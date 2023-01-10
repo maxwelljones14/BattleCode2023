@@ -80,7 +80,6 @@ public class Robot {
         if (!sectorDatabase[sector].hasReports()) {
             sectorDatabase[sector].exploreSector();
         }
-        rc.setIndicatorString("Taking turn for Robot! ");
     }
 
     public void endTurn() throws GameActionException {

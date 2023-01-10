@@ -43,7 +43,6 @@ public strictfp class RobotPlayer {
         Debug.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
 
         // You can also use indicators to save debug notes in replays.
-        rc.setIndicatorString("Hello world!");
         switch (rc.getType()) {
             case AMPLIFIER:
                 bot = new Amplifier(rc);

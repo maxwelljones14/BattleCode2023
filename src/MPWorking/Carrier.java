@@ -54,7 +54,7 @@ public class Carrier extends Robot {
 
         // If we are at capacity, go home.
         if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
-            rc.setIndicatorString("At capacity, going home");
+            Debug.printString("At capacity, going home");
             if (rc.canTransferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget))) {
                 rc.transferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget));
             } else {
