@@ -31,6 +31,9 @@ public class Robot {
 
     static SectorInfo[] sectorDatabase;
 
+    static int[] bufferPool;
+    static boolean[] dirtyFlags;
+
     public Robot(RobotController r) throws GameActionException {
         rc = r;
         turnCount = 0;
@@ -61,6 +64,8 @@ public class Robot {
         for (int i = 0; i < CommsConstants.numSectors; i++) {
             sectorDatabase[i] = new SectorInfo();
         }
+        bufferPool = new int[64];
+        dirtyFlags = new boolean[64];
     }
 
     public void loadArchonLocations() throws GameActionException {
@@ -89,6 +94,7 @@ public class Robot {
                 return;
             default:
                 if (rc.canWriteSharedArray(0, 0)) {
+                    initBufferPool();
                     for (int i = 0; i < CommsConstants.numSectors; i++) {
                         SectorInfo entry = sectorDatabase[i];
                         if (entry.hasReports()) {
@@ -103,6 +109,7 @@ public class Robot {
                             }
                         }
                     }
+                    flushBufferPool();
                 }
                 Explore.markSeen();
         }
@@ -267,6 +274,26 @@ public class Robot {
             sectorDatabase[sector].addIsland(idx, 2);
         } else {
             sectorDatabase[sector].addIsland(idx, 0);
+        }
+    }
+
+    public void initBufferPool() throws GameActionException {
+        for (int i = 0; i < 64; i++) {
+            bufferPool[i] = rc.readSharedArray(i);
+            dirtyFlags[i] = false;
+        }
+    }
+
+    public void writeToBufferPool(int idx, int value) throws GameActionException {
+        bufferPool[idx] = value;
+        dirtyFlags[idx] = true;
+    }
+
+    public void flushBufferPool() throws GameActionException {
+        for (int i = 0; i < 64; i++) {
+            if (dirtyFlags[i]) {
+                rc.writeSharedArray(i, bufferPool[i]);
+            }
         }
     }
 
