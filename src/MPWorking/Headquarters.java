@@ -55,26 +55,34 @@ public class Headquarters extends Robot {
         currentState = newState;
     }
 
+    public void buildCarrier(MapLocation newLoc) throws GameActionException {
+        Debug.printString("Trying to build a carrier");
+        if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
+            rc.buildRobot(RobotType.CARRIER, newLoc);
+            carrierCount++;
+        }
+    }
+
+    public void buildLauncher(MapLocation newLoc) throws GameActionException {
+        Debug.printString("Trying to build a launcher");
+        if (rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) {
+            rc.buildRobot(RobotType.LAUNCHER, newLoc);
+            launcherCount++;
+        }
+    }
+
     public void doStateAction() throws GameActionException {
+        Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
+        MapLocation newLoc = rc.getLocation().add(dir);
         switch (currentState) {
             case CHILLING:
                 // Pick a direction to build in.
-                Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
-                MapLocation newLoc = rc.getLocation().add(dir);
                 if (Util.rng.nextBoolean()) {
                     // Let's try to build a carrier.
-                    Debug.printString("Trying to build a carrier");
-                    if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
-                        rc.buildRobot(RobotType.CARRIER, newLoc);
-                        carrierCount++;
-                    }
+                    buildCarrier(newLoc);
                 } else {
                     // Let's try to build a launcher.
-                    Debug.printString("Trying to build a launcher");
-                    if (rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) {
-                        rc.buildRobot(RobotType.LAUNCHER, newLoc);
-                        launcherCount++;
-                    }
+                    buildLauncher(newLoc);
                 }
                 break;
             case BUILDING_ANCHOR:
@@ -84,6 +92,12 @@ public class Headquarters extends Robot {
                     rc.buildAnchor(Anchor.STANDARD);
                     Debug.printString("Building anchor! " + rc.getAnchor());
                     anchorCount++;
+                } else {
+                    if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= Util.ANCHOR_COST + Util.CARRIER_COST) {
+                        buildCarrier(newLoc);
+                    } else if (rc.getResourceAmount(ResourceType.MANA) >= Util.ANCHOR_COST + Util.LAUNCHER_COST) {
+                        buildLauncher(newLoc);
+                    }
                 }
                 break;
         }
