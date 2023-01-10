@@ -4,29 +4,12 @@ import battlecode.common.*;
 
 public class Explore {
     static RobotController rc;
-    static Direction lastExploreDir;
-    static final int EXPLORE_BOREDOM = 20;
-    static int boredom;
-
-    static final int MIN_DIST_FROM_WALL = 3;
-
-    static final Direction[] directions = {
-            Direction.NORTH,
-            Direction.NORTHEAST,
-            Direction.EAST,
-            Direction.SOUTHEAST,
-            Direction.SOUTH,
-            Direction.SOUTHWEST,
-            Direction.WEST,
-            Direction.NORTHWEST,
-            Direction.CENTER
-    };
 
     static Direction[] dirPath;
 
     static final int MAX_MAP_SIZE = 60;
     static final int MAX_MAP_SIZE_SQ = MAX_MAP_SIZE * MAX_MAP_SIZE;
-    static final int MAX_MAP_SIZE2 = 120;
+    static final int MAX_MAP_SIZE2 = 2 * MAX_MAP_SIZE;
     static boolean[][] visited = new boolean[MAX_MAP_SIZE][];
 
     static int visionRadius;
@@ -38,23 +21,8 @@ public class Explore {
     static MapLocation exploreTarget = null;
 
     static Direction exploreDir = Direction.CENTER;
-    static double angle = 0;
-    static final double EXPLORE_DIST = 100;
+    static final double EXPLORE_DIST = 10;
     static MapLocation explore3Target = null;
-    static Boolean rotateLeft = null;
-
-    static final int BYTECODES_USED = 2500;
-
-    static Direction lastDirMoved = null;
-
-    static int initialX, initialY;
-
-    static enum ExploreType {
-        PATHFINDING,
-        GREEDY,
-    }
-
-    static ExploreType exploreType;
 
     public static void init(RobotController r) {
         rc = r;
@@ -62,9 +30,6 @@ public class Explore {
         fillDirPath();
         Math.random(); // for some reason the first entry is buggy...
         initExploreDir();
-        initialX = rc.getLocation().x;
-        initialY = rc.getLocation().y;
-        exploreType = ExploreType.GREEDY;
     }
 
     // Don't continue in this explore dir if it will bring you too close to a wall.
@@ -87,119 +52,10 @@ public class Explore {
         return false;
     }
 
-    public static void pickNewExploreDir90() {
-        Direction[] newDirChoices = {
-                lastExploreDir.rotateLeft().rotateLeft(),
-                lastExploreDir.rotateRight().rotateRight(),
-        };
-        Direction[] validDirs = new Direction[5];
-        int numValidDirs = 0;
-        for (Direction dir : newDirChoices) {
-            if (isValidExploreDir(dir)) {
-                Debug.printString("valid: " + dir);
-                validDirs[numValidDirs++] = dir;
-            }
-        }
-        if (numValidDirs > 0) {
-            lastExploreDir = validDirs[Util.rng.nextInt(numValidDirs)];
-        } else {
-            // This can happen if you're going straight into a corner or wall
-            // In this case, we choose from close to the opposite current explore dir
-            switch (Util.rng.nextInt(3)) {
-                case 0:
-                    lastExploreDir = lastExploreDir.opposite().rotateLeft();
-                    break;
-                case 1:
-                    lastExploreDir = lastExploreDir.opposite().rotateRight();
-                    break;
-                default:
-                    lastExploreDir = lastExploreDir.opposite();
-                    break;
-            }
-        }
-    }
-
-    public static void pickNewExploreDir() {
-        Direction[] newDirChoices = {
-                // Util.turnLeft90(lastExploreDir),
-                lastExploreDir.rotateLeft(),
-                lastExploreDir,
-                lastExploreDir.rotateRight(),
-                // Util.turnRight90(lastExploreDir),
-        };
-
-        Direction[] validDirs = new Direction[5];
-        int numValidDirs = 0;
-        for (Direction dir : newDirChoices) {
-            if (isValidExploreDir(dir)) {
-                validDirs[numValidDirs++] = dir;
-            }
-        }
-
-        if (numValidDirs > 0) {
-            lastExploreDir = validDirs[Util.rng.nextInt(numValidDirs)];
-        } else {
-            // This can happen if you're going straight into a corner or wall
-            // In this case, we choose from close to the opposite current explore dir
-            switch (Util.rng.nextInt(3)) {
-                case 0:
-                    lastExploreDir = lastExploreDir.opposite().rotateLeft();
-                    break;
-                case 1:
-                    lastExploreDir = lastExploreDir.opposite().rotateRight();
-                    break;
-                default:
-                    lastExploreDir = lastExploreDir.opposite();
-                    break;
-            }
-        }
-    }
-
-    // If you're traveling south *right* next to a wall, you should go
-    // southwest/east for a turn
-    public static Direction rotateAwayFromWallIfNecessary(Direction dir) {
-        MapLocation currLoc = rc.getLocation();
-        switch (dir) {
-            case SOUTH:
-                if (currLoc.x < MIN_DIST_FROM_WALL) {
-                    return dir.rotateLeft();
-                }
-                if (Util.MAP_WIDTH - currLoc.x < MIN_DIST_FROM_WALL) {
-                    return dir.rotateRight();
-                }
-                break;
-            case NORTH:
-                if (currLoc.x < MIN_DIST_FROM_WALL) {
-                    return dir.rotateRight();
-                }
-                if (Util.MAP_WIDTH - currLoc.x < MIN_DIST_FROM_WALL) {
-                    return dir.rotateLeft();
-                }
-                break;
-            case WEST:
-                if (currLoc.y < MIN_DIST_FROM_WALL) {
-                    return dir.rotateRight();
-                }
-                if (Util.MAP_HEIGHT - currLoc.y < MIN_DIST_FROM_WALL) {
-                    return dir.rotateLeft();
-                }
-                break;
-            case EAST:
-                if (currLoc.y < MIN_DIST_FROM_WALL) {
-                    return dir.rotateLeft();
-                }
-                if (Util.MAP_HEIGHT - currLoc.y < MIN_DIST_FROM_WALL) {
-                    return dir.rotateRight();
-                }
-                break;
-        }
-        return dir;
-    }
-
     static void initExploreDir() {
         if (rc.getType() == RobotType.HEADQUARTERS)
             return;
-        assignExplore3Dir(directions[Util.rng.nextInt(8)]);
+        assignExplore3Dir(Util.directions[Util.rng.nextInt(Util.directions.length)]);
     }
 
     static void initialize() {
@@ -254,11 +110,12 @@ public class Explore {
         double x = rc.getLocation().x, y = rc.getLocation().y;
         for (int i = tries; i-- > 0;) {
             // Try for more variance in the direction?
-            angle = tempAngle + (Util.rng.nextDouble() * 45 - 22.5) / 180 * Math.PI;
+            double angle = tempAngle + (Util.rng.nextDouble() * 45 - 22.5) / 180 * Math.PI;
             x += Math.cos(angle) * EXPLORE_DIST;
             y += Math.sin(angle) * EXPLORE_DIST;
             explore3Target = new MapLocation((int) x, (int) y);
-            if (Util.onTheMap(explore3Target))
+            explore3Target = Util.clipToWithinMap(explore3Target);
+            if (!hasVisited(explore3Target))
                 return;
         }
     }
@@ -396,6 +253,7 @@ public class Explore {
         }
     }
 
+    // Spiral pattern for markSeen
     static void fillDirPath() {
         switch (visionRadius) {
             case 20:
