@@ -1,6 +1,9 @@
 package examplefuncsplayer;
 
 import battlecode.common.*;
+import MPWorking.Util.*;
+import MPWorking.Comms.*;
+import MPWorking.Debug.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
