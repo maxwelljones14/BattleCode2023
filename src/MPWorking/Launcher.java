@@ -6,6 +6,20 @@ import MPWorking.Comms.*;
 import MPWorking.Debug.*;
 
 public class Launcher extends Robot {
+    static enum LauncherState {
+        EXPLORING,
+    }
+
+    static LauncherState currState;
+    static int numEnemyLaunchers;
+    static int numFriendlyLaunchers;
+    static RobotInfo closestEnemy;
+    static int numFriendlies;
+    static int numEnemies;
+    static MapLocation closestAttackingEnemy;
+    static int numEnemyLaunchersAttackingUs;
+
+    static RobotInfo[] enemyAttackable;
 
     public Launcher(RobotController r) throws GameActionException {
         super(r);
@@ -13,6 +27,7 @@ public class Launcher extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+
         // Try to attack someone
         int radius = rc.getType().actionRadiusSquared;
         Team opponent = rc.getTeam().opponent();
