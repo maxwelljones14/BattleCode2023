@@ -262,11 +262,11 @@ public class Robot {
         int idx = rc.senseIsland(loc);
         Team team = rc.senseTeamOccupyingIsland(idx);
         if (team == rc.getTeam()) {
-            sectorDatabase[sector].addIsland(loc, 1);
+            sectorDatabase[sector].addIsland(idx, 1);
         } else if (team == rc.getTeam().opponent()) {
-            sectorDatabase[sector].addIsland(loc, 2);
+            sectorDatabase[sector].addIsland(idx, 2);
         } else {
-            sectorDatabase[sector].addIsland(loc, 0);
+            sectorDatabase[sector].addIsland(idx, 0);
         }
     }
 

@@ -8,18 +8,18 @@ public class SectorInfo {
     private FastIterableLocSet adamWells;
     private FastIterableLocSet manaWells;
     private FastIterableLocSet elxrWells;
-    private FastIterableLocSet neutralIslands;
-    private FastIterableLocSet friendlyIslands;
-    private FastIterableLocSet enemyIslands;
+    private FastIterableIntSet neutralIslands;
+    private FastIterableIntSet friendlyIslands;
+    private FastIterableIntSet enemyIslands;
     private int enemies;
 
     public SectorInfo() {
         adamWells = new FastIterableLocSet();
         manaWells = new FastIterableLocSet();
         elxrWells = new FastIterableLocSet();
-        neutralIslands = new FastIterableLocSet();
-        friendlyIslands = new FastIterableLocSet();
-        enemyIslands = new FastIterableLocSet();
+        neutralIslands = new FastIterableIntSet();
+        friendlyIslands = new FastIterableIntSet();
+        enemyIslands = new FastIterableIntSet();
         enemies = 0;
         found = false;
     }
@@ -47,20 +47,20 @@ public class SectorInfo {
     }
 
     // 0 = Neutral, 1 = Ours, 2 = Enemy, can make this an enum later
-    public void addIsland(MapLocation loc, int control) {
+    public void addIsland(int islandIdx, int control) {
         found = true;
         if (control == 0) {
-            friendlyIslands.remove(loc);
-            enemyIslands.remove(loc);
-            neutralIslands.add(loc);
+            friendlyIslands.remove(islandIdx);
+            enemyIslands.remove(islandIdx);
+            neutralIslands.add(islandIdx);
         } else if (control == 1) {
-            neutralIslands.remove(loc);
-            enemyIslands.remove(loc);
-            friendlyIslands.add(loc);
+            neutralIslands.remove(islandIdx);
+            enemyIslands.remove(islandIdx);
+            friendlyIslands.add(islandIdx);
         } else if (control == 2) {
-            neutralIslands.remove(loc);
-            friendlyIslands.remove(loc);
-            enemyIslands.add(loc);
+            neutralIslands.remove(islandIdx);
+            friendlyIslands.remove(islandIdx);
+            enemyIslands.add(islandIdx);
         }
     }
 
