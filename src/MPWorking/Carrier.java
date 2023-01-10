@@ -15,7 +15,11 @@ public class Carrier extends Robot {
 
     public Carrier(RobotController r) throws GameActionException {
         super(r);
-        resourceTarget = ResourceType.ADAMANTIUM;
+        if (Util.rng.nextInt(2) == 0) {
+            resourceTarget = ResourceType.ADAMANTIUM;
+        } else {
+            resourceTarget = ResourceType.MANA;
+        }
     }
 
     public void takeTurn() throws GameActionException {

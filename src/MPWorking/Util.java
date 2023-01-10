@@ -25,6 +25,8 @@ public class Util {
             Direction.NORTHWEST,
     };
 
+    static final int JUST_OUTSIDE_OF_VISION_RADIUS = 34;
+
     static void init(RobotController r) {
         rc = r;
         rng = new Random(rc.getRoundNum() * 23981 + rc.getID() * 10289);
@@ -70,4 +72,19 @@ public class Util {
     static Direction randomDirection(Direction[] newDirections) {
         return newDirections[Util.rng.nextInt(newDirections.length)];
     }
+
+    static Direction[] getInOrderDirections(Direction target_dir) {
+        return new Direction[] { target_dir, target_dir.rotateRight(), target_dir.rotateLeft(),
+                target_dir.rotateRight().rotateRight(), target_dir.rotateLeft().rotateLeft() };
+    }
+
+    static Direction getFirstValidInOrderDirection(Direction dir){
+        for(Direction newDir : Util.getInOrderDirections(dir)) {
+            if(rc.canMove(newDir)) {
+                return newDir;
+            }
+        }
+        return Direction.CENTER;
+    }
+
 }
