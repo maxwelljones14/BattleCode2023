@@ -27,20 +27,20 @@ public class Comms {
         sectorSize = new MapLocation(numCols, numRows);
     }
 
-    public MapLocation getSectorDimensions() {
+    static MapLocation getSectorDimensions() {
         return sectorSize;
     }
 
-    public int getSector(MapLocation loc) {
+    static int getSector(MapLocation loc) {
         return (loc.x / sectorSize.x) + (loc.y / sectorSize.y) * CommsConstants.gridDimensions;
     }
 
-    public boolean isSectorReported(int sectorIdx) throws GameActionException {
+    static boolean isSectorReported(int sectorIdx) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorIdx * CommsConstants.idxPerSector)
                 & CommsConstants.sectorReportedMask) != 0;
     }
 
-    public int getNumHQs() throws GameActionException {
+    static int getNumHQs() throws GameActionException {
         int numHQs = rc.readSharedArray(CommsConstants.statusIdx) & CommsConstants.numHQsMask;
         if (numHQs == 0) {
             numHQs = 4;
@@ -48,7 +48,7 @@ public class Comms {
         return numHQs;
     }
 
-    public void reportHQ(MapLocation loc) throws GameActionException {
+    static void reportHQ(MapLocation loc) throws GameActionException {
         int statusArrayData = rc.readSharedArray(CommsConstants.statusIdx);
         int numHQs = statusArrayData & CommsConstants.numHQsMask;
         int newNumHQs = (numHQs + 1) & CommsConstants.numHQsMask;
@@ -76,7 +76,7 @@ public class Comms {
         }
     }
 
-    private int adjustCount(int value) {
+    private static int adjustCount(int value) {
         if (value <= thresholds[0]) {
             return 0;
         } else if (value <= thresholds[1]) {
@@ -96,7 +96,7 @@ public class Comms {
         }
     }
 
-    public void reportSector(int sectorNum, int adamWells, int manaWells, int elxrWells, int enemies, int islands)
+    static void reportSector(int sectorNum, int adamWells, int manaWells, int elxrWells, int enemies, int islands)
             throws GameActionException {
         int adjAdamWells = adjustCount(adamWells);
         int adjManaWells = adjustCount(manaWells);
@@ -113,7 +113,7 @@ public class Comms {
         }
     }
 
-    public void updateAdamWells(int sectorNum, int wells) throws GameActionException {
+    static void updateAdamWells(int sectorNum, int wells) throws GameActionException {
         int adjWells = adjustCount(wells);
         int oldData = rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum);
         int oldCount = (oldData >> CommsConstants.sectorWellAdamOffset) & CommsConstants.sectorWellAdamMask;
@@ -127,7 +127,7 @@ public class Comms {
         }
     }
 
-    public void updateManaWells(int sectorNum, int wells) throws GameActionException {
+    static void updateManaWells(int sectorNum, int wells) throws GameActionException {
         int adjWells = adjustCount(wells);
         int oldData = rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum);
         int oldCount = (oldData >> CommsConstants.sectorWellManaOffset) & CommsConstants.sectorWellManaMask;
@@ -141,7 +141,7 @@ public class Comms {
         }
     }
 
-    public void updateElxrWells(int sectorNum, int wells) throws GameActionException {
+    static void updateElxrWells(int sectorNum, int wells) throws GameActionException {
         int adjWells = adjustCount(wells);
         int oldData = rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum);
         int oldCount = (oldData >> CommsConstants.sectorWellElxrOffset) & CommsConstants.sectorWellElxrMask;
@@ -155,7 +155,7 @@ public class Comms {
         }
     }
 
-    public void updateIslands(int sectorNum, int islands) throws GameActionException {
+    static void updateIslands(int sectorNum, int islands) throws GameActionException {
         int adjIslands = adjustCount(islands);
         int oldData = rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum);
         int newData = (oldData & ~CommsConstants.sectorIslandMask) | (adjIslands << CommsConstants.sectorIslandOffset);
@@ -164,7 +164,7 @@ public class Comms {
         }
     }
 
-    public void updateEnemies(int sectorNum, int enemies) throws GameActionException {
+    static void updateEnemies(int sectorNum, int enemies) throws GameActionException {
         int adjEnemies = adjustCount(enemies);
         int oldData = rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum);
         int newData = (oldData & ~CommsConstants.sectorEnemyMask) | (adjEnemies << CommsConstants.sectorEnemyOffset);
@@ -173,27 +173,27 @@ public class Comms {
         }
     }
 
-    public int getSectorAdamWells(int sectorNum) throws GameActionException {
+    static int getSectorAdamWells(int sectorNum) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum) >> CommsConstants.sectorWellAdamOffset)
                 & CommsConstants.sectorWellAdamMask;
     }
 
-    public int getSectorManaWells(int sectorNum) throws GameActionException {
+    static int getSectorManaWells(int sectorNum) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum) >> CommsConstants.sectorWellManaOffset)
                 & CommsConstants.sectorWellManaMask;
     }
 
-    public int getSectorElxrWells(int sectorNum) throws GameActionException {
+    static int getSectorElxrWells(int sectorNum) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum) >> CommsConstants.sectorWellElxrOffset)
                 & CommsConstants.sectorWellElxrMask;
     }
 
-    public int getSectorEnemies(int sectorNum) throws GameActionException {
+    static int getSectorEnemies(int sectorNum) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum) >> CommsConstants.sectorEnemyOffset)
                 & CommsConstants.sectorEnemyMask;
     }
 
-    public int getSectorIslands(int sectorNum) throws GameActionException {
+    static int getSectorIslands(int sectorNum) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum) >> CommsConstants.sectorIslandOffset)
                 & CommsConstants.sectorIslandMask;
     }

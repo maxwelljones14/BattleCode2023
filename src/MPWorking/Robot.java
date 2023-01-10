@@ -29,6 +29,8 @@ public class Robot {
     static Team team;
     static Team opponent;
 
+    static SectorInfo[] sectorDatabase;
+
     public Robot(RobotController r) throws GameActionException {
         rc = r;
         turnCount = 0;
@@ -54,6 +56,8 @@ public class Robot {
         if (home == null) {
             home = rc.getLocation();
         }
+
+        sectorDatabase = new SectorInfo[25];
     }
 
     public void loadArchonLocations() throws GameActionException {
@@ -224,6 +228,24 @@ public class Robot {
             }
         }
         return false;
+    }
+
+    public void recordWell(WellInfo info) {
+        int sector = Comms.getSector(info.getMapLocation());
+        sectorDatabase[sector].addWell(info.getMapLocation(), info.getResourceType());
+    }
+
+    public void recordIsland(MapLocation loc) throws GameActionException {
+        int sector = Comms.getSector(loc);
+        int idx = rc.senseIsland(loc);
+        Team team = rc.senseTeamOccupyingIsland(idx);
+        if (team == rc.getTeam()) {
+            sectorDatabase[sector].addIsland(loc, 1);
+        } else if (team == rc.getTeam().opponent()) {
+            sectorDatabase[sector].addIsland(loc, 2);
+        } else {
+            sectorDatabase[sector].addIsland(loc, 0);
+        }
     }
 
 }
