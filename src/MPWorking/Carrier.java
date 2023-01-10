@@ -12,6 +12,7 @@ import java.util.Set;
 public class Carrier extends Robot {
 
     ResourceType resourceTarget;
+    MapLocation seenIsland;
 
     public Carrier(RobotController r) throws GameActionException {
         super(r);
@@ -22,8 +23,34 @@ public class Carrier extends Robot {
         }
     }
 
+    public MapLocation findUnconqueredIsland() throws GameActionException {
+        int[] islandIdxs = rc.senseNearbyIslands();
+        if (islandIdxs.length > 0) {
+            // TODO: only note islands that are not conquered yet
+            for (int idx : islandIdxs) {
+                if (rc.senseTeamOccupyingIsland(idx) == Team.NEUTRAL) {
+                    return rc.senseNearbyIslandLocations(idx)[0];
+                }
+            }
+        }
+        return null;
+    }
+
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+
+        Debug.printString("seen island at " + seenIsland);
+
+        // if we're near home and have an island in our history, pick up anchor if home
+        // has anchor
+        if (seenIsland != null && rc.canTakeAnchor(home, Anchor.STANDARD)) {
+            rc.takeAnchor(home, Anchor.STANDARD);
+        }
+
+        // mark the first island we see
+        if (seenIsland == null) {
+            seenIsland = findUnconqueredIsland();
+        }
 
         // If we are at capacity, go home.
         if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
@@ -49,7 +76,26 @@ public class Carrier extends Robot {
             }
         }
 
-        if (closestWell != null) {
+        // if we have an anchor and have island location, go to that first
+        if (seenIsland != null && rc.getAnchor() != null) {
+            Debug.printString("seen island at " + seenIsland + "; have an anchor");
+            // if we're near an island and have an anchor, place the anchor and reset
+            // seenIsland
+            // TODO: mark this island as conquered in comms
+            if (rc.canSenseLocation(seenIsland)) {
+                // if i get to the island and its taken already then find another island
+                if (rc.senseTeamOccupyingIsland(rc.senseIsland(seenIsland)) != Team.NEUTRAL) {
+                    seenIsland = findUnconqueredIsland();
+                    return;
+                }
+            }
+            if (rc.canPlaceAnchor()) {
+                rc.placeAnchor();
+                seenIsland = null;
+            } else {
+                Pathfinding.move(seenIsland);
+            }
+        } else if (closestWell != null) {
             Debug.printString("Moving towards well at " + closestWell.getMapLocation());
             // TODO: canCollectResource is broken right now
             // It does not confirm the adjacency condition

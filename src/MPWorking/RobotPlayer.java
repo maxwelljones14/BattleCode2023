@@ -14,14 +14,6 @@ import MPWorking.Debug.*;
  */
 public strictfp class RobotPlayer {
 
-    /**
-     * We will use this variable to count the number of turns this robot has been
-     * alive.
-     * You can use static variables like this to save any information you want. Keep
-     * in mind that even though
-     * these variables are static, in Battlecode they aren't actually shared between
-     * your robots.
-     */
     static Robot bot;
 
     /**
