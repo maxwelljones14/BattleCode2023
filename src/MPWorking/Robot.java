@@ -54,7 +54,7 @@ public class Robot {
     }
 
     public void initTurn() throws GameActionException {
-
+        Pathfinding.initTurn();
     }
 
     public void takeTurn() throws GameActionException {
@@ -63,6 +63,12 @@ public class Robot {
     }
 
     public void endTurn() throws GameActionException {
-
+        Explore.initialize();
+        switch (robotType) {
+            case HEADQUARTERS:
+                return;
+            default:
+                Explore.markSeen();
+        }
     }
 }

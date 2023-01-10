@@ -2,6 +2,7 @@ package MPWorking;
 
 import battlecode.common.*;
 import MPWorking.Util.*;
+import MPWorking.fast.FastMath;
 import MPWorking.Comms.*;
 import MPWorking.Debug.*;
 
@@ -36,16 +37,18 @@ public strictfp class RobotPlayer {
      **/
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
+        FastMath.initRand(rc);
         Debug.init(rc);
         Util.init(rc);
         Comms.init(rc);
-        // Explore.init(rc);
+        Explore.init(rc);
+        Pathfinding.init(rc);
         // Nav.init(rc);
 
         // Hello world! Standard output is very useful for debugging.
         // Everything you say here will be directly viewable in your terminal when you
         // run a match!
-        System.out.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
+        Debug.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
 
         // You can also use indicators to save debug notes in replays.
         rc.setIndicatorString("Hello world!");
@@ -74,11 +77,11 @@ public strictfp class RobotPlayer {
                 bot.initTurn();
                 bot.takeTurn();
                 bot.endTurn();
-                // Debug.flush();
+                Debug.flush();
                 Clock.yield();
 
             } catch (Exception e) {
-                System.out.println(rc.getType() + " Exception");
+                Debug.println(rc.getType() + " Exception");
                 e.printStackTrace();
 
                 reset(rc);
