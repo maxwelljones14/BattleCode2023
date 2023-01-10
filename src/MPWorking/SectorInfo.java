@@ -4,6 +4,7 @@ import MPWorking.fast.*;
 import battlecode.common.*;
 
 public class SectorInfo {
+    private boolean found;
     private FastIterableLocSet adamWells;
     private FastIterableLocSet manaWells;
     private FastIterableLocSet elxrWells;
@@ -12,7 +13,23 @@ public class SectorInfo {
     private FastIterableLocSet enemyIslands;
     private int enemies;
 
+    public SectorInfo() {
+        adamWells = new FastIterableLocSet();
+        manaWells = new FastIterableLocSet();
+        elxrWells = new FastIterableLocSet();
+        neutralIslands = new FastIterableLocSet();
+        friendlyIslands = new FastIterableLocSet();
+        enemyIslands = new FastIterableLocSet();
+        enemies = 0;
+        found = false;
+    }
+
+    public boolean hasReports() {
+        return found;
+    }
+
     public void addWell(MapLocation loc, ResourceType type) {
+        found = true;
         if (type == ResourceType.ADAMANTIUM) {
             adamWells.add(loc);
             adamWells.updateIterable();
@@ -31,6 +48,7 @@ public class SectorInfo {
 
     // 0 = Neutral, 1 = Ours, 2 = Enemy, can make this an enum later
     public void addIsland(MapLocation loc, int control) {
+        found = true;
         if (control == 0) {
             friendlyIslands.remove(loc);
             enemyIslands.remove(loc);
@@ -44,6 +62,10 @@ public class SectorInfo {
             friendlyIslands.remove(loc);
             enemyIslands.add(loc);
         }
+    }
+
+    public void exploreSector() {
+        found = true;
     }
 
     public int numAdamWells() {
@@ -86,5 +108,6 @@ public class SectorInfo {
         friendlyIslands.clear();
         enemyIslands.clear();
         enemies = 0;
+        found = false;
     }
 }

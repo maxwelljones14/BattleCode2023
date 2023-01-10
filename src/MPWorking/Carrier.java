@@ -68,6 +68,7 @@ public class Carrier extends Robot {
         WellInfo closestWell = null;
         int closestDist = Integer.MAX_VALUE;
         for (WellInfo well : wells) {
+            recordWell(well);
             MapLocation wellLocation = well.getMapLocation();
             int dist = Util.distance(rc.getLocation(), wellLocation);
             if (dist < closestDist) {

@@ -57,7 +57,10 @@ public class Robot {
             home = rc.getLocation();
         }
 
-        sectorDatabase = new SectorInfo[25];
+        sectorDatabase = new SectorInfo[CommsConstants.numSectors];
+        for (int i = 0; i < CommsConstants.numSectors; i++) {
+            sectorDatabase[i] = new SectorInfo();
+        }
     }
 
     public void loadArchonLocations() throws GameActionException {
@@ -73,6 +76,10 @@ public class Robot {
         EnemySensable = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         FriendlySensable = rc.senseNearbyRobots(-1, rc.getTeam());
         currLoc = rc.getLocation();
+        int sector = Comms.getSector(currLoc);
+        if (!sectorDatabase[sector].hasReports()) {
+            sectorDatabase[sector].exploreSector();
+        }
         rc.setIndicatorString("Taking turn for Robot! ");
     }
 
@@ -82,6 +89,22 @@ public class Robot {
             case HEADQUARTERS:
                 return;
             default:
+                if (rc.canWriteSharedArray(0, 0)) {
+                    for (int i = 0; i < CommsConstants.numSectors; i++) {
+                        SectorInfo entry = sectorDatabase[i];
+                        if (entry.hasReports()) {
+                            if (!Comms.isSectorReported(i)) {
+                                Comms.reportSector(i, entry.numAdamWells(), entry.numManaWells(), entry.numElxrWells(),
+                                        entry.numIslands(), entry.numEnemies());
+                            } else {
+                                Comms.updateAdamWells(i, entry.numAdamWells());
+                                Comms.updateManaWells(i, entry.numManaWells());
+                                Comms.updateElxrWells(i, entry.numElxrWells());
+                                Comms.updateIslands(i, entry.numIslands());
+                            }
+                        }
+                    }
+                }
                 Explore.markSeen();
         }
     }

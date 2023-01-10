@@ -24,6 +24,7 @@ public class CommsConstants {
     public static int sectorReportedMask = 0b1000000000000000;
     public static int sectorReportedOffset = 15;
     public static int sectorWellAdamMask = 0b111;
+    public static int sectorCountMask = 0x7;
     public static int sectorWellAdamOffset = 0;
     public static int sectorWellManaMask = 0b111000;
     public static int sectorWellManaOffset = 3;

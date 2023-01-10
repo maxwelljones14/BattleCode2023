@@ -116,7 +116,7 @@ public class Comms {
     static void updateAdamWells(int sectorNum, int wells) throws GameActionException {
         int adjWells = adjustCount(wells);
         int oldData = rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum);
-        int oldCount = (oldData >> CommsConstants.sectorWellAdamOffset) & CommsConstants.sectorWellAdamMask;
+        int oldCount = (oldData >> CommsConstants.sectorWellAdamOffset) & CommsConstants.sectorCountMask;
         if (oldCount >= adjWells) {
             return;
         }
@@ -130,7 +130,7 @@ public class Comms {
     static void updateManaWells(int sectorNum, int wells) throws GameActionException {
         int adjWells = adjustCount(wells);
         int oldData = rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum);
-        int oldCount = (oldData >> CommsConstants.sectorWellManaOffset) & CommsConstants.sectorWellManaMask;
+        int oldCount = (oldData >> CommsConstants.sectorWellManaOffset) & CommsConstants.sectorCountMask;
         if (oldCount >= adjWells) {
             return;
         }
@@ -144,7 +144,7 @@ public class Comms {
     static void updateElxrWells(int sectorNum, int wells) throws GameActionException {
         int adjWells = adjustCount(wells);
         int oldData = rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum);
-        int oldCount = (oldData >> CommsConstants.sectorWellElxrOffset) & CommsConstants.sectorWellElxrMask;
+        int oldCount = (oldData >> CommsConstants.sectorWellElxrOffset) & CommsConstants.sectorCountMask;
         if (oldCount >= adjWells) {
             return;
         }
@@ -175,26 +175,26 @@ public class Comms {
 
     static int getSectorAdamWells(int sectorNum) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum) >> CommsConstants.sectorWellAdamOffset)
-                & CommsConstants.sectorWellAdamMask;
+                & CommsConstants.sectorCountMask;
     }
 
     static int getSectorManaWells(int sectorNum) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum) >> CommsConstants.sectorWellManaOffset)
-                & CommsConstants.sectorWellManaMask;
+                & CommsConstants.sectorCountMask;
     }
 
     static int getSectorElxrWells(int sectorNum) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum) >> CommsConstants.sectorWellElxrOffset)
-                & CommsConstants.sectorWellElxrMask;
+                & CommsConstants.sectorCountMask;
     }
 
     static int getSectorEnemies(int sectorNum) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum) >> CommsConstants.sectorEnemyOffset)
-                & CommsConstants.sectorEnemyMask;
+                & CommsConstants.sectorCountMask;
     }
 
     static int getSectorIslands(int sectorNum) throws GameActionException {
         return (rc.readSharedArray(CommsConstants.firstSectorIdx + sectorNum) >> CommsConstants.sectorIslandOffset)
-                & CommsConstants.sectorIslandMask;
+                & CommsConstants.sectorCountMask;
     }
 }
