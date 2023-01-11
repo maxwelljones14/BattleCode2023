@@ -220,7 +220,7 @@ public class Headquarters extends Robot {
         Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
         // spawn as far away from us as possible
         MapLocation newLoc = rc.getLocation().add(dir).add(dir);
-        while (!rc.sensePassability(newLoc)) {
+        while (!rc.onTheMap(newLoc) || !rc.sensePassability(newLoc)) {
             newLoc = Util.moveTowardsMe(newLoc);
         }
         switch (currentState) {
