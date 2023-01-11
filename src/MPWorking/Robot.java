@@ -8,6 +8,7 @@ import MPWorking.Debug.*;
 public class Robot {
     static RobotController rc;
     static int turnCount;
+    static int roundNum;
     static RobotType robotType;
 
     static MapLocation home;
@@ -40,12 +41,14 @@ public class Robot {
     float yStep;
     int[] whichXLoc;
     int[] whichYLoc;
-    int[] sectorCentersX;
-    int[] sectorCentersY;
+    MapLocation[] sectorCenters;
     int[] sectorResources;
     int[] sectorControls;
     int[] markedSectorsBuffer;
     int[] sectorPermutation;
+    int sectorToReport;
+
+    boolean exploreMode;
 
     public Robot(RobotController r) throws GameActionException {
         rc = r;
@@ -78,6 +81,7 @@ public class Robot {
         sectorResources = new int[numSectors];
         sectorControls = new int[numSectors];
         markedSectorsBuffer = new int[numSectors];
+        sectorToReport = 0;
 
         sectorDatabase = new SectorInfo[numSectors];
         for (int i = 0; i < numSectors; i++) {
@@ -93,6 +97,8 @@ public class Robot {
         for (int i = 0; i < Util.MAP_HEIGHT; i++) {
             whichYLoc[i] = (int) (i / yStep) * sectorWidths.length;
         }
+
+        exploreMode = false;
     }
 
     public void loadArchonLocations() throws GameActionException {
@@ -105,6 +111,7 @@ public class Robot {
 
     public void takeTurn() throws GameActionException {
         turnCount += 1;
+        roundNum = rc.getRoundNum();
         EnemySensable = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         FriendlySensable = rc.senseNearbyRobots(-1, rc.getTeam());
         currLoc = rc.getLocation();
@@ -112,6 +119,7 @@ public class Robot {
         if (!sectorDatabase[sector].hasReports()) {
             sectorDatabase[sector].exploreSector();
         }
+        setSectorStates();
     }
 
     public void endTurn() throws GameActionException {
@@ -122,44 +130,40 @@ public class Robot {
             default:
                 if (rc.canWriteSharedArray(0, 0)) {
                     Comms.initBufferPool();
-                    for (int i = 0; i < numSectors; i++) {
-                        SectorInfo entry = sectorDatabase[i];
+                    int numSectorsReported = 0;
+                    final int MAX_SECTORS_REPORTED = 10;
+                    for (; sectorToReport < numSectors &&
+                            numSectorsReported < MAX_SECTORS_REPORTED; sectorToReport++) {
+                        SectorInfo entry = sectorDatabase[sectorToReport];
                         if (entry.hasReports()) {
-                            if (Comms.readSectorExplored(i) == Comms.ExploredStatus.UNEXPLORED) {
-                                Comms.writeBPSectorExplored(i, Comms.ExploredStatus.EXPLORED);
-                            }
-
-                            // Keep the maximum amount of wells reported
-                            // TODO: Wells can change into elixir wells.
                             int hasAdamWell = (entry.shouldUnsetAdamWells() ? 0 : 1)
-                                    & (Comms.readSectorAdamantiumFlag(i) | (entry.numAdamWells() > 0 ? 1 : 0));
-                            Comms.writeBPSectorAdamantiumFlag(i, hasAdamWell);
+                                    & (Comms.readSectorAdamantiumFlag(sectorToReport)
+                                            | (entry.numAdamWells() > 0 ? 1 : 0));
+                            Comms.writeBPSectorAdamantiumFlag(sectorToReport, hasAdamWell);
                             int hasManaWell = (entry.shouldUnsetManaWells() ? 0 : 1)
-                                    & (Comms.readSectorManaFlag(i) | (entry.numManaWells() > 0 ? 1 : 0));
-                            Comms.writeBPSectorManaFlag(i, hasManaWell);
+                                    & (Comms.readSectorManaFlag(sectorToReport) | (entry.numManaWells() > 0 ? 1 : 0));
+                            Comms.writeBPSectorManaFlag(sectorToReport, hasManaWell);
                             int hasElixirWell = (entry.shouldUnsetManaWells() ? 0 : 1)
-                                    & (Comms.readSectorElixirFlag(i) | (entry.numElxrWells() > 0 ? 1 : 0));
-                            Comms.writeBPSectorElixirFlag(i, hasElixirWell);
+                                    & (Comms.readSectorElixirFlag(sectorToReport) | (entry.numElxrWells() > 0 ? 1 : 0));
+                            Comms.writeBPSectorElixirFlag(sectorToReport, hasElixirWell);
 
-                            // Keep the maximum number of islands reported
-                            // TODO: Islands can change teams
-                            int hasFriendlyIsland = (entry.shouldUnsetFriendlyIslands() ? 0 : 1)
-                                    & (Comms.readSectorFriendlyIsland(i)
-                                            | (entry.numFriendlyIslands() > 0 ? 1 : 0));
-                            Comms.writeBPSectorFriendlyIsland(i, hasFriendlyIsland);
-                            int hasEnemyIsland = (entry.shouldUnsetEnemyIslands() ? 0 : 1)
-                                    & (Comms.readSectorEnemyIsland(i)
-                                            | (entry.numEnemyIslands() > 0 ? 1 : 0));
-                            Comms.writeBPSectorEnemyIsland(i, hasEnemyIsland);
-                            int hasNeutralIsland = (entry.shouldUnsetNeutralIslands() ? 0 : 1)
-                                    & (Comms.readSectorNeutralIsland(i)
-                                            | (entry.numNeutralIslands() > 0 ? 1 : 0));
-                            Comms.writeBPSectorNeutralIsland(i, hasNeutralIsland);
-                            sectorDatabase[i].reset();
+                            int hasIsland = (entry.numIslands() > 0 ? 1 : 0);
+                            Comms.writeBPSectorIslands(sectorToReport, hasIsland);
+
+                            Comms.writeBPSectorControlStatus(sectorToReport, entry.getControlStatus());
+
+                            sectorDatabase[sectorToReport].reset();
+                            numSectorsReported++;
                         }
                     }
+
+                    if (sectorToReport == numSectors)
+                        sectorToReport = 0;
+
                     Comms.flushBufferPool();
                 }
+
+                // Note: markSeen should be last due to bytecode usage
                 Explore.markSeen();
         }
     }
@@ -330,19 +334,14 @@ public class Robot {
         return false;
     }
 
-    public void recordWell(WellInfo info) {
-        int sector = whichSector(info.getMapLocation());
-        sectorDatabase[sector].addWell(info.getMapLocation(), info.getResourceType());
-    }
-
     public void recordIsland(int islandIdx, int sector) throws GameActionException {
         Team team = rc.senseTeamOccupyingIsland(islandIdx);
         if (team == rc.getTeam()) {
-            sectorDatabase[sector].addIsland(islandIdx, Comms.IslandTeam.FRIENDLY);
+            sectorDatabase[sector].addIsland(islandIdx, Comms.ControlStatus.FRIENDLY);
         } else if (team == rc.getTeam().opponent()) {
-            sectorDatabase[sector].addIsland(islandIdx, Comms.IslandTeam.ENEMY);
+            sectorDatabase[sector].addIsland(islandIdx, Comms.ControlStatus.ENEMY);
         } else {
-            sectorDatabase[sector].addIsland(islandIdx, Comms.IslandTeam.NEUTRAL);
+            sectorDatabase[sector].addIsland(islandIdx, Comms.ControlStatus.NEUTRAL);
         }
     }
 
@@ -359,18 +358,16 @@ public class Robot {
      * Precompute x, y coordinates of centers of all sectors
      */
     public void precomputeSectorCenters() {
-        sectorCentersX = new int[sectorWidths.length];
-        sectorCentersY = new int[sectorHeights.length];
-        int xStart = 0;
-        for (int i = 0; i < sectorWidths.length; i++) {
-            int xCenter = xStart + (sectorWidths[i] / 2);
-            sectorCentersX[i] = xCenter;
-            xStart += sectorWidths[i];
-        }
+        sectorCenters = new MapLocation[numSectors];
         int yStart = 0;
         for (int j = 0; j < sectorHeights.length; j++) {
-            int yCenter = yStart + (sectorHeights[j] / 2);
-            sectorCentersY[j] = yCenter;
+            int xStart = 0;
+            for (int i = 0; i < sectorWidths.length; i++) {
+                int xCenter = xStart + (sectorWidths[i] / 2);
+                int yCenter = yStart + (sectorHeights[j] / 2);
+                sectorCenters[i + j * sectorWidths.length] = new MapLocation(xCenter, yCenter);
+                xStart += sectorWidths[i];
+            }
             yStart += sectorHeights[j];
         }
     }
@@ -750,14 +747,200 @@ public class Robot {
         }
     }
 
+    /**
+     * Updates sector information. Scans nearby tiles, enemy locations, and nearby
+     * resources
+     * and aggregates into sectorControls and sectorResoruces as buffers. Uses
+     * markedSectorsBuffer to track which buffers have been modified each turn to
+     * reset them.
+     * Alternates whether control or resources are scanned each turn to conserve
+     * bytecode.
+     * 
+     * Note: This is not set up until turn 3 to save compute on initialization.
+     * 
+     * @throws GameActionException
+     */
+    public void setSectorStates() throws GameActionException {
+        // int bytecodeUsed = Clock.getBytecodeNum();
+
+        // Not initialized until turn 3
+        if (roundNum == 2) {
+            return;
+        }
+
+        if (roundNum % 2 == 0) {
+            setSectorControlStates();
+        } else {
+            setSectorResourceStates();
+        }
+
+        // int bytecodeUsed2 = Clock.getBytecodeNum();
+        // rc.setIndicatorString("Sector States: "+(bytecodeUsed2 - bytecodeUsed));
+    }
+
+    /**
+     * Updates sector information. Scans nearby enemy locations.
+     * 
+     * @throws GameActionException
+     */
+    public void setSectorControlStates() throws GameActionException {
+        // Mark nearby sectors with enemies as hostile
+        // Process at max 10 enemies
+        int numEnemies = Math.min(EnemySensable.length, 10);
+        for (int i = 0; i < numEnemies; i++) {
+            RobotInfo enemy = EnemySensable[i];
+            int sectorIdx = whichXLoc[enemy.location.x] + whichYLoc[enemy.location.y];
+            sectorDatabase[sectorIdx].setControlStatus(Comms.ControlStatus.ENEMY);
+        }
+
+        int[] islandIdxs = rc.senseNearbyIslands();
+        if (islandIdxs.length > 0) {
+            for (int idx : islandIdxs) {
+                // This costs a lot of bytecode, but I don't know how to get around this
+                recordIsland(idx, whichSector(rc.senseNearbyIslandLocations(idx)[0]));
+            }
+        }
+    }
+
+    /**
+     * Updates sector information.
+     * Scans nearby sectors to mark as explored and adds wells.
+     * 
+     * @throws GameActionException
+     */
+    public void setSectorResourceStates() throws GameActionException {
+        // Mark nearby sectors as explored
+        int[][] shifts = { { 0, 3 }, { 2, 2 }, { 3, 0 }, { 2, -2 }, { 0, -3 }, { -2, -2 }, { -3, 0 }, { -2, 2 } };
+        for (int[] shift : shifts) {
+            MapLocation shiftedLocation = currLoc.translate(shift[0], shift[1]);
+            if (rc.canSenseLocation(shiftedLocation)) {
+                // int sectorIdx = whichSector(shiftedLocation);
+                // Note: Inlined to save bytecode
+                int sectorIdx = whichXLoc[shiftedLocation.x] + whichYLoc[shiftedLocation.y];
+                sectorDatabase[sectorIdx].setControlStatus(Comms.ControlStatus.EMPTY);
+            }
+        }
+
+        for (WellInfo info : rc.senseNearbyWells()) {
+            int sector = whichSector(info.getMapLocation());
+            sectorDatabase[sector].addWell(info.getMapLocation(), info.getResourceType());
+        }
+    }
+
+    /**
+     * Returns nearest combat sector or UNDEFINED_SECTOR_INDEX otherwise
+     * 
+     * @return
+     * @throws GameActionException
+     */
+    public int getNearestCombatSector() throws GameActionException {
+        int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
+        int closestDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int nearestSector = Comms.readCombatSectorIndex(i);
+            // Break if no more combat sectors exist
+            if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestSector = nearestSector;
+            }
+        }
+        return closestSector;
+    }
+
+    /**
+     * Returns nearest explore sector or UNDEFINED_SECTOR_INDEX otherwise
+     * 
+     * @return
+     * @throws GameActionException
+     */
+    public int getNearestExploreSector() throws GameActionException {
+        int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
+        int closestSectorIndex = Comms.UNDEFINED_SECTOR_INDEX;
+        int closestDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < Comms.EXPLORE_SECTOR_SLOTS; i++) {
+            int nearestSectorAll = Comms.readExploreSectorAll(i);
+            int nearestSector = nearestSectorAll & 127; // 7 lowest order bits
+            // Break if no more combat sectors exist
+            if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            // Skip sectors which are fully claimed
+            int nearestSectorStatus = (nearestSectorAll & 128) >> 7; // 2^7
+            if (nearestSectorStatus == Comms.ClaimStatus.CLAIMED) {
+                continue;
+            }
+            int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestSector = nearestSector;
+                closestSectorIndex = i;
+            }
+        }
+        // Claim sector
+        if (closestSectorIndex != Comms.UNDEFINED_SECTOR_INDEX) {
+            // TODO: Have similar logic to SectorInfo?
+            if (rc.canWriteSharedArray(0, 0)) {
+                Comms.writeExploreSectorClaimStatus(closestSectorIndex, Comms.ClaimStatus.CLAIMED);
+            }
+            sectorDatabase[closestSector].setControlStatus(Comms.ControlStatus.EXPLORING);
+            exploreMode = true;
+        }
+        return closestSector;
+    }
+
+    /**
+     * If unit redirects from an exploration, remark the sector as unknown
+     * 
+     * @param destination
+     * @throws GameActionException
+     */
+    public void resetControlStatus(MapLocation destination) throws GameActionException {
+        if (exploreMode) {
+            int sector = whichXLoc[destination.x] + whichYLoc[destination.y];
+            sectorDatabase[sector].resetControlStatus();
+        }
+    }
+
+    /**
+     * Get the nearest sector that satisfies the given control status, encoded as
+     * follows:
+     * 0: unknown; 1: we control; 2: enemy controls; 3: ??.
+     * Get the nearest sector that satisfies the given control status, encoded by
+     * `Comms.ControlStatus`.
+     * 
+     */
+    public int getNearestSectorByControlStatus(int status) throws GameActionException {
+        int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
+        int closestDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < numSectors; i++) {
+            if (Comms.readSectorControlStatus(i) == status) {
+                int distance = currLoc.distanceSquaredTo(sectorCenters[i]);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestSector = i;
+                }
+            }
+        }
+        return closestSector;
+    }
+
     // For debugging right now. Prints found adam wells
     public void findWells() throws GameActionException {
         for (int i = 0; i < numSectors; i++) {
             if (Comms.readSectorAdamantiumFlag(i) == 1) {
-                MapLocation sectorLoc = new MapLocation(
-                        sectorCentersX[i % sectorWidthsLength],
-                        sectorCentersY[i / sectorWidthsLength]);
-                Debug.println("Adam well in sector " + i + " at " + sectorLoc);
+                Debug.println("Adam well in sector " + i + " at " + sectorCenters[i]);
+            }
+        }
+    }
+
+    public void printEnemySectors() throws GameActionException {
+        for (int i = 0; i < numSectors; i++) {
+            if (Comms.readSectorControlStatus(i) == Comms.ControlStatus.ENEMY) {
+                Debug.println("Enemy sector " + i + " at " + sectorCenters[i]);
             }
         }
     }

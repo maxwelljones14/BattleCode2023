@@ -50,11 +50,12 @@ public class Headquarters extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         computeHqNum();
-        // updateUnitCounts();
+        setPrioritySectors();
         toggleState();
         Debug.printString("current state: " + currentState);
         doStateAction();
         // findWells();
+        // printEnemySectors();
     }
 
     public void toggleState() throws GameActionException {
@@ -299,14 +300,93 @@ public class Headquarters extends Robot {
         Debug.println("I am HQ number " + myHqNum);
     }
 
-    public void updateUnitCounts() throws GameActionException {
-        carrierCount = Comms.readBotCountCarriers();
-        launcherCount = Comms.readBotCountLaunchers();
+    /**
+     * Sets the priority sectors list
+     * 
+     * @throws GameActionException
+     */
+    public void setPrioritySectors() throws GameActionException {
+        // Sectors aren't initialized until round 2
+        if (rc.getRoundNum() == 1)
+            return;
 
-        if (lastHq) {
-            // Debug.println("There are currently " + carrierCount + " carriers and " +
-            // launcherCount + " launchers.");
-            Comms.writeBotCountAll(0);
+        int combatSectorIndex = 0;
+        int exploreSectorIndex = 0;
+
+        // Preserve combat sectors which still have enemies
+        while (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS) {
+            int sector = Comms.readCombatSectorIndex(combatSectorIndex);
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            if (Comms.readSectorControlStatus(sector) != Comms.ControlStatus.ENEMY) {
+                break;
+            }
+            combatSectorIndex++;
+        }
+
+        // Preserve explore sectors which still have not been claimed
+        while (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
+                && Comms.readExploreSectorIndex(exploreSectorIndex) != Comms.UNDEFINED_SECTOR_INDEX
+                && Comms.readExploreSectorClaimStatus(exploreSectorIndex) == Comms.ClaimStatus.UNCLAIMED) {
+            exploreSectorIndex++;
+        }
+
+        // Alternate sweeping each half of the sectors every turn
+        int mode = (myHqNum + rc.getRoundNum()) % 3;
+        int startIdx = 0;
+        int endIdx = 0;
+        switch (mode) {
+            case 0:
+                startIdx = 0;
+                endIdx = numSectors / 3;
+                break;
+            case 1:
+                startIdx = numSectors / 3;
+                endIdx = numSectors * 2 / 3;
+                break;
+            case 2:
+                startIdx = numSectors * 2 / 3;
+                endIdx = numSectors;
+                break;
+            default:
+                Debug.println("[Error] Unexpected case in setPriorityQueue!");
+        }
+
+        for (int i = startIdx; i < endIdx; i++) {
+            int controlStatus = Comms.readSectorControlStatus(i);
+            // Combat sector
+            if (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS
+                    && controlStatus == Comms.ControlStatus.ENEMY) {
+                Comms.writeCombatSectorIndex(combatSectorIndex, i);
+                combatSectorIndex++;
+
+                // Preserve combat sectors which still have enemies
+                while (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS) {
+                    int sector = Comms.readCombatSectorIndex(combatSectorIndex);
+                    if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
+                        break;
+                    }
+                    if (Comms.readSectorControlStatus(sector) != Comms.ControlStatus.ENEMY) {
+                        break;
+                    }
+                    combatSectorIndex++;
+                }
+            }
+            // Explore sector
+            if (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
+                    && controlStatus == Comms.ControlStatus.UNKNOWN) {
+                Comms.writeExploreSectorIndex(exploreSectorIndex, i);
+                Comms.writeExploreSectorClaimStatus(exploreSectorIndex, Comms.ClaimStatus.UNCLAIMED);
+                exploreSectorIndex++;
+
+                // Preserve explore sectors which still have not been claimed
+                while (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
+                        && Comms.readExploreSectorIndex(exploreSectorIndex) != Comms.UNDEFINED_SECTOR_INDEX
+                        && Comms.readExploreSectorClaimStatus(exploreSectorIndex) == Comms.ClaimStatus.UNCLAIMED) {
+                    exploreSectorIndex++;
+                }
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ public class SectorInfo {
     private FastIntSet enemyIslands;
     private boolean unsetEnemyIslands;
     private int enemies;
+    private int controlStatus;
 
     private static final int MAX_SECTOR_AREA = 36;
 
@@ -62,7 +63,7 @@ public class SectorInfo {
 
     public void addIsland(int islandIdx, int control) {
         found = true;
-        if (control == Comms.IslandTeam.NEUTRAL) {
+        if (control == Comms.ControlStatus.NEUTRAL) {
             unsetNeutralIslands = false;
             neutralIslands.add(islandIdx);
             if (friendlyIslands.contains(islandIdx)) {
@@ -77,7 +78,7 @@ public class SectorInfo {
                     unsetEnemyIslands = true;
                 }
             }
-        } else if (control == Comms.IslandTeam.FRIENDLY) {
+        } else if (control == Comms.ControlStatus.FRIENDLY) {
             unsetFriendlyIslands = false;
             friendlyIslands.add(islandIdx);
             if (neutralIslands.contains(islandIdx)) {
@@ -92,7 +93,7 @@ public class SectorInfo {
                     unsetEnemyIslands = true;
                 }
             }
-        } else if (control == Comms.IslandTeam.ENEMY) {
+        } else if (control == Comms.ControlStatus.ENEMY) {
             unsetEnemyIslands = false;
             enemyIslands.add(islandIdx);
             if (neutralIslands.contains(islandIdx)) {
@@ -108,10 +109,34 @@ public class SectorInfo {
                 }
             }
         }
+
+        setControlStatus(control);
+    }
+
+    public void addEnemy() {
+        found = true;
+        enemies++;
+        setControlStatus(Comms.ControlStatus.ENEMY);
+    }
+
+    public int getControlStatus() {
+        return controlStatus;
+    }
+
+    public void setControlStatus(int cStatus) {
+        found = true;
+        if (cStatus > controlStatus)
+            controlStatus = cStatus;
+    }
+
+    public void resetControlStatus() {
+        found = true;
+        controlStatus = Comms.ControlStatus.UNKNOWN;
     }
 
     public void exploreSector() {
         found = true;
+        setControlStatus(Comms.ControlStatus.EMPTY);
     }
 
     public int numAdamWells() {
@@ -180,5 +205,6 @@ public class SectorInfo {
         unsetNeutralIslands = false;
         unsetFriendlyIslands = false;
         unsetEnemyIslands = false;
+        controlStatus = Comms.ControlStatus.EXPLORING;
     }
 }

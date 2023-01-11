@@ -12,23 +12,14 @@ SCHEMA = {
             'y_coord': 6,
         }
     },
-    'bot_count': { # make sure this is in a single int
-        'slots': 1,
-        'bits': {
-            'carriers': 8,
-            'launchers': 8,
-        }
-    },
     'sector': {
         'slots': 100,
         'bits': {
-            'explored': 1,
+            'islands': 1,
             'adamantium_flag': 1,
             'mana_flag': 1,
             'elixir_flag': 1,
-            'friendly_island': 1,
-            'enemy_island': 1,
-            'neutral_island': 1,
+            'control_status': 3,
         }
     },
     'combat_sector': {
@@ -37,13 +28,13 @@ SCHEMA = {
             'index': 7,
         }
     },
-    # 'explore_sector': {
-    #     'slots': 10,
-    #     'bits': {
-    #         'claim_status': 1,
-    #         'index': 7,
-    #     }
-    # },
+    'explore_sector': {
+        'slots': 10,
+        'bits': {
+            'claim_status': 1,
+            'index': 7,
+        }
+    },
     'mine_sector': {
         'slots': 10,
         'bits': {
@@ -216,11 +207,11 @@ def gen():
     print("Total bit usage: " + str(bits_so_far))
     return out
 
-# Inits control statuses to 
-def gen_sector_explored_reset():
-    # SPECIFIC TO 1 BIT CONTROL STATUS SCHEMA
+# Inits control statuses to EMPTY = 0b000
+def gen_sector_control_status_reset():
+    # SPECIFIC TO 3 BIT CONTROL STATUS SCHEMA
     out = f"""
-    public static void resetAllSectorExplored() throws GameActionException {{"""
+    public static void resetAllSectorControlStatus() throws GameActionException {{"""
     shmem = '1'*1024
     bits_so_far = 0
     for datatype in SCHEMA:
@@ -229,10 +220,10 @@ def gen_sector_explored_reset():
         if datatype == 'sector':
             for attribute in SCHEMA[datatype]['bits']:
                 attribute_bits = SCHEMA[datatype]['bits'][attribute]
-                if attribute == 'explored':
+                if attribute == 'control_status':
                     for idx in range(SCHEMA[datatype]['slots']):
                         start_bit = bits_so_far + datatype_bits * idx + prefix_bits
-                        shmem = shmem[:start_bit] + '0' + shmem[start_bit+attribute_bits:]
+                        shmem = shmem[:start_bit] + '000' + shmem[start_bit+attribute_bits:]
                 prefix_bits += attribute_bits
         bits_so_far += datatype_bits * SCHEMA[datatype]['slots']
 
@@ -283,13 +274,14 @@ if __name__ == '__main__':
     if total_bits > 1024:
         raise Exception("Too many bits")
 
+    package_name = len(sys.argv) > 1 and sys.argv[1] or 'MPWorking'
     template_file = Path('./CommsTemplate.java')
-    out_file = Path('./src/') / sys.argv[1] / 'Comms.java'
+    out_file = Path('./src/') / package_name / 'Comms.java'
     with open(template_file, 'r') as t:
         with open(out_file, 'w') as f:
             for line in t:
                 if 'package examplefuncsplayer;' in line:
-                    f.write(f"package {sys.argv[1]};\n")
+                    f.write(f"package {package_name};\n")
                 elif '// MAIN READ AND WRITE METHODS' in line:
                     f.write(gen())
                 elif '// CONSTS' in line:
@@ -297,6 +289,6 @@ if __name__ == '__main__':
                 elif '// PRIORITY SECTOR INIT' in line:
                     f.write(gen_init_sectors())
                 elif '// SECTOR CONTROL STATUS RESET' in line:
-                    f.write(gen_sector_explored_reset())
+                    f.write(gen_sector_control_status_reset())
                 else:
                     f.write(line)

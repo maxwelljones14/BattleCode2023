@@ -30,8 +30,6 @@ public class Carrier extends Robot {
         if (islandIdxs.length > 0) {
             // TODO: only note islands that are not conquered yet
             for (int idx : islandIdxs) {
-                // This costs a lot of bytecode, but I don't know how to get around this
-                recordIsland(idx, whichSector(rc.senseNearbyIslandLocations(idx)[0]));
                 if (rc.senseTeamOccupyingIsland(idx) == Team.NEUTRAL) {
                     return rc.senseNearbyIslandLocations(idx)[0];
                 }
@@ -45,9 +43,7 @@ public class Carrier extends Robot {
         int closestDistance = Integer.MAX_VALUE;
         if (resourceTarget == ResourceType.ADAMANTIUM) {
             for (int x = 0; x < numSectors; x++) {
-                MapLocation sectorLoc = new MapLocation(
-                        sectorCentersX[x % sectorWidthsLength],
-                        sectorCentersY[x / sectorWidthsLength]);
+                MapLocation sectorLoc = sectorCenters[x];
                 int currDistance = currLoc.distanceSquaredTo(sectorLoc);
                 if (currDistance < closestDistance) {
                     int flag = Comms.readSectorAdamantiumFlag(x);
@@ -59,9 +55,7 @@ public class Carrier extends Robot {
             }
         } else {
             for (int x = 0; x < numSectors; x++) {
-                MapLocation sectorLoc = new MapLocation(
-                        sectorCentersX[x % sectorWidthsLength],
-                        sectorCentersY[x / sectorWidthsLength]);
+                MapLocation sectorLoc = sectorCenters[x];
                 int currDistance = currLoc.distanceSquaredTo(sectorLoc);
                 if (currDistance < closestDistance) {
                     int flag = Comms.readSectorManaFlag(x);
@@ -77,7 +71,6 @@ public class Carrier extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        announceAlive();
 
         if (runAway()) {
             return;
@@ -113,7 +106,6 @@ public class Carrier extends Robot {
         WellInfo[] wells = rc.senseNearbyWells(resourceTarget);
         int closestDist = Integer.MAX_VALUE;
         for (WellInfo well : wells) {
-            recordWell(well);
             MapLocation wellLocation = well.getMapLocation();
             int dist = Util.distance(rc.getLocation(), wellLocation);
             if (dist < closestDist) {
@@ -196,12 +188,5 @@ public class Carrier extends Robot {
             Debug.printString(str);
         }
         return target != null;
-    }
-
-    public void announceAlive() throws GameActionException {
-        int currCarriers = Comms.readBotCountCarriers();
-        if (currCarriers < 254) {
-            Comms.writeBotCountCarriers(currCarriers + 1);
-        }
     }
 }

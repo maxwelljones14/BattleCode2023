@@ -10,21 +10,24 @@ public class Comms {
     private static boolean[] dirtyFlags;
 
     private static int[] thresholds = { 0, 1, 2, 3, 5, 10, 50 };
-
     // CONSTS
 
-    public class IslandTeam {
-        public static final int NEUTRAL = 0;
-        public static final int FRIENDLY = 1;
-        public static final int ENEMY = 2;
+    // ControlStatus priorities are in increasing priority.
+    public class ControlStatus {
+        public static final int UNKNOWN = 0;
+        public static final int EMPTY = 1;
+        public static final int EXPLORING = 2;
+        public static final int FRIENDLY = 3;
+        public static final int NEUTRAL = 4;
+        public static final int ENEMY = 5;
     }
 
-    public class ExploredStatus {
-        public static final int UNEXPLORED = 0;
-        public static final int EXPLORED = 1;
+    public class ClaimStatus {
+        public static final int UNCLAIMED = 0;
+        public static final int CLAIMED = 1;
     }
 
-    final int UNDEFINED_SECTOR_INDEX = 127;
+    public final static int UNDEFINED_SECTOR_INDEX = 127;
 
     public static void init(RobotController r) {
         rc = r;
