@@ -26,6 +26,7 @@ public class Headquarters extends Robot {
 
     static final int initCarriersWanted = 4;
     static final int initLaunchersWanted = 4;
+    static final int minCarriersBeforeAnchor = 20;
 
     static MapLocation currLoc;
 
@@ -54,8 +55,8 @@ public class Headquarters extends Robot {
                     changeState(State.CHILLING);
                 }
             case CHILLING:
-                if (carrierCount >= 5 && rc.getAnchor() == null) {
-                    // start saving for anchor if you have 5 carriers already
+                if (carrierCount >= minCarriersBeforeAnchor && rc.getAnchor() == null) {
+                    // start saving for anchor if you have minCarriersBeforeAnchor carriers already
                     stateStack.push(currentState);
                     changeState(State.BUILDING_ANCHOR);
                 }
