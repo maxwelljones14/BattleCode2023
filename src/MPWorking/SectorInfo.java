@@ -13,13 +13,15 @@ public class SectorInfo {
     private FastIterableIntSet enemyIslands;
     private int enemies;
 
+    private static final int MAX_SECTOR_AREA = 36;
+
     public SectorInfo() {
-        adamWells = new FastIterableLocSet();
-        manaWells = new FastIterableLocSet();
-        elxrWells = new FastIterableLocSet();
-        neutralIslands = new FastIterableIntSet();
-        friendlyIslands = new FastIterableIntSet();
-        enemyIslands = new FastIterableIntSet();
+        adamWells = new FastIterableLocSet(MAX_SECTOR_AREA);
+        manaWells = new FastIterableLocSet(MAX_SECTOR_AREA);
+        elxrWells = new FastIterableLocSet(MAX_SECTOR_AREA);
+        neutralIslands = new FastIterableIntSet(MAX_SECTOR_AREA);
+        friendlyIslands = new FastIterableIntSet(MAX_SECTOR_AREA);
+        enemyIslands = new FastIterableIntSet(MAX_SECTOR_AREA);
         enemies = 0;
         found = false;
     }
@@ -46,18 +48,17 @@ public class SectorInfo {
         }
     }
 
-    // 0 = Neutral, 1 = Ours, 2 = Enemy, can make this an enum later
     public void addIsland(int islandIdx, int control) {
         found = true;
-        if (control == 0) {
+        if (control == Comms.IslandTeam.NEUTRAL) {
             friendlyIslands.remove(islandIdx);
             enemyIslands.remove(islandIdx);
             neutralIslands.add(islandIdx);
-        } else if (control == 1) {
+        } else if (control == Comms.IslandTeam.FRIENDLY) {
             neutralIslands.remove(islandIdx);
             enemyIslands.remove(islandIdx);
             friendlyIslands.add(islandIdx);
-        } else if (control == 2) {
+        } else if (control == Comms.IslandTeam.ENEMY) {
             neutralIslands.remove(islandIdx);
             friendlyIslands.remove(islandIdx);
             enemyIslands.add(islandIdx);

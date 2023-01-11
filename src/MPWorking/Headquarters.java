@@ -12,6 +12,8 @@ public class Headquarters extends Robot {
         BUILDING_ANCHOR,
     };
 
+    static int myHqNum;
+
     static ArrayDeque<State> stateStack;
     static State currentState;
 
@@ -24,13 +26,18 @@ public class Headquarters extends Robot {
         super(r);
         stateStack = new ArrayDeque<State>();
         currentState = State.CHILLING;
+
+        myHqNum = -1;
+        initSectorPermutation();
     }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         Debug.printString("current state: " + currentState);
+        computeHqNum();
         toggleState();
         doStateAction();
+        // findWells();
     }
 
     public void toggleState() throws GameActionException {
@@ -101,6 +108,44 @@ public class Headquarters extends Robot {
                 }
                 break;
         }
+    }
+
+    /**
+     * First round, find out our HQ number and set our location
+     * 
+     * @throws GameActionException
+     */
+    public void computeHqNum() throws GameActionException {
+        // On round 1, write a bad location to all HQ locations
+        if (rc.getRoundNum() == 1) {
+            MapLocation badLocation = new MapLocation(
+                    GameConstants.MAP_MAX_WIDTH + 1,
+                    GameConstants.MAP_MAX_HEIGHT + 1);
+            for (int i = 0; i < GameConstants.MAX_STARTING_HEADQUARTERS; i++) {
+                Comms.writeOurHqLocation(i, badLocation);
+            }
+            return;
+        }
+
+        if (myHqNum >= 0) {
+            return;
+        }
+
+        MapLocation lastHqLoc;
+        for (int i = 0; i < GameConstants.MAX_STARTING_HEADQUARTERS; i++) {
+            lastHqLoc = Comms.readOurHqLocation(i);
+            if (!Util.onTheMap(lastHqLoc)) {
+                Comms.writeOurHqLocation(i, rc.getLocation());
+                myHqNum = i;
+                break;
+            }
+        }
+
+        if (myHqNum == 0) {
+            Comms.initPrioritySectors();
+        }
+
+        Debug.println("I am HQ number " + myHqNum);
     }
 
 }

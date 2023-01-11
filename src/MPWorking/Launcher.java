@@ -298,7 +298,7 @@ public class Launcher extends Robot {
         // }
         // }
         // if (!seeArchonInSensable) {
-        // Comms.broadcastLauncherNearClusterButNothingFound();
+        // Comms.broadcastLauncherNearSectorButNothingFound();
         // }
         // }
         // Debug.printString("going for it");
