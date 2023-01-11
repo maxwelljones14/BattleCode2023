@@ -35,6 +35,7 @@ public class Headquarters extends Robot {
     public Headquarters(RobotController r) throws GameActionException {
         super(r);
         stateStack = new ArrayDeque<State>();
+        currentState = State.INIT;
         currLoc = rc.getLocation();
 
         if (numHqs == -1)
@@ -288,7 +289,8 @@ public class Headquarters extends Robot {
         launcherCount = Comms.readBotCountLaunchers();
 
         if (lastHq) {
-            // Debug.println("There are currently " + carrierCount + " carriers and " + launcherCount + " launchers.");
+            // Debug.println("There are currently " + carrierCount + " carriers and " +
+            // launcherCount + " launchers.");
             Comms.writeBotCountAll(0);
         }
     }
