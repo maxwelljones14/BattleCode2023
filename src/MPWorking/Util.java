@@ -17,6 +17,8 @@ public class Util {
     static final int LAUNCHER_COST = 60;
     static final int ANCHOR_COST = 100;
 
+    static final int CLEAR_ENEMY_INFO_PERIOD = 100;
+
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
             Direction.NORTH,

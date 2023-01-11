@@ -66,6 +66,7 @@ public class Headquarters extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         computeHqNum();
+        clearOldEnemyInfo();
         setPrioritySectors();
         toggleState();
         Debug.printString("current state: " + currentState);
@@ -349,6 +350,26 @@ public class Headquarters extends Robot {
     }
 
     /**
+     * Clears old ENEMY_PASSIVE or ENEMY_AGGRESIVE information from sectors
+     * every Util.CLEAR_ENEMY_INFO_PERIOD rounds
+     */
+    public void clearOldEnemyInfo() throws GameActionException {
+        for (int sectorIdx = rc.getRoundNum()
+                % Util.CLEAR_ENEMY_INFO_PERIOD; sectorIdx < numSectors; sectorIdx += Util.CLEAR_ENEMY_INFO_PERIOD) {
+            int controlStatus = Comms.readSectorControlStatus(sectorIdx);
+            // Mocked controlStatusSet
+            // We assume an island is friendly if we don't know
+            // A neutral/enemy island will override a friendly island if one is found.
+            if (controlStatus == Comms.ControlStatus.ENEMY_PASSIVE
+                    || controlStatus == Comms.ControlStatus.ENEMY_AGGRESIVE) {
+                int newControlStatus = Comms.readSectorIslands(sectorIdx) == 1 ? Comms.ControlStatus.FRIENDLY_ISLAND
+                        : Comms.ControlStatus.UNKNOWN;
+                Comms.writeSectorControlStatus(sectorIdx, newControlStatus);
+            }
+        }
+    }
+
+    /**
      * Sets the priority sectors list
      * 
      * @throws GameActionException
@@ -367,7 +388,7 @@ public class Headquarters extends Robot {
             if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
                 break;
             }
-            if (Comms.readSectorControlStatus(sector) != Comms.ControlStatus.ENEMY) {
+            if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS) {
                 break;
             }
             combatSectorIndex++;
@@ -405,7 +426,7 @@ public class Headquarters extends Robot {
             int controlStatus = Comms.readSectorControlStatus(i);
             // Combat sector
             if (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS
-                    && controlStatus == Comms.ControlStatus.ENEMY) {
+                    && controlStatus >= Comms.ControlStatus.MIN_ENEMY_STATUS) {
                 Comms.writeCombatSectorIndex(combatSectorIndex, i);
                 combatSectorIndex++;
 
@@ -415,7 +436,7 @@ public class Headquarters extends Robot {
                     if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
                         break;
                     }
-                    if (Comms.readSectorControlStatus(sector) != Comms.ControlStatus.ENEMY) {
+                    if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS) {
                         break;
                     }
                     combatSectorIndex++;

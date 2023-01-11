@@ -17,7 +17,9 @@ public class SectorInfo {
     private FastIntSet enemyIslands;
     private boolean unsetEnemyIslands;
     private int enemies;
-    private int controlStatus;
+    private int lastRoundEnemyAdded;
+
+    private boolean controlStatusSet[];
 
     private static final int MAX_SECTOR_AREA = 36;
 
@@ -29,7 +31,9 @@ public class SectorInfo {
         friendlyIslands = new FastIntSet(MAX_SECTOR_AREA);
         enemyIslands = new FastIntSet(MAX_SECTOR_AREA);
         enemies = 0;
+        lastRoundEnemyAdded = 0;
         found = false;
+        controlStatusSet = new boolean[Comms.ControlStatus.NUM_CONTROL_STATUS];
     }
 
     public boolean hasReports() {
@@ -63,7 +67,7 @@ public class SectorInfo {
 
     public void addIsland(int islandIdx, int control) {
         found = true;
-        if (control == Comms.ControlStatus.NEUTRAL) {
+        if (control == Comms.ControlStatus.NEUTRAL_ISLAND) {
             unsetNeutralIslands = false;
             neutralIslands.add(islandIdx);
             if (friendlyIslands.contains(islandIdx)) {
@@ -78,7 +82,7 @@ public class SectorInfo {
                     unsetEnemyIslands = true;
                 }
             }
-        } else if (control == Comms.ControlStatus.FRIENDLY) {
+        } else if (control == Comms.ControlStatus.FRIENDLY_ISLAND) {
             unsetFriendlyIslands = false;
             friendlyIslands.add(islandIdx);
             if (neutralIslands.contains(islandIdx)) {
@@ -93,7 +97,7 @@ public class SectorInfo {
                     unsetEnemyIslands = true;
                 }
             }
-        } else if (control == Comms.ControlStatus.ENEMY) {
+        } else if (control == Comms.ControlStatus.ENEMY_ISLAND) {
             unsetEnemyIslands = false;
             enemyIslands.add(islandIdx);
             if (neutralIslands.contains(islandIdx)) {
@@ -113,25 +117,41 @@ public class SectorInfo {
         setControlStatus(control);
     }
 
-    public void addEnemy() {
+    public void addEnemy(int cStatus) {
         found = true;
         enemies++;
-        setControlStatus(Comms.ControlStatus.ENEMY);
+        setControlStatus(cStatus);
+        lastRoundEnemyAdded = Robot.rc.getRoundNum();
     }
 
     public int getControlStatus() {
-        return controlStatus;
+        boolean isEnemyInfoStale = Robot.rc.getRoundNum() > lastRoundEnemyAdded + Util.CLEAR_ENEMY_INFO_PERIOD;
+
+        if (controlStatusSet[Comms.ControlStatus.ENEMY_AGGRESIVE] && !isEnemyInfoStale) {
+            return Comms.ControlStatus.ENEMY_AGGRESIVE;
+        } else if (controlStatusSet[Comms.ControlStatus.ENEMY_PASSIVE] && !isEnemyInfoStale) {
+            return Comms.ControlStatus.ENEMY_PASSIVE;
+        } else if (controlStatusSet[Comms.ControlStatus.ENEMY_ISLAND]) {
+            return Comms.ControlStatus.ENEMY_ISLAND;
+        } else if (controlStatusSet[Comms.ControlStatus.FRIENDLY_ISLAND]) {
+            return Comms.ControlStatus.FRIENDLY_ISLAND;
+        } else if (controlStatusSet[Comms.ControlStatus.NEUTRAL_ISLAND]) {
+            return Comms.ControlStatus.NEUTRAL_ISLAND;
+        } else if (controlStatusSet[Comms.ControlStatus.EMPTY]) {
+            return Comms.ControlStatus.EMPTY;
+        } else {
+            return Comms.ControlStatus.UNKNOWN;
+        }
     }
 
     public void setControlStatus(int cStatus) {
         found = true;
-        if (cStatus > controlStatus)
-            controlStatus = cStatus;
+        controlStatusSet[cStatus] = true;
     }
 
     public void resetControlStatus() {
         found = true;
-        controlStatus = Comms.ControlStatus.UNKNOWN;
+        controlStatusSet = new boolean[Comms.ControlStatus.NUM_CONTROL_STATUS];
     }
 
     public void exploreSector() {
@@ -199,12 +219,13 @@ public class SectorInfo {
         friendlyIslands.clear();
         enemyIslands.clear();
         enemies = 0;
+        lastRoundEnemyAdded = 0;
         found = false;
         unsetAdamWells = false;
         unsetManaWells = false;
         unsetNeutralIslands = false;
         unsetFriendlyIslands = false;
         unsetEnemyIslands = false;
-        controlStatus = Comms.ControlStatus.EXPLORING;
+        controlStatusSet = new boolean[Comms.ControlStatus.NUM_CONTROL_STATUS];
     }
 }

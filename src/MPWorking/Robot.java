@@ -147,10 +147,11 @@ public class Robot {
                                             | (entry.numAdamWells() > 0 ? 1 : 0));
                             Comms.writeBPSectorAdamantiumFlag(sectorToReport, hasAdamWell);
                             int hasManaWell = (entry.shouldUnsetManaWells() ? 0 : 1)
-                                    & (Comms.readSectorManaFlag(sectorToReport) | (entry.numManaWells() > 0 ? 1 : 0));
+                                    & (Comms.readSectorManaFlag(sectorToReport)
+                                            | (entry.numManaWells() > 0 ? 1 : 0));
                             Comms.writeBPSectorManaFlag(sectorToReport, hasManaWell);
-                            int hasElixirWell = (entry.shouldUnsetManaWells() ? 0 : 1)
-                                    & (Comms.readSectorElixirFlag(sectorToReport) | (entry.numElxrWells() > 0 ? 1 : 0));
+                            int hasElixirWell = (Comms.readSectorElixirFlag(sectorToReport)
+                                    | (entry.numElxrWells() > 0 ? 1 : 0));
                             Comms.writeBPSectorElixirFlag(sectorToReport, hasElixirWell);
 
                             int hasIsland = (entry.numIslands() > 0 ? 1 : 0);
@@ -345,11 +346,11 @@ public class Robot {
     public void recordIsland(int islandIdx, int sector) throws GameActionException {
         Team team = rc.senseTeamOccupyingIsland(islandIdx);
         if (team == rc.getTeam()) {
-            sectorDatabase.at(sector).addIsland(islandIdx, Comms.ControlStatus.FRIENDLY);
+            sectorDatabase.at(sector).addIsland(islandIdx, Comms.ControlStatus.FRIENDLY_ISLAND);
         } else if (team == rc.getTeam().opponent()) {
-            sectorDatabase.at(sector).addIsland(islandIdx, Comms.ControlStatus.ENEMY);
+            sectorDatabase.at(sector).addIsland(islandIdx, Comms.ControlStatus.ENEMY_ISLAND);
         } else {
-            sectorDatabase.at(sector).addIsland(islandIdx, Comms.ControlStatus.NEUTRAL);
+            sectorDatabase.at(sector).addIsland(islandIdx, Comms.ControlStatus.NEUTRAL_ISLAND);
         }
     }
 
@@ -798,7 +799,24 @@ public class Robot {
         for (int i = 0; i < numEnemies; i++) {
             RobotInfo enemy = EnemySensable[i];
             int sectorIdx = whichXLoc[enemy.location.x] + whichYLoc[enemy.location.y];
-            sectorDatabase.at(sectorIdx).setControlStatus(Comms.ControlStatus.ENEMY);
+
+            int controlStatus = Comms.ControlStatus.MIN_ENEMY_STATUS;
+            switch (enemy.getType()) {
+                case HEADQUARTERS:
+                case CARRIER:
+                case AMPLIFIER:
+                    controlStatus = Comms.ControlStatus.ENEMY_PASSIVE;
+                    break;
+                case LAUNCHER:
+                case BOOSTER:
+                case DESTABILIZER:
+                    controlStatus = Comms.ControlStatus.ENEMY_AGGRESIVE;
+                    break;
+                default:
+                    Debug.println("Invalid robot type found");
+            }
+
+            sectorDatabase.at(sectorIdx).addEnemy(controlStatus);
         }
 
         int[] islandIdxs = rc.senseNearbyIslands();
@@ -923,7 +941,7 @@ public class Robot {
             if (rc.canWriteSharedArray(0, 0)) {
                 Comms.writeExploreSectorClaimStatus(closestSectorIndex, Comms.ClaimStatus.CLAIMED);
             }
-            sectorDatabase.at(closestSector).setControlStatus(Comms.ControlStatus.EXPLORING);
+            sectorDatabase.at(closestSector).setControlStatus(Comms.ControlStatus.UNKNOWN);
             exploreMode = true;
         }
         return closestSector;
@@ -976,8 +994,9 @@ public class Robot {
 
     public void printEnemySectors() throws GameActionException {
         for (int i = 0; i < numSectors; i++) {
-            if (Comms.readSectorControlStatus(i) == Comms.ControlStatus.ENEMY) {
-                Debug.println("Enemy sector " + i + " at " + sectorCenters[i]);
+            if (Comms.readSectorControlStatus(i) >= Comms.ControlStatus.MIN_ENEMY_STATUS) {
+                Debug.println("Enemy sector " + i + " at " + sectorCenters[i] + " with status "
+                        + Comms.readSectorControlStatus(i));
             }
         }
     }
