@@ -225,12 +225,25 @@ public class Headquarters extends Robot {
                 }
             }
 
-            if (carrierCount <= 2) {
-                // next should be an ad carrier
-                nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
+            if (nearestMnWell != null && nearestAdWell == null) {
+                // if theres an mn but not an ad, the first 2 should be mn and the second should
+                // be ad
+                if (carrierCount <= 2) {
+                    // next should be an mn carrier
+                    nextFlag = Comms.HQFlag.CARRIER_MANA;
+                } else {
+                    nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                }
             } else {
-                // next should be an mn carrier
-                nextFlag = Comms.HQFlag.CARRIER_MANA;
+                // if theres both ad and mn, or neither, then first 2 should be ad and second 2
+                // should be mn
+                if (carrierCount <= 2) {
+                    // next should be an ad carrier
+                    nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                } else {
+                    // next should be an mn carrier
+                    nextFlag = Comms.HQFlag.CARRIER_MANA;
+                }
             }
 
             return;
