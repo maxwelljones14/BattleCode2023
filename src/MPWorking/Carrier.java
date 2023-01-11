@@ -194,6 +194,14 @@ public class Carrier extends Robot {
         }
 
         if (target != null) {
+            if (rc.getResourceAmount(resourceTarget) > 0 && rc.canAttack(closestEnemy.location)) {
+                rc.attack((closestEnemy.location));
+            } else if (rc.getResourceAmount(resourceTarget) / 5 >= closestEnemy.health && rc.isActionReady()) {
+                Pathfinding.move(closestEnemy.location);
+                if (rc.canAttack(closestEnemy.location)) {
+                    rc.attack(closestEnemy.location);
+                }
+            }
             Pathfinding.move(target);
             Debug.printString(str);
         }

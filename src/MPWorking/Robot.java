@@ -30,7 +30,7 @@ public class Robot {
     static Team team;
     static Team opponent;
 
-    static SectorInfo[] sectorDatabase;
+    static SectorDatabase sectorDatabase;
 
     // Sectors are 6x6, 5x6, 6x5, or 5x5
     int numSectors;
@@ -83,10 +83,7 @@ public class Robot {
         markedSectorsBuffer = new int[numSectors];
         sectorToReport = 0;
 
-        sectorDatabase = new SectorInfo[numSectors];
-        for (int i = 0; i < numSectors; i++) {
-            sectorDatabase[i] = new SectorInfo();
-        }
+        sectorDatabase = new SectorDatabase(numSectors);
 
         // Precompute math for whichSector
         whichXLoc = new int[Util.MAP_WIDTH];
@@ -116,8 +113,8 @@ public class Robot {
         FriendlySensable = rc.senseNearbyRobots(-1, rc.getTeam());
         currLoc = rc.getLocation();
         int sector = whichSector(currLoc);
-        if (!sectorDatabase[sector].hasReports()) {
-            sectorDatabase[sector].exploreSector();
+        if (!sectorDatabase.at(sector).hasReports()) {
+            sectorDatabase.at(sector).exploreSector();
         }
         setSectorStates();
     }
@@ -134,7 +131,7 @@ public class Robot {
                     final int MAX_SECTORS_REPORTED = 10;
                     for (; sectorToReport < numSectors &&
                             numSectorsReported < MAX_SECTORS_REPORTED; sectorToReport++) {
-                        SectorInfo entry = sectorDatabase[sectorToReport];
+                        SectorInfo entry = sectorDatabase.at(sectorToReport);
                         if (entry.hasReports()) {
                             int hasAdamWell = (entry.shouldUnsetAdamWells() ? 0 : 1)
                                     & (Comms.readSectorAdamantiumFlag(sectorToReport)
@@ -152,7 +149,7 @@ public class Robot {
 
                             Comms.writeBPSectorControlStatus(sectorToReport, entry.getControlStatus());
 
-                            sectorDatabase[sectorToReport].reset();
+                            entry.reset();
                             numSectorsReported++;
                         }
                     }
@@ -337,11 +334,11 @@ public class Robot {
     public void recordIsland(int islandIdx, int sector) throws GameActionException {
         Team team = rc.senseTeamOccupyingIsland(islandIdx);
         if (team == rc.getTeam()) {
-            sectorDatabase[sector].addIsland(islandIdx, Comms.ControlStatus.FRIENDLY);
+            sectorDatabase.at(sector).addIsland(islandIdx, Comms.ControlStatus.FRIENDLY);
         } else if (team == rc.getTeam().opponent()) {
-            sectorDatabase[sector].addIsland(islandIdx, Comms.ControlStatus.ENEMY);
+            sectorDatabase.at(sector).addIsland(islandIdx, Comms.ControlStatus.ENEMY);
         } else {
-            sectorDatabase[sector].addIsland(islandIdx, Comms.ControlStatus.NEUTRAL);
+            sectorDatabase.at(sector).addIsland(islandIdx, Comms.ControlStatus.NEUTRAL);
         }
     }
 
@@ -790,7 +787,7 @@ public class Robot {
         for (int i = 0; i < numEnemies; i++) {
             RobotInfo enemy = EnemySensable[i];
             int sectorIdx = whichXLoc[enemy.location.x] + whichYLoc[enemy.location.y];
-            sectorDatabase[sectorIdx].setControlStatus(Comms.ControlStatus.ENEMY);
+            sectorDatabase.at(sectorIdx).setControlStatus(Comms.ControlStatus.ENEMY);
         }
 
         int[] islandIdxs = rc.senseNearbyIslands();
@@ -817,13 +814,13 @@ public class Robot {
                 // int sectorIdx = whichSector(shiftedLocation);
                 // Note: Inlined to save bytecode
                 int sectorIdx = whichXLoc[shiftedLocation.x] + whichYLoc[shiftedLocation.y];
-                sectorDatabase[sectorIdx].setControlStatus(Comms.ControlStatus.EMPTY);
+                sectorDatabase.at(sectorIdx).setControlStatus(Comms.ControlStatus.EMPTY);
             }
         }
 
         for (WellInfo info : rc.senseNearbyWells()) {
             int sector = whichSector(info.getMapLocation());
-            sectorDatabase[sector].addWell(info.getMapLocation(), info.getResourceType());
+            sectorDatabase.at(sector).addWell(info.getMapLocation(), info.getResourceType());
         }
     }
 
@@ -886,7 +883,7 @@ public class Robot {
             if (rc.canWriteSharedArray(0, 0)) {
                 Comms.writeExploreSectorClaimStatus(closestSectorIndex, Comms.ClaimStatus.CLAIMED);
             }
-            sectorDatabase[closestSector].setControlStatus(Comms.ControlStatus.EXPLORING);
+            sectorDatabase.at(closestSector).setControlStatus(Comms.ControlStatus.EXPLORING);
             exploreMode = true;
         }
         return closestSector;
@@ -901,7 +898,7 @@ public class Robot {
     public void resetControlStatus(MapLocation destination) throws GameActionException {
         if (exploreMode) {
             int sector = whichXLoc[destination.x] + whichYLoc[destination.y];
-            sectorDatabase[sector].resetControlStatus();
+            sectorDatabase.at(sector).resetControlStatus();
         }
     }
 
