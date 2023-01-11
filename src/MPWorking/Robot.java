@@ -1044,7 +1044,7 @@ public class Robot {
                 break;
             }
             if (Comms.readSectorControlStatus(i) != status) {
-                break;
+                continue;
             }
             int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
             if (distance < closestDistance) {
