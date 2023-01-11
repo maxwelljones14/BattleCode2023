@@ -45,8 +45,6 @@ public class Carrier extends Robot {
             return;
         }
 
-        Debug.printString("seen island at " + seenIsland);
-
         // if we're near home and have an island in our history, pick up anchor if home
         // has anchor
         if (seenIsland != null && rc.canTakeAnchor(home, Anchor.STANDARD)) {
@@ -56,6 +54,8 @@ public class Carrier extends Robot {
         // mark the first island we see
         if (seenIsland == null) {
             seenIsland = findUnconqueredIsland();
+        } else {
+            Debug.printString("seen island at " + seenIsland);
         }
 
         // If we are at capacity, go home.
@@ -85,7 +85,7 @@ public class Carrier extends Robot {
         }
         // if we have an anchor and have island location, go to that first
         if (seenIsland != null && rc.getAnchor() != null) {
-            Debug.printString("seen island at " + seenIsland + "; have an anchor");
+            Debug.printString("have an anchor");
             // if we're near an island and have an anchor, place the anchor and reset
             // seenIsland
             // TODO: mark this island as conquered in comms
@@ -93,6 +93,7 @@ public class Carrier extends Robot {
                 // if i get to the island and its taken already then find another island
                 if (rc.senseTeamOccupyingIsland(rc.senseIsland(seenIsland)) != Team.NEUTRAL) {
                     seenIsland = findUnconqueredIsland();
+                    Debug.printString("Island already claimed");
                     return;
                 }
             }
@@ -100,18 +101,18 @@ public class Carrier extends Robot {
                 rc.placeAnchor();
                 recordIsland(rc.senseIsland(currLoc), whichSector(currLoc));
                 seenIsland = null;
+                Debug.printString("Placed anchor");
             } else {
                 Pathfinding.move(seenIsland);
             }
         } else if (closestWell != null && rc.getAnchor() == null) {
             // only go to a well if we have ava
-            Debug.printString("Moving towards well at " + closestWell.getMapLocation());
-            // TODO: canCollectResource is broken right now
-            // It does not confirm the adjacency condition
-            if (rc.getLocation().isAdjacentTo(closestWell.getMapLocation()) &&
-                    rc.canCollectResource(closestWell.getMapLocation(), -1)) {
+            Debug.printString("Found well at " + closestWell.getMapLocation());
+            if (rc.canCollectResource(closestWell.getMapLocation(), -1)) {
+                Debug.printString("Collecting");
                 rc.collectResource(closestWell.getMapLocation(), -1);
             } else {
+                Debug.printString("Moving");
                 Pathfinding.move(closestWell.getMapLocation());
             }
             return;
@@ -127,7 +128,7 @@ public class Carrier extends Robot {
         RobotInfo[] friendlyAttackable = getFriendlyAttackable();
         RobotInfo closestEnemy = getClosestRobot(enemyAttackable);
         RobotInfo closestFriendly = getClosestRobot(friendlyAttackable);
-        String str = null;
+        String str = "";
         MapLocation target = null;
         // Run away if either
         // - You see fewer friendly attackers than enemy attackers
@@ -146,9 +147,9 @@ public class Carrier extends Robot {
             }
         }
 
-        Debug.printString(str);
         if (target != null) {
             Pathfinding.move(target);
+            Debug.printString(str);
         }
         return target != null;
     }
