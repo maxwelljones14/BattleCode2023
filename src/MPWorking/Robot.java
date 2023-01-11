@@ -115,10 +115,6 @@ public class Robot {
         EnemySensable = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         FriendlySensable = rc.senseNearbyRobots(-1, rc.getTeam());
         currLoc = rc.getLocation();
-        int sector = whichSector(currLoc);
-        if (!sectorDatabase.at(sector).hasReports()) {
-            sectorDatabase.at(sector).exploreSector();
-        }
         setSectorStates();
     }
 
@@ -843,7 +839,7 @@ public class Robot {
                 // int sectorIdx = whichSector(shiftedLocation);
                 // Note: Inlined to save bytecode
                 int sectorIdx = whichXLoc[shiftedLocation.x] + whichYLoc[shiftedLocation.y];
-                sectorDatabase.at(sectorIdx).setControlStatus(Comms.ControlStatus.EMPTY);
+                sectorDatabase.at(sectorIdx).exploreSector();
             }
         }
 
