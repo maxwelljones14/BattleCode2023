@@ -14,15 +14,24 @@ public class Carrier extends Robot {
     ResourceType resourceTarget;
     MapLocation seenIsland;
     WellInfo closestWell;
+    int homeIdx;
 
     public Carrier(RobotController r) throws GameActionException {
         super(r);
-        if (Util.rng.nextInt(2) == 0) {
+        closestWell = null;
+        homeIdx = 0;
+        for (int i = 0; i < 4; i++) {
+            if (Comms.readOurHqLocation(i) == home) {
+                homeIdx = i;
+                break;
+            }
+        }
+        int assignment = Comms.readOurHqFlag(homeIdx);
+        if (assignment == Comms.HQFlag.CARRIER_ADAMENTIUM) {
             resourceTarget = ResourceType.ADAMANTIUM;
         } else {
             resourceTarget = ResourceType.MANA;
         }
-        closestWell = null;
     }
 
     public MapLocation findUnconqueredIsland() throws GameActionException {
@@ -71,6 +80,7 @@ public class Carrier extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        Debug.printString("my assignment: " + resourceTarget);
 
         if (runAway()) {
             return;

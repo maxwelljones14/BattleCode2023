@@ -27,6 +27,11 @@ public class Comms {
         public static final int CLAIMED = 1;
     }
 
+    public class HQFlag {
+        public static final int CARRIER_ADAMENTIUM = 0;
+        public static final int CARRIER_MANA = 1;
+    }
+
     public final static int UNDEFINED_SECTOR_INDEX = 127;
 
     public static void init(RobotController r) {

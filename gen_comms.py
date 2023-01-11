@@ -8,6 +8,7 @@ SCHEMA = {
     'our_HQ': {
         'slots': 4,
         'bits': {
+            'flag': 1,
             'x_coord': 6,
             'y_coord': 6,
         }
