@@ -5,6 +5,8 @@ import MPWorking.Util.*;
 import MPWorking.Comms.*;
 import MPWorking.Debug.*;
 
+import MPWorking.fast.*;
+
 public class Launcher extends Robot {
     static enum LauncherState {
         EXPLORING,
@@ -29,10 +31,15 @@ public class Launcher extends Robot {
 
     static RobotInfo[] enemyAttackable;
 
+    static MapLocation[] possibleEnemyHQLocs;
+    static FastLocSet seenEnemyHQLocs;
+
+    static int sectorCenterIdx;
+
     public Launcher(RobotController r) throws GameActionException {
         super(r);
+        guessAndSortSymmetryLocs();
         currState = LauncherState.EXPLORING;
-
     }
 
     public void takeTurn() throws GameActionException {
@@ -42,31 +49,39 @@ public class Launcher extends Robot {
 
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
-        int sectorCenterIdx = getNearestCombatSector();
+        sectorCenterIdx = getNearestCombatSector();
         if (sectorCenterIdx != Comms.UNDEFINED_SECTOR_INDEX) {
             closestEnemyLocation = sectorCenters[sectorCenterIdx];
         }
-        switchCombatSectorIfCurrentEmpty(sectorCenterIdx);
         trySwitchState();
         doStateAction();
     }
 
-    public void switchCombatSectorIfCurrentEmpty(int sectorCenterIdx) throws GameActionException {
-        if (closestEnemyLocation != null && currLoc.distanceSquaredTo(closestEnemyLocation) <= visionRadiusSquared) {
-            // if there exists a target closest enemy loc and you're near it, check for enemy islands or enemy troops
-            for (int idx : rc.senseNearbyIslands()) {
-                if (rc.senseTeamOccupyingIsland(idx) != rc.getTeam()) {
-                    return;
-                }
-            }
-            if (enemyAttackable.length > 0) {
-                return;
-            }
-            // now we know theres no enemies at the target location, so set a new target sector
-            int newTargetSectorIdx = getNextNearestCombatSector(sectorCenterIdx);
-            if (newTargetSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
-                closestEnemyLocation = sectorCenters[newTargetSectorIdx];
-            }
+    public void switchCombatSectorIfCurrentEmpty(MapLocation target) throws GameActionException {
+        // UNDER DEVELOPMENT
+        // if (currLoc.distanceSquaredTo(target) <= actionRadiusSquared / 2) {
+        // // if there exists a target closest enemy loc and you're near it, check for
+        // // enemy islands or enemy troops
+        // for (int idx : rc.senseNearbyIslands()) {
+        // if (rc.senseTeamOccupyingIsland(idx) != rc.getTeam()) {
+        // return;
+        // }
+        // }
+        // if (enemyAttackable.length > 0) {
+        // return;
+        // }
+        // // now we know theres no enemies at the target location, so set a new target
+        // // sector
+        // int newTargetSectorIdx = getNextNearestCombatSector(sectorCenterIdx);
+        // if (newTargetSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
+        // closestEnemyLocation = sectorCenters[newTargetSectorIdx];
+        // }
+        // }
+    }
+
+    public void switchSymmetryLocationIfCurrentEmpty(MapLocation target) throws GameActionException {
+        if (currLoc.distanceSquaredTo(target) <= actionRadiusSquared / 2) {
+            seenEnemyHQLocs.add(target);
         }
     }
 
@@ -88,10 +103,8 @@ public class Launcher extends Robot {
             if (botType == RobotType.LAUNCHER || botType == RobotType.DESTABILIZER) {
                 if (candidateDist <= actionRadiusSquared /* && canAttack */) {
                     numEnemyLaunchersAttackingUs++;
-                    overallEnemyLauncherDx += currLoc.directionTo(candidateLoc).dx
-                            * (100 / (currLoc.distanceSquaredTo(candidateLoc)));
-                    overallEnemyLauncherDy += currLoc.directionTo(candidateLoc).dy
-                            * (100 / (currLoc.distanceSquaredTo(candidateLoc)));
+                    overallEnemyLauncherDx += (candidateLoc.x - currLoc.x);
+                    overallEnemyLauncherDy += (candidateLoc.y - currLoc.y);
                 }
                 if (candidateDist < closestLauncherDist) {
                     closestLauncherDist = candidateDist;
@@ -104,8 +117,8 @@ public class Launcher extends Robot {
         if (closestAttackingEnemy != null) {
             closestEnemyLocation = closestAttackingEnemy;
             int enemyHealth = closestEnemyInfo.getHealth();
-            healthLow = rc.getHealth() <= enemyHealth - 8;
-            healthHigh = rc.getHealth() >= 6 + enemyHealth;
+            healthLow = rc.getHealth() <= enemyHealth - 2;
+            healthHigh = rc.getHealth() >= 5 + enemyHealth;
             // NOTE: subject to chage as I'm not sure what the optimal health parameters are
             // for this game
 
@@ -154,6 +167,12 @@ public class Launcher extends Robot {
                                                                                                                    // numEnemySages;
     }
 
+    public boolean shouldStandGround() {
+        return numFriendlies + 1 == numEnemies && !healthHigh && !(closestEnemy.getHealth() <= 6);
+        // stand ground if its an even match and you don't have an overwhelming health
+        // advantage and you can't one shot enemy
+    }
+
     public void moveAndAttack(Direction[] targetDirs, boolean attackFirst) throws GameActionException {
         if (attackFirst) {
             tryAttackBestEnemy(closestEnemy);
@@ -173,12 +192,14 @@ public class Launcher extends Robot {
             boolean attackFirst = false;
             if (shouldRunAway()) {
                 attackFirst = true;
-                // Positive so that we move towards the point mass.
+                // Positive so that we move towards the point mass. adding a 3 times multiplier
+                // so that directoTo dest is not CENTER
                 dest = currLoc.translate(-overallEnemyLauncherDx, -overallEnemyLauncherDy);// (overallFriendlyLauncherDx,
-                                                                                           // overallFriendlyLauncherDy);
+                // overallFriendlyLauncherDy);
                 Direction possibleDir = currLoc.directionTo(dest);
                 dir = chooseBackupDirection(possibleDir);
-                Debug.printString("t: " + rc.getMovementCooldownTurns() + " " + dir);
+                Debug.printString("t: " + rc.getMovementCooldownTurns() + " " + dir + " " + overallEnemyLauncherDx + " "
+                        + overallEnemyLauncherDy);
                 if (dir == null) {
                     Debug.printString("RA bad");
                     tryAttackBestEnemy(closestEnemy);
@@ -217,18 +238,25 @@ public class Launcher extends Robot {
                     moveAndAttack(targetDirs, attackFirst);
                     return true;
                 } else {
-                    dir = chooseForwardDirection(dest);
-                    attackFirst = false;
-                    if (dir == null) {
-                        Debug.printString("Fw bad; ");
+                    if (!shouldStandGround()) {
+                        dir = chooseForwardDirection(dest);
+                        attackFirst = false;
+                        if (dir == null) {
+                            Debug.printString("Fw bad; ");
+                            tryAttackBestEnemy();
+                            return true;
+                        }
+                        Debug.printString("Fw, Dest: " + dir);
+                        Direction[] targetDirs = Util.getInOrderDirections(dir);
+                        moveAndAttack(targetDirs, attackFirst);
+                        return true;
+                    } else {
+                        Debug.printString("standing ground");
                         tryAttackBestEnemy();
                         return true;
                     }
-                    Debug.printString("Fw, Dest: " + dir);
-                    Direction[] targetDirs = Util.getInOrderDirections(dir);
-                    moveAndAttack(targetDirs, attackFirst);
-                    return true;
                 }
+
             }
         }
         return false;
@@ -314,12 +342,20 @@ public class Launcher extends Robot {
 
     public void launcherExplore() throws GameActionException {
         MapLocation target;
+        boolean goingToSector = false;
         if (closestEnemyLocation != null) {
             target = closestEnemyLocation;
+            goingToSector = true;
             Debug.printString("going for it");
         } else {
-            target = Explore.getExploreTarget();
-            Debug.printString("Exploring: " + target.toString());
+            MapLocation symmetricLoc = chooseSymmetricLoc();
+            if (symmetricLoc != null) {
+                target = symmetricLoc;
+                Debug.printString("going to symmetric Loc: " + target.toString());
+            } else {
+                target = Explore.getExploreTarget();
+                Debug.printString("Exploring: " + target.toString());
+            }
         }
         if (currLoc.distanceSquaredTo(target) <= Util.JUST_OUTSIDE_OF_VISION_RADIUS) {
             Pathfinding.move(target); // tryMoveSafely
@@ -328,5 +364,77 @@ public class Launcher extends Robot {
             Pathfinding.move(target);
             Debug.printString("reg mov");
         }
+        tryAttackBestEnemy(getBestEnemy());
+        if (goingToSector) {
+            switchCombatSectorIfCurrentEmpty(target);
+        } else {
+            switchSymmetryLocationIfCurrentEmpty(target);
+        }
+
+    }
+
+    public static MapLocation[] guessEnemyLoc(MapLocation ourLoc) throws GameActionException {
+        MapLocation[] results;
+
+        int height = rc.getMapHeight();
+        int width = rc.getMapWidth();
+
+        MapLocation verticalFlip = new MapLocation(ourLoc.x, height - ourLoc.y - 1);
+        MapLocation horizontalFlip = new MapLocation(width - ourLoc.x - 1, ourLoc.y);
+        MapLocation rotation = new MapLocation(width - ourLoc.x - 1, height - ourLoc.y - 1);
+
+        results = new MapLocation[] { verticalFlip, horizontalFlip, rotation };
+        return results;
+    }
+
+    public void guessAndSortSymmetryLocs() throws GameActionException {
+        FastIterableLocSet possibleLocs = new FastIterableLocSet(12);
+
+        MapLocation[] listOfHQs = new MapLocation[] { Comms.readOurHqLocation(0),
+                Comms.readOurHqLocation(1),
+                Comms.readOurHqLocation(2),
+                Comms.readOurHqLocation(3) };
+        for (int i = 0; i < 4; i++) {
+            MapLocation HQLoc = listOfHQs[i];
+            if (rc.onTheMap(HQLoc)) {
+                MapLocation[] possibleFlips = guessEnemyLoc(HQLoc);
+                for (int j = 0; j < possibleFlips.length; j++) {
+                    MapLocation possibleFlip = possibleFlips[j];
+                    Debug.printString("pF: " + possibleFlip);
+                    boolean IsOk = true;
+                    for (int k = 0; k < listOfHQs.length; k++) {
+                        if (possibleFlip
+                                .distanceSquaredTo(HQLoc) < RobotType.HEADQUARTERS.visionRadiusSquared) {
+                            IsOk = false;
+                        }
+                    }
+                    if (IsOk && rc.onTheMap(possibleFlip)) {
+                        possibleLocs.add(possibleFlip);
+                        possibleLocs.updateIterable();
+                    }
+                }
+            }
+        }
+        possibleEnemyHQLocs = new MapLocation[possibleLocs.size];
+        for (int i = 0; i < possibleLocs.size; i++) {
+            possibleEnemyHQLocs[i] = possibleLocs.locs[i];
+        }
+        seenEnemyHQLocs = new FastLocSet(12);
+    }
+
+    public MapLocation chooseSymmetricLoc() throws GameActionException {
+        MapLocation bestLoc = null;
+        int bestDist = Integer.MAX_VALUE;
+        for (int i = 0; i < possibleEnemyHQLocs.length; i++) {
+            MapLocation possibleLoc = possibleEnemyHQLocs[i];
+            int currDist = currLoc.distanceSquaredTo(possibleLoc);
+            boolean notTraversed = Comms
+                    .readSectorControlStatus(whichSector(possibleLoc)) == Comms.ControlStatus.UNKNOWN;
+            if (!seenEnemyHQLocs.contains(possibleLoc.x, possibleLoc.y) && currDist < bestDist && notTraversed) {
+                bestLoc = possibleLoc;
+                bestDist = currDist;
+            }
+        }
+        return bestLoc;
     }
 }
