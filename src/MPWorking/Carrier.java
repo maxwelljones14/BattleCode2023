@@ -39,6 +39,10 @@ public class Carrier extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
 
+        if (runAway()) {
+            return;
+        }
+
         Debug.printString("seen island at " + seenIsland);
 
         // if we're near home and have an island in our history, pick up anchor if home
@@ -76,7 +80,6 @@ public class Carrier extends Robot {
                 closestWell = well;
             }
         }
-
         // if we have an anchor and have island location, go to that first
         if (seenIsland != null && rc.getAnchor() != null) {
             Debug.printString("seen island at " + seenIsland + "; have an anchor");
@@ -112,6 +115,37 @@ public class Carrier extends Robot {
             MapLocation target = Explore.getExploreTarget();
             Pathfinding.move(target);
         }
+    }
+
+    public Boolean runAway() throws GameActionException {
+        RobotInfo[] enemyAttackable = getEnemyAttackable();
+        RobotInfo[] friendlyAttackable = getFriendlyAttackable();
+        RobotInfo closestEnemy = getClosestRobot(enemyAttackable);
+        RobotInfo closestFriendly = getClosestRobot(friendlyAttackable);
+        String str = null;
+        MapLocation target = null;
+        // Run away if either
+        // - You see fewer friendly attackers than enemy attackers
+        // - the closest enemy is closer than the clsoest friendly
+        if (closestEnemy != null) {
+            if (enemyAttackable.length + 5 >= friendlyAttackable.length) {
+                target = Pathfinding.getGreedyTargetAway(closestEnemy.getLocation());
+                str = "Enemies++ " + closestEnemy.type;
+            }
+
+            if (closestFriendly != null &&
+                    currLoc.distanceSquaredTo(closestEnemy.location) < currLoc
+                            .distanceSquaredTo(closestFriendly.location)) {
+                target = Pathfinding.getGreedyTargetAway(closestEnemy.getLocation());
+                str = "Close enemy " + closestEnemy.type;
+            }
+        }
+
+        Debug.printString(str);
+        if (target != null) {
+            Pathfinding.move(target);
+        }
+        return target != null;
     }
 
 }

@@ -237,8 +237,30 @@ public class Robot {
         return res;
     }
 
+    public RobotInfo getClosestRobot(RobotInfo[] robots) {
+        RobotInfo robot;
+        RobotInfo closestRobot = null;
+        int leastDistance = Integer.MAX_VALUE;
+        int currDistance;
+
+        for (int i = robots.length - 1; i >= 0; i--) {
+            robot = robots[i];
+            currDistance = robot.getLocation().distanceSquaredTo(currLoc);
+            if (leastDistance > currDistance) {
+                leastDistance = currDistance;
+                closestRobot = robot;
+            }
+        }
+
+        return closestRobot;
+    }
+
     public RobotInfo[] getEnemyAttackable() throws GameActionException {
         return getAttackableRobots(EnemySensable);
+    }
+
+    public RobotInfo[] getFriendlyAttackable() throws GameActionException {
+        return getAttackableRobots(FriendlySensable);
     }
 
     public RobotInfo[] getAttackableRobots(RobotInfo[] robots) throws GameActionException {

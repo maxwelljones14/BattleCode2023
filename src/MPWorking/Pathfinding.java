@@ -52,6 +52,12 @@ public class Pathfinding {
         BugNav.move();
     }
 
+    static MapLocation getGreedyTargetAway(MapLocation loc) throws GameActionException {
+        Direction opp_direction = rc.getLocation().directionTo(loc).opposite();
+        Direction[] dirs = new Direction[] { opp_direction, opp_direction.rotateLeft(), opp_direction.rotateRight() };
+        return rc.getLocation().add(Util.getFirstMoveableDir(dirs));
+    }
+
     static final double eps = 1e-5;
 
     static void greedyPath() {

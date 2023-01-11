@@ -82,10 +82,19 @@ public class Util {
                 target_dir.rotateRight().rotateRight(), target_dir.rotateLeft().rotateLeft() };
     }
 
-    static Direction getFirstValidInOrderDirection(Direction dir){
-        for(Direction newDir : Util.getInOrderDirections(dir)) {
-            if(rc.canMove(newDir)) {
+    static Direction getFirstValidInOrderDirection(Direction dir) {
+        for (Direction newDir : Util.getInOrderDirections(dir)) {
+            if (rc.canMove(newDir)) {
                 return newDir;
+            }
+        }
+        return Direction.CENTER;
+    }
+
+    static Direction getFirstMoveableDir(Direction[] dirs) {
+        for (Direction dir : dirs) {
+            if (rc.canMove(dir)) {
+                return dir;
             }
         }
         return Direction.CENTER;
