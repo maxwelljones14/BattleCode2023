@@ -50,7 +50,7 @@ public class Headquarters extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         computeHqNum();
-        updateUnitCounts();
+        // updateUnitCounts();
         toggleState();
         Debug.printString("current state: " + currentState);
         doStateAction();
@@ -101,7 +101,7 @@ public class Headquarters extends Robot {
 
     public void firstRounds() throws GameActionException {
         // find nearest wells
-        WellInfo[] wellsNearMe = rc.senseNearbyWells(actionRadiusSquared);
+        WellInfo[] wellsNearMe = rc.senseNearbyWells(visionRadiusSquared);
         MapLocation nearestAdWell = null;
         int closestAdWellDistance = visionRadiusSquared;
 
@@ -129,11 +129,15 @@ public class Headquarters extends Robot {
         MapLocation[] locsToBuildCarriers = new MapLocation[initCarriersWanted];
         int i = 0;
         if (nearestAdWell != null) {
-            locsToBuildCarriers[i] = nearestAdWell;
+            MapLocation adWellLocInsideActionRadius = nearestAdWell;
+            while (adWellLocInsideActionRadius.distanceSquaredTo(currLoc) > actionRadiusSquared) {
+                adWellLocInsideActionRadius = Util.moveTowardsMe(adWellLocInsideActionRadius);
+            }
+            locsToBuildCarriers[i] = adWellLocInsideActionRadius;
             i++;
             // find location closest to carrier that i can build but 1 square towards me
             // each time
-            MapLocation translated = Util.moveTowardsMe(nearestAdWell);
+            MapLocation translated = Util.moveTowardsMe(adWellLocInsideActionRadius);
             while (!rc.sensePassability(translated)) {
                 translated = Util.moveTowardsMe(translated);
             }
@@ -141,11 +145,15 @@ public class Headquarters extends Robot {
             i++;
         }
         if (nearestMnWell != null) {
-            locsToBuildCarriers[i] = nearestMnWell;
+            MapLocation mnWellLocInsideActionRadius = nearestMnWell;
+            while (mnWellLocInsideActionRadius.distanceSquaredTo(currLoc) > actionRadiusSquared) {
+                mnWellLocInsideActionRadius = Util.moveTowardsMe(mnWellLocInsideActionRadius);
+            }
+            locsToBuildCarriers[i] = mnWellLocInsideActionRadius;
             i++;
             // find location closest to carrier that i can build but 1 square towards me
             // each time
-            MapLocation translated = Util.moveTowardsMe(nearestMnWell);
+            MapLocation translated = Util.moveTowardsMe(mnWellLocInsideActionRadius);
             while (!rc.sensePassability(translated)) {
                 translated = Util.moveTowardsMe(translated);
             }
@@ -170,7 +178,7 @@ public class Headquarters extends Robot {
                 if (rc.canBuildRobot(RobotType.CARRIER, locToBuild)) {
                     buildCarrier(locToBuild);
                     break;
-                } else if (rc.getActionCooldownTurns() == 0) {
+                } else if (rc.isActionReady()) {
                     locToBuild = Util.rotateLoc90(locToBuild);
                 }
             }
@@ -199,7 +207,7 @@ public class Headquarters extends Robot {
                 if (rc.canBuildRobot(RobotType.LAUNCHER, locToBuild)) {
                     buildLauncher(locToBuild);
                     break;
-                } else if (rc.getActionCooldownTurns() == 0) {
+                } else if (rc.isActionReady()) {
                     locToBuild = Util.rotateLoc90(locToBuild);
                 }
             }
