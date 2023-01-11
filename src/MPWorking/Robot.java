@@ -50,6 +50,10 @@ public class Robot {
 
     boolean exploreMode;
 
+    final int MIN_BC_TO_FLUSH_SECTOR_DB = 1500;
+    final int BC_TO_WRITE_SECTOR = 150;
+    final int MIN_BC_TO_FLUSH = 1200;
+
     public Robot(RobotController r) throws GameActionException {
         rc = r;
         turnCount = 0;
@@ -121,6 +125,10 @@ public class Robot {
 
     public void endTurn() throws GameActionException {
         Explore.initialize();
+
+        if (Clock.getBytecodesLeft() < MIN_BC_TO_FLUSH_SECTOR_DB)
+            return;
+
         switch (robotType) {
             case HEADQUARTERS:
                 return;
@@ -129,8 +137,10 @@ public class Robot {
                     Comms.initBufferPool();
                     int numSectorsReported = 0;
                     final int MAX_SECTORS_REPORTED = 10;
-                    for (; sectorToReport < numSectors &&
-                            numSectorsReported < MAX_SECTORS_REPORTED; sectorToReport++) {
+
+                    while (sectorToReport < numSectors &&
+                            numSectorsReported < MAX_SECTORS_REPORTED &&
+                            Clock.getBytecodesLeft() > numSectorsReported * BC_TO_WRITE_SECTOR + MIN_BC_TO_FLUSH) {
                         SectorInfo entry = sectorDatabase.at(sectorToReport);
                         if (entry.hasReports()) {
                             int hasAdamWell = (entry.shouldUnsetAdamWells() ? 0 : 1)
@@ -152,6 +162,8 @@ public class Robot {
                             entry.reset();
                             numSectorsReported++;
                         }
+
+                        sectorToReport++;
                     }
 
                     if (sectorToReport == numSectors)

@@ -15,8 +15,8 @@ public class Explore {
     static int visionRadius;
     static boolean initialized = false;
     static int initRow = 0;
-    static final int INIT_BC_LEFT = 300;
-    static final int VISITED_BC_LEFT = 100;
+    static final int INIT_BC_LEFT = 1000;
+    static final int VISITED_BC_LEFT = 500;
 
     static MapLocation exploreTarget = null;
 
@@ -66,7 +66,6 @@ public class Explore {
             if (Clock.getBytecodesLeft() < INIT_BC_LEFT)
                 return;
             visited[initRow] = new boolean[MAX_MAP_SIZE];
-            // muckrakerLocations[initRow] = new int[MAX_MAP_SIZE];
             initRow++;
         }
         initialized = true;
