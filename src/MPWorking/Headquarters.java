@@ -219,6 +219,9 @@ public class Headquarters extends Robot {
                 firstRounds();
                 break;
             case CHILLING:
+                if (rc.getResourceAmount(ResourceType.MANA) >= Util.LAUNCHER_COST) {
+                    buildLauncher(newLoc);
+                }
                 // Pick a direction to build in.
                 if (rc.getRoundNum() % 2 == 0) {
                     // Let's try to build a carrier.
@@ -236,10 +239,10 @@ public class Headquarters extends Robot {
                     Debug.printString("Building anchor! " + rc.getAnchor());
                     anchorCount++;
                 } else {
-                    if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= Util.ANCHOR_COST + Util.CARRIER_COST) {
-                        buildCarrier(newLoc);
-                    } else if (rc.getResourceAmount(ResourceType.MANA) >= Util.ANCHOR_COST + Util.LAUNCHER_COST) {
+                    if (rc.getResourceAmount(ResourceType.MANA) >= Util.ANCHOR_COST + Util.LAUNCHER_COST) {
                         buildLauncher(newLoc);
+                    } else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= Util.ANCHOR_COST + Util.CARRIER_COST) {
+                        buildCarrier(newLoc);
                     }
                 }
                 break;
