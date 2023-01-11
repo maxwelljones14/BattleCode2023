@@ -21,6 +21,7 @@ public class Launcher extends Robot {
     static int numFriendlies;
     static int numEnemies;
     static MapLocation closestAttackingEnemy;
+    static MapLocation closestEnemyLocation;
     static int numEnemyLaunchersAttackingUs;
 
     static boolean healthLow;
@@ -41,7 +42,10 @@ public class Launcher extends Robot {
 
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
-
+        int sectorCenterIdx = getNearestCombatSector();
+        if (sectorCenterIdx != Comms.UNDEFINED_SECTOR_INDEX) {
+            closestEnemyLocation = sectorCenters[sectorCenterIdx];
+        }
         trySwitchState();
         doStateAction();
     }
@@ -94,7 +98,6 @@ public class Launcher extends Robot {
                 if ((FbotLocation).distanceSquaredTo(closestEnemyLocation) <= FbotType.visionRadiusSquared) {
                     numFriendlies++;
                 }
-
             }
         }
     }
@@ -110,7 +113,7 @@ public class Launcher extends Robot {
         switch (currState) {
             case EXPLORING:
                 if (!tryMoveTowardsEnemy()) {
-                    soldierExplore();
+                    launcherExplore();
                 }
                 break;
         }
@@ -181,9 +184,9 @@ public class Launcher extends Robot {
                         tryAttackBestEnemy(closestEnemy);
                         return true;
                     }
-                    // We're already close to a non-attacking enemy, and moving would put us in
-                    // lower passability
-                    int distanceNeeded = 5;
+                    // // We're already close to a non-attacking enemy, and moving would put us in
+                    // // lower passability
+                    int distanceNeeded = 2;
                     if (currLoc.distanceSquaredTo(dest) <= distanceNeeded) {
                         Debug.printString("close");
                         tryAttackBestEnemy(closestEnemy);
@@ -289,26 +292,15 @@ public class Launcher extends Robot {
         return bestDirSoFar;
     }
 
-    public void soldierExplore() throws GameActionException {
+    public void launcherExplore() throws GameActionException {
         MapLocation target;
-        // if(avgEnemyLoc != null) {
-        // target = avgEnemyLoc;
-        // if (currLoc.distanceSquaredTo(target) <= visionRadiusSquared) {
-        // boolean seeArchonInSensable = false;
-        // for (RobotInfo bot : EnemySensable) {
-        // if (bot.getType() == RobotType.ARCHON) {
-        // seeArchonInSensable = true;
-        // }
-        // }
-        // if (!seeArchonInSensable) {
-        // Comms.broadcastLauncherNearSectorButNothingFound();
-        // }
-        // }
-        // Debug.printString("going for it");
-        // } else {
-        target = Explore.getExploreTarget();
-        Debug.printString("Exploring: " + target.toString());
-        // }
+        if (closestEnemyLocation != null) {
+            target = closestEnemyLocation;
+            Debug.printString("going for it");
+        } else {
+            target = Explore.getExploreTarget();
+            Debug.printString("Exploring: " + target.toString());
+        }
         if (currLoc.distanceSquaredTo(target) <= Util.JUST_OUTSIDE_OF_VISION_RADIUS) {
             Pathfinding.move(target); // tryMoveSafely
             Debug.printString("saf mov");

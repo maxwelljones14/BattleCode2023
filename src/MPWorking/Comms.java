@@ -56,7 +56,7 @@ public class Comms {
     }
 
     public static void initBufferPool() throws GameActionException {
-        for (int i = 63; i >= 0; i++) {
+        for (int i = 63; i >= 0; i--) {
             bufferPool[i] = rc.readSharedArray(i);
             dirtyFlags[i] = false;
         }
@@ -68,7 +68,7 @@ public class Comms {
     }
 
     public static void flushBufferPool() throws GameActionException {
-        for (int i = 63; i >= 0; i++) {
+        for (int i = 63; i >= 0; i--) {
             if (dirtyFlags[i]) {
                 rc.writeSharedArray(i, bufferPool[i]);
             }

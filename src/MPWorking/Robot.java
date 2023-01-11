@@ -79,7 +79,6 @@ public class Robot {
         if (home == null) {
             home = rc.getLocation();
         }
-
         setupSectors();
         precomputeSectorCenters();
         sectorResources = new int[numSectors];
