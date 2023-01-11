@@ -5,28 +5,28 @@ import battlecode.common.*;
 
 public class SectorInfo {
     private boolean found;
-    private FastIterableLocSet adamWells;
+    private FastLocSet adamWells;
     private boolean unsetAdamWells;
-    private FastIterableLocSet manaWells;
+    private FastLocSet manaWells;
     private boolean unsetManaWells;
-    private FastIterableLocSet elxrWells;
-    private FastIterableIntSet neutralIslands;
+    private FastLocSet elxrWells;
+    private FastIntSet neutralIslands;
     private boolean unsetNeutralIslands;
-    private FastIterableIntSet friendlyIslands;
+    private FastIntSet friendlyIslands;
     private boolean unsetFriendlyIslands;
-    private FastIterableIntSet enemyIslands;
+    private FastIntSet enemyIslands;
     private boolean unsetEnemyIslands;
     private int enemies;
 
     private static final int MAX_SECTOR_AREA = 36;
 
     public SectorInfo() {
-        adamWells = new FastIterableLocSet(MAX_SECTOR_AREA);
-        manaWells = new FastIterableLocSet(MAX_SECTOR_AREA);
-        elxrWells = new FastIterableLocSet(MAX_SECTOR_AREA);
-        neutralIslands = new FastIterableIntSet(MAX_SECTOR_AREA);
-        friendlyIslands = new FastIterableIntSet(MAX_SECTOR_AREA);
-        enemyIslands = new FastIterableIntSet(MAX_SECTOR_AREA);
+        adamWells = new FastLocSet(MAX_SECTOR_AREA);
+        manaWells = new FastLocSet(MAX_SECTOR_AREA);
+        elxrWells = new FastLocSet(MAX_SECTOR_AREA);
+        neutralIslands = new FastIntSet(MAX_SECTOR_AREA);
+        friendlyIslands = new FastIntSet(MAX_SECTOR_AREA);
+        enemyIslands = new FastIntSet(MAX_SECTOR_AREA);
         enemies = 0;
         found = false;
     }
@@ -40,24 +40,19 @@ public class SectorInfo {
         if (type == ResourceType.ADAMANTIUM) {
             unsetAdamWells = false;
             adamWells.add(loc);
-            adamWells.updateIterable();
         } else if (type == ResourceType.MANA) {
             unsetManaWells = false;
             manaWells.add(loc);
-            manaWells.updateIterable();
         } else if (type == ResourceType.ELIXIR) {
             elxrWells.add(loc);
-            elxrWells.updateIterable();
             if (manaWells.contains(loc)) {
                 manaWells.remove(loc);
-                manaWells.updateIterable();
                 if (manaWells.size == 0) {
                     unsetManaWells = true;
                 }
             }
             if (adamWells.contains(loc)) {
                 adamWells.remove(loc);
-                adamWells.updateIterable();
                 if (adamWells.size == 0) {
                     unsetAdamWells = true;
                 }
@@ -70,17 +65,14 @@ public class SectorInfo {
         if (control == Comms.IslandTeam.NEUTRAL) {
             unsetNeutralIslands = false;
             neutralIslands.add(islandIdx);
-            neutralIslands.updateIterable();
             if (friendlyIslands.contains(islandIdx)) {
                 friendlyIslands.remove(islandIdx);
-                friendlyIslands.updateIterable();
                 if (friendlyIslands.size == 0) {
                     unsetFriendlyIslands = true;
                 }
             }
             if (enemyIslands.contains(islandIdx)) {
                 enemyIslands.remove(islandIdx);
-                enemyIslands.updateIterable();
                 if (enemyIslands.size == 0) {
                     unsetEnemyIslands = true;
                 }
@@ -88,17 +80,14 @@ public class SectorInfo {
         } else if (control == Comms.IslandTeam.FRIENDLY) {
             unsetFriendlyIslands = false;
             friendlyIslands.add(islandIdx);
-            friendlyIslands.updateIterable();
             if (neutralIslands.contains(islandIdx)) {
                 neutralIslands.remove(islandIdx);
-                neutralIslands.updateIterable();
                 if (neutralIslands.size == 0) {
                     unsetNeutralIslands = true;
                 }
             }
             if (enemyIslands.contains(islandIdx)) {
                 enemyIslands.remove(islandIdx);
-                enemyIslands.updateIterable();
                 if (enemyIslands.size == 0) {
                     unsetEnemyIslands = true;
                 }
@@ -106,17 +95,14 @@ public class SectorInfo {
         } else if (control == Comms.IslandTeam.ENEMY) {
             unsetEnemyIslands = false;
             enemyIslands.add(islandIdx);
-            enemyIslands.updateIterable();
             if (neutralIslands.contains(islandIdx)) {
                 neutralIslands.remove(islandIdx);
-                neutralIslands.updateIterable();
                 if (neutralIslands.size == 0) {
                     unsetNeutralIslands = true;
                 }
             }
             if (friendlyIslands.contains(islandIdx)) {
                 friendlyIslands.remove(islandIdx);
-                friendlyIslands.updateIterable();
                 if (friendlyIslands.size == 0) {
                     unsetFriendlyIslands = true;
                 }
