@@ -46,8 +46,28 @@ public class Launcher extends Robot {
         if (sectorCenterIdx != Comms.UNDEFINED_SECTOR_INDEX) {
             closestEnemyLocation = sectorCenters[sectorCenterIdx];
         }
+        switchCombatSectorIfCurrentEmpty(sectorCenterIdx);
         trySwitchState();
         doStateAction();
+    }
+
+    public void switchCombatSectorIfCurrentEmpty(int sectorCenterIdx) throws GameActionException {
+        if (closestEnemyLocation != null && currLoc.distanceSquaredTo(closestEnemyLocation) <= visionRadiusSquared) {
+            // if there exists a target closest enemy loc and you're near it, check for enemy islands or enemy troops
+            for (int idx : rc.senseNearbyIslands()) {
+                if (rc.senseTeamOccupyingIsland(idx) != rc.getTeam()) {
+                    return;
+                }
+            }
+            if (enemyAttackable.length > 0) {
+                return;
+            }
+            // now we know theres no enemies at the target location, so set a new target sector
+            int newTargetSectorIdx = getNextNearestCombatSector(sectorCenterIdx);
+            if (newTargetSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
+                closestEnemyLocation = sectorCenters[newTargetSectorIdx];
+            }
+        }
     }
 
     public void resetShouldRunAway() throws GameActionException {

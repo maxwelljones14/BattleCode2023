@@ -860,6 +860,35 @@ public class Robot {
     }
 
     /**
+     * Returns nearest combat sector outside of sectorToAvoid or
+     * UNDEFINED_SECTOR_INDEX otherwise
+     * 
+     * @return
+     * @throws GameActionException
+     */
+    public int getNextNearestCombatSector(int sectorToAvoid) throws GameActionException {
+        int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
+        int closestDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int nearestSector = Comms.readCombatSectorIndex(i);
+            // Break if no more combat sectors exist
+            if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            // ignore the sector to avoid
+            if (nearestSector == sectorToAvoid) {
+                continue;
+            }
+            int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestSector = nearestSector;
+            }
+        }
+        return closestSector;
+    }
+
+    /**
      * Returns nearest explore sector or UNDEFINED_SECTOR_INDEX otherwise
      * 
      * @return
