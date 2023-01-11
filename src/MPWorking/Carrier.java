@@ -38,6 +38,41 @@ public class Carrier extends Robot {
         return null;
     }
 
+    public MapLocation findClosestWell() throws GameActionException {
+        MapLocation closestLoc = null;
+        int closestDistance = Integer.MAX_VALUE;
+        if (resourceTarget == ResourceType.ADAMANTIUM) {
+            for (int x = 0; x < numSectors; x++) {
+                MapLocation sectorLoc = new MapLocation(
+                        sectorCentersX[x % sectorWidthsLength],
+                        sectorCentersY[x / sectorWidthsLength]);
+                int currDistance = currLoc.distanceSquaredTo(sectorLoc);
+                if (currDistance < closestDistance) {
+                    int flag = Comms.readSectorAdamantiumFlag(x);
+                    if (flag == 1) {
+                        closestDistance = currDistance;
+                        closestLoc = sectorLoc;
+                    }
+                }
+            }
+        } else {
+            for (int x = 0; x < numSectors; x++) {
+                MapLocation sectorLoc = new MapLocation(
+                        sectorCentersX[x % sectorWidthsLength],
+                        sectorCentersY[x / sectorWidthsLength]);
+                int currDistance = currLoc.distanceSquaredTo(sectorLoc);
+                if (currDistance < closestDistance) {
+                    int flag = Comms.readSectorManaFlag(x);
+                    if (flag == 1) {
+                        closestDistance = currDistance;
+                        closestLoc = sectorLoc;
+                    }
+                }
+            }
+        }
+        return closestLoc;
+    }
+
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         announceAlive();
@@ -118,8 +153,14 @@ public class Carrier extends Robot {
             }
             return;
         } else {
+            MapLocation target = findClosestWell();
             // If there is no visible well, just explore.
-            MapLocation target = Explore.getExploreTarget();
+            if (target == null) {
+                target = Explore.getExploreTarget();
+                Debug.printString("Exploring");
+            } else {
+                Debug.printString("going to known well at " + target);
+            }
             Pathfinding.move(target);
         }
     }

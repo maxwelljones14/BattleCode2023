@@ -224,7 +224,8 @@ public class Launcher extends Robot {
         for (int x = 0; x < dirsToConsider.length; x++) {
             Direction newDir = dirsToConsider[x];
             if (rc.canMove(newDir)) {
-                MapLocation targetLoc = currLoc.add(newDir);
+                Direction extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
+                MapLocation targetLoc = currLoc.add(newDir).add(extraDir);
                 boolean isPassible = rc.sensePassability(targetLoc);
                 int currEnemiesSeen = 0;
                 for (int i = enemyAttackable.length; --i >= 0;) {
@@ -254,14 +255,16 @@ public class Launcher extends Robot {
 
     public Direction chooseBackupDirection(Direction Dir) throws GameActionException {
         Direction[] dirsToConsider = Util.getInOrderDirections(Dir);
-        // Debug.printString("dir:" + Dir + " " + rc.getActionCooldownTurns());
+        Debug.printString("dir:" + Dir + " " + rc.getMovementCooldownTurns());
         Direction bestDirSoFar = null;
         int bestEnemiesStillSeen = Integer.MAX_VALUE;
         RobotInfo enemy;
         for (int x = 0; x < dirsToConsider.length; x++) {
             Direction newDir = dirsToConsider[x];
             if (rc.canMove(newDir)) {
-                MapLocation targetLoc = currLoc.add(newDir);
+                Direction extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
+                MapLocation targetLoc = currLoc.add(newDir).add(extraDir);
+                Debug.printString("best dir " + newDir);
                 boolean isPassible = rc.sensePassability(targetLoc);
                 int currEnemiesStillSeen = 0;
                 for (int i = enemyAttackable.length; --i >= 0;) {
@@ -273,7 +276,7 @@ public class Launcher extends Robot {
                     }
                 }
                 if (isPassible && currEnemiesStillSeen <= bestEnemiesStillSeen) {
-                    // Debug.printString("R");
+                    Debug.printString("R");
                     if (currEnemiesStillSeen < bestEnemiesStillSeen) {
                         bestDirSoFar = newDir;
                         bestEnemiesStillSeen = currEnemiesStillSeen;
