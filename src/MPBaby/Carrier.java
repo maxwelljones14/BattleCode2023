@@ -40,7 +40,7 @@ public class Carrier extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        announceAlive();
+        // announceAlive();
 
         if (runAway()) {
             return;

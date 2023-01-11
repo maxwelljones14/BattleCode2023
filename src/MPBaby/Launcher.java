@@ -36,7 +36,7 @@ public class Launcher extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        announceAlive();
+        // announceAlive();
         closestEnemy = getBestEnemy(EnemySensable);
         resetShouldRunAway();
 

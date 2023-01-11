@@ -50,7 +50,7 @@ public class Headquarters extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         computeHqNum();
-        updateUnitCounts();
+        // updateUnitCounts();
         toggleState();
         Debug.printString("current state: " + currentState);
         doStateAction();
