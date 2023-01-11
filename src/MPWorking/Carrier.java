@@ -112,6 +112,18 @@ public class Carrier extends Robot {
             return;
         }
 
+        // if we have an anchor but no island known then go home and return it
+        if (rc.getAnchor() != null && seenIsland == null) {
+            // go home
+            if (rc.canReturnAnchor(home)) {
+                Debug.printString("at home to return anchor");
+                rc.returnAnchor(home);
+            } else {
+                Pathfinding.move(home);
+            }
+            return;
+        }
+
         // If we can see a well, move towards it
         WellInfo[] wells = rc.senseNearbyWells(resourceTarget);
         int closestDist = Integer.MAX_VALUE;
@@ -128,7 +140,6 @@ public class Carrier extends Robot {
             Debug.printString("have an anchor");
             // if we're near an island and have an anchor, place the anchor and reset
             // seenIsland
-            // TODO: mark this island as conquered in comms
             if (rc.canSenseLocation(seenIsland)) {
                 // if i get to the island and its taken already then find another island
                 if (rc.senseTeamOccupyingIsland(rc.senseIsland(seenIsland)) != Team.NEUTRAL) {
@@ -145,7 +156,7 @@ public class Carrier extends Robot {
             } else {
                 Pathfinding.move(seenIsland);
             }
-        } else if (closestWell != null && rc.getAnchor() == null) {
+        } else if (closestWell != null) {
             // only go to a well if we have ava
             Debug.printString("Found well at " + closestWell.getMapLocation());
             if (rc.canCollectResource(closestWell.getMapLocation(), -1)) {
