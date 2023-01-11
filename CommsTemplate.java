@@ -28,7 +28,7 @@ public class Comms {
     }
 
     public class HQFlag {
-        public static final int CARRIER_ADAMENTIUM = 0;
+        public static final int CARRIER_ADAMANTIUM = 0;
         public static final int CARRIER_MANA = 1;
     }
 

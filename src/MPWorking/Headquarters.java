@@ -197,7 +197,7 @@ public class Headquarters extends Robot {
                 if (Util.rng.nextFloat() < 0.7) {
                     nextCarrierAssignment = Comms.HQFlag.CARRIER_MANA;
                 } else {
-                    nextCarrierAssignment = Comms.HQFlag.CARRIER_ADAMENTIUM;
+                    nextCarrierAssignment = Comms.HQFlag.CARRIER_ADAMANTIUM;
                 }
                 nextFlag = nextCarrierAssignment;
             }
@@ -224,41 +224,15 @@ public class Headquarters extends Robot {
                     locToBuild = Util.rotateLoc90(locToBuild);
                 }
             }
-            if (nearestAdWell != null && nearestMnWell != null) {
-                // if there exists an ad well and mn well, then the first 2 are ad and the 2nd 2
-                // are mn
-                if (carrierCount <= 2) {
-                    // next should be an ad carrier
-                    nextFlag = Comms.HQFlag.CARRIER_ADAMENTIUM;
-                } else {
-                    // next should be an mn carrier
-                    nextFlag = Comms.HQFlag.CARRIER_MANA;
-                }
-            } else if (nearestAdWell != null) {
-                // if theres an ad but not an mn, the first 2 should be ad and the 2nd 2 should
-                // be random
-                if (carrierCount <= 2) {
-                    // next should be an ad carrier
-                    nextFlag = Comms.HQFlag.CARRIER_ADAMENTIUM;
-                } else {
-                    int nextCarrierAssignment = Util.rng.nextInt(2);
-                    nextFlag = nextCarrierAssignment;
-                }
-            } else if (nearestMnWell != null) {
-                // if theres an mn but not an ad, the first 2 should be mn and the 2nd 2 should
-                // be random
-                if (carrierCount <= 2) {
-                    // next should be an mn carrier
-                    nextFlag = Comms.HQFlag.CARRIER_MANA;
-                } else {
-                    int nextCarrierAssignment = Util.rng.nextInt(2);
-                    nextFlag = nextCarrierAssignment;
-                }
+
+            if (carrierCount <= 2) {
+                // next should be an ad carrier
+                nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
             } else {
-                // if theres none, all should be random
-                int nextCarrierAssignment = Util.rng.nextInt(2);
-                nextFlag = nextCarrierAssignment;
+                // next should be an mn carrier
+                nextFlag = Comms.HQFlag.CARRIER_MANA;
             }
+
             return;
         }
 

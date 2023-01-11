@@ -27,7 +27,7 @@ public class Carrier extends Robot {
             }
         }
         int assignment = Comms.readOurHqFlag(homeIdx);
-        if (assignment == Comms.HQFlag.CARRIER_ADAMENTIUM) {
+        if (assignment == Comms.HQFlag.CARRIER_ADAMANTIUM) {
             resourceTarget = ResourceType.ADAMANTIUM;
         } else {
             resourceTarget = ResourceType.MANA;
