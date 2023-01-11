@@ -120,57 +120,8 @@ public class Robot {
 
     public void endTurn() throws GameActionException {
         Explore.initialize();
-
-        if (Clock.getBytecodesLeft() < MIN_BC_TO_FLUSH_SECTOR_DB)
-            return;
-
-        switch (robotType) {
-            case HEADQUARTERS:
-                return;
-            default:
-                if (rc.canWriteSharedArray(0, 0)) {
-                    Comms.initBufferPool();
-                    int numSectorsReported = 0;
-                    final int MAX_SECTORS_REPORTED = 10;
-
-                    while (sectorToReport < numSectors &&
-                            numSectorsReported < MAX_SECTORS_REPORTED &&
-                            Clock.getBytecodesLeft() > numSectorsReported * BC_TO_WRITE_SECTOR + MIN_BC_TO_FLUSH) {
-                        SectorInfo entry = sectorDatabase.at(sectorToReport);
-                        if (entry.hasReports()) {
-                            int hasAdamWell = (entry.shouldUnsetAdamWells() ? 0 : 1)
-                                    & (Comms.readSectorAdamantiumFlag(sectorToReport)
-                                            | (entry.numAdamWells() > 0 ? 1 : 0));
-                            Comms.writeBPSectorAdamantiumFlag(sectorToReport, hasAdamWell);
-                            int hasManaWell = (entry.shouldUnsetManaWells() ? 0 : 1)
-                                    & (Comms.readSectorManaFlag(sectorToReport)
-                                            | (entry.numManaWells() > 0 ? 1 : 0));
-                            Comms.writeBPSectorManaFlag(sectorToReport, hasManaWell);
-                            int hasElixirWell = (Comms.readSectorElixirFlag(sectorToReport)
-                                    | (entry.numElxrWells() > 0 ? 1 : 0));
-                            Comms.writeBPSectorElixirFlag(sectorToReport, hasElixirWell);
-
-                            int hasIsland = (entry.numIslands() > 0 ? 1 : 0);
-                            Comms.writeBPSectorIslands(sectorToReport, hasIsland);
-
-                            Comms.writeBPSectorControlStatus(sectorToReport, entry.getControlStatus());
-
-                            entry.reset();
-                            numSectorsReported++;
-                        }
-
-                        sectorToReport++;
-                    }
-
-                    if (sectorToReport == numSectors)
-                        sectorToReport = 0;
-
-                    Comms.flushBufferPool();
-                }
-
-                // Note: markSeen should be last due to bytecode usage
-                Explore.markSeen();
-        }
+        flushSectorDatabase();
+        Explore.markSeen();
     }
 
     /*
@@ -337,6 +288,51 @@ public class Robot {
             }
         }
         return false;
+    }
+
+    public void flushSectorDatabase() throws GameActionException {
+        if (Clock.getBytecodesLeft() < MIN_BC_TO_FLUSH_SECTOR_DB)
+            return;
+
+        if (rc.canWriteSharedArray(0, 0)) {
+            Comms.initBufferPool();
+            int numSectorsReported = 0;
+            final int MAX_SECTORS_REPORTED = 10;
+
+            while (sectorToReport < numSectors &&
+                    numSectorsReported < MAX_SECTORS_REPORTED &&
+                    Clock.getBytecodesLeft() > numSectorsReported * BC_TO_WRITE_SECTOR + MIN_BC_TO_FLUSH) {
+                SectorInfo entry = sectorDatabase.at(sectorToReport);
+                if (entry.hasReports()) {
+                    int hasAdamWell = (entry.shouldUnsetAdamWells() ? 0 : 1)
+                            & (Comms.readSectorAdamantiumFlag(sectorToReport)
+                                    | (entry.numAdamWells() > 0 ? 1 : 0));
+                    Comms.writeBPSectorAdamantiumFlag(sectorToReport, hasAdamWell);
+                    int hasManaWell = (entry.shouldUnsetManaWells() ? 0 : 1)
+                            & (Comms.readSectorManaFlag(sectorToReport)
+                                    | (entry.numManaWells() > 0 ? 1 : 0));
+                    Comms.writeBPSectorManaFlag(sectorToReport, hasManaWell);
+                    int hasElixirWell = (Comms.readSectorElixirFlag(sectorToReport)
+                            | (entry.numElxrWells() > 0 ? 1 : 0));
+                    Comms.writeBPSectorElixirFlag(sectorToReport, hasElixirWell);
+
+                    int hasIsland = (entry.numIslands() > 0 ? 1 : 0);
+                    Comms.writeBPSectorIslands(sectorToReport, hasIsland);
+
+                    Comms.writeBPSectorControlStatus(sectorToReport, entry.getControlStatus());
+
+                    entry.reset();
+                    numSectorsReported++;
+                }
+
+                sectorToReport++;
+            }
+
+            if (sectorToReport == numSectors)
+                sectorToReport = 0;
+
+            Comms.flushBufferPool();
+        }
     }
 
     public void recordIsland(int islandIdx, int sector) throws GameActionException {
