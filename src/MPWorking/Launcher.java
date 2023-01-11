@@ -36,6 +36,7 @@ public class Launcher extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        announceAlive();
         closestEnemy = getBestEnemy(EnemySensable);
         resetShouldRunAway();
 
@@ -315,4 +316,10 @@ public class Launcher extends Robot {
         }
     }
 
+    public void announceAlive() throws GameActionException {
+        int currLaunchers = Comms.readBotCountLaunchers();
+        if (currLaunchers < 254) {
+            Comms.writeBotCountLaunchers(currLaunchers + 1);
+        }
+    }
 }

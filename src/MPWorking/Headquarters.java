@@ -14,7 +14,9 @@ public class Headquarters extends Robot {
         BUILDING_ANCHOR,
     };
 
-    static int myHqNum;
+    static int myHqNum = -1;
+    static int numHqs = -1;
+    static boolean lastHq;
 
     static ArrayDeque<State> stateStack;
     static State currentState;
@@ -33,15 +35,21 @@ public class Headquarters extends Robot {
     public Headquarters(RobotController r) throws GameActionException {
         super(r);
         stateStack = new ArrayDeque<State>();
-        myHqNum = -1;
-        initSectorPermutation();
-        currentState = State.INIT;
         currLoc = rc.getLocation();
+
+        if (numHqs == -1)
+            numHqs = rc.getRobotCount();
+        initSectorPermutation();
+
+        carrierCount = 0;
+        launcherCount = 0;
+        anchorCount = 0;
     }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         computeHqNum();
+        updateUnitCounts();
         toggleState();
         Debug.printString("current state: " + currentState);
         doStateAction();
@@ -234,7 +242,7 @@ public class Headquarters extends Robot {
     }
 
     /**
-     * First round, find out our HQ number and set our location
+     * First rounds, find out our HQ number and set our location
      * 
      * @throws GameActionException
      */
@@ -268,7 +276,20 @@ public class Headquarters extends Robot {
             Comms.initPrioritySectors();
         }
 
+        if (myHqNum == numHqs - 1) {
+            lastHq = true;
+        }
+
         Debug.println("I am HQ number " + myHqNum);
     }
 
+    public void updateUnitCounts() throws GameActionException {
+        carrierCount = Comms.readBotCountCarriers();
+        launcherCount = Comms.readBotCountLaunchers();
+
+        if (lastHq) {
+            // Debug.println("There are currently " + carrierCount + " carriers and " + launcherCount + " launchers.");
+            Comms.writeBotCountAll(0);
+        }
+    }
 }

@@ -40,6 +40,7 @@ public class Carrier extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        announceAlive();
 
         if (runAway()) {
             return;
@@ -154,4 +155,10 @@ public class Carrier extends Robot {
         return target != null;
     }
 
+    public void announceAlive() throws GameActionException {
+        int currCarriers = Comms.readBotCountCarriers();
+        if (currCarriers < 254) {
+            Comms.writeBotCountCarriers(currCarriers + 1);
+        }
+    }
 }
