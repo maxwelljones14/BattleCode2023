@@ -131,24 +131,31 @@ public class Robot {
 
                             // Keep the maximum amount of wells reported
                             // TODO: Wells can change into elixir wells.
-                            int hasAdamWell = Comms.readSectorAdamantiumFlag(i) | (entry.numAdamWells() > 0 ? 1 : 0);
+                            int hasAdamWell = (entry.shouldUnsetAdamWells() ? 0 : 1)
+                                    & (Comms.readSectorAdamantiumFlag(i) | (entry.numAdamWells() > 0 ? 1 : 0));
                             Comms.writeBPSectorAdamantiumFlag(i, hasAdamWell);
-                            int hasManaWell = Comms.readSectorManaFlag(i) | (entry.numManaWells() > 0 ? 1 : 0);
+                            int hasManaWell = (entry.shouldUnsetManaWells() ? 0 : 1)
+                                    & (Comms.readSectorManaFlag(i) | (entry.numManaWells() > 0 ? 1 : 0));
                             Comms.writeBPSectorManaFlag(i, hasManaWell);
-                            int hasElixirWell = Comms.readSectorElixirFlag(i) | (entry.numElxrWells() > 0 ? 1 : 0);
+                            int hasElixirWell = (entry.shouldUnsetManaWells() ? 0 : 1)
+                                    & (Comms.readSectorElixirFlag(i) | (entry.numElxrWells() > 0 ? 1 : 0));
                             Comms.writeBPSectorElixirFlag(i, hasElixirWell);
 
                             // Keep the maximum number of islands reported
                             // TODO: Islands can change teams
-                            int hasFriendlyIsland = Comms.readSectorFriendlyIsland(i)
-                                    | (entry.numFriendlyIslands() > 0 ? 1 : 0);
+                            int hasFriendlyIsland = (entry.shouldUnsetFriendlyIslands() ? 0 : 1)
+                                    & (Comms.readSectorFriendlyIsland(i)
+                                            | (entry.numFriendlyIslands() > 0 ? 1 : 0));
                             Comms.writeBPSectorFriendlyIsland(i, hasFriendlyIsland);
-                            int hasEnemyIsland = Comms.readSectorEnemyIsland(i)
-                                    | (entry.numEnemyIslands() > 0 ? 1 : 0);
+                            int hasEnemyIsland = (entry.shouldUnsetEnemyIslands() ? 0 : 1)
+                                    & (Comms.readSectorEnemyIsland(i)
+                                            | (entry.numEnemyIslands() > 0 ? 1 : 0));
                             Comms.writeBPSectorEnemyIsland(i, hasEnemyIsland);
-                            int hasNeutralIsland = Comms.readSectorNeutralIsland(i)
-                                    | (entry.numNeutralIslands() > 0 ? 1 : 0);
+                            int hasNeutralIsland = (entry.shouldUnsetNeutralIslands() ? 0 : 1)
+                                    & (Comms.readSectorNeutralIsland(i)
+                                            | (entry.numNeutralIslands() > 0 ? 1 : 0));
                             Comms.writeBPSectorNeutralIsland(i, hasNeutralIsland);
+                            sectorDatabase[i].reset();
                         }
                     }
                     Comms.flushBufferPool();
@@ -328,16 +335,14 @@ public class Robot {
         sectorDatabase[sector].addWell(info.getMapLocation(), info.getResourceType());
     }
 
-    public void recordIsland(MapLocation loc) throws GameActionException {
-        int sector = whichSector(loc);
-        int idx = rc.senseIsland(loc);
-        Team team = rc.senseTeamOccupyingIsland(idx);
+    public void recordIsland(int islandIdx, int sector) throws GameActionException {
+        Team team = rc.senseTeamOccupyingIsland(islandIdx);
         if (team == rc.getTeam()) {
-            sectorDatabase[sector].addIsland(idx, Comms.IslandTeam.FRIENDLY);
+            sectorDatabase[sector].addIsland(islandIdx, Comms.IslandTeam.FRIENDLY);
         } else if (team == rc.getTeam().opponent()) {
-            sectorDatabase[sector].addIsland(idx, Comms.IslandTeam.ENEMY);
+            sectorDatabase[sector].addIsland(islandIdx, Comms.IslandTeam.ENEMY);
         } else {
-            sectorDatabase[sector].addIsland(idx, Comms.IslandTeam.NEUTRAL);
+            sectorDatabase[sector].addIsland(islandIdx, Comms.IslandTeam.NEUTRAL);
         }
     }
 

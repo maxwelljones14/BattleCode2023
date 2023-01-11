@@ -28,6 +28,8 @@ public class Carrier extends Robot {
         if (islandIdxs.length > 0) {
             // TODO: only note islands that are not conquered yet
             for (int idx : islandIdxs) {
+                // This costs a lot of bytecode, but I don't know how to get around this
+                recordIsland(idx, whichSector(rc.senseNearbyIslandLocations(idx)[0]));
                 if (rc.senseTeamOccupyingIsland(idx) == Team.NEUTRAL) {
                     return rc.senseNearbyIslandLocations(idx)[0];
                 }
@@ -95,6 +97,7 @@ public class Carrier extends Robot {
             }
             if (rc.canPlaceAnchor()) {
                 rc.placeAnchor();
+                recordIsland(rc.senseIsland(currLoc), whichSector(currLoc));
                 seenIsland = null;
             } else {
                 Pathfinding.move(seenIsland);
