@@ -13,10 +13,6 @@ public class Util {
     static int MAP_AREA;
     static int MAP_MAX_DIST_SQUARED;
 
-    static final int CARRIER_COST = 50;
-    static final int LAUNCHER_COST = 60;
-    static final int ANCHOR_COST = 100;
-
     static final int CLEAR_ENEMY_INFO_PERIOD = 100;
 
     /** Array containing all the possible movement directions. */

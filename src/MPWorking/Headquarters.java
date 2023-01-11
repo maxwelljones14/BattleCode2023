@@ -277,7 +277,7 @@ public class Headquarters extends Robot {
                 firstRounds();
                 break;
             case CHILLING:
-                if (rc.getResourceAmount(ResourceType.MANA) >= Util.LAUNCHER_COST) {
+                if (canBuildRobotType(RobotType.LAUNCHER)) {
                     buildLauncher(newLoc);
                 }
                 // Pick a direction to build in.
@@ -297,9 +297,9 @@ public class Headquarters extends Robot {
                     Debug.printString("Building anchor! " + rc.getAnchor());
                     anchorCount++;
                 } else {
-                    if (rc.getResourceAmount(ResourceType.MANA) >= Util.ANCHOR_COST + Util.LAUNCHER_COST) {
+                    if (canBuildRobotTypeAndAnchor(RobotType.LAUNCHER, Anchor.STANDARD)) {
                         buildLauncher(newLoc);
-                    } else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= Util.ANCHOR_COST + Util.CARRIER_COST) {
+                    } else if (canBuildRobotTypeAndAnchor(RobotType.CARRIER, Anchor.STANDARD)) {
                         buildCarrier(newLoc);
                     }
                 }
@@ -457,5 +457,21 @@ public class Headquarters extends Robot {
                 }
             }
         }
+    }
+
+    /**
+     * Only checks if you have the resources for the robot type.
+     * Does not check action cooldown
+     */
+    public boolean canBuildRobotType(RobotType robotType) {
+        return hasResources(robotType.buildCostMana,
+                robotType.buildCostAdamantium,
+                robotType.buildCostElixir);
+    }
+
+    public boolean canBuildRobotTypeAndAnchor(RobotType robotType, Anchor anchor) {
+        return hasResources(robotType.buildCostMana + anchor.manaCost,
+                robotType.buildCostAdamantium + anchor.adamantiumCost,
+                robotType.buildCostElixir + anchor.elixirCost);
     }
 }

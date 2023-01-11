@@ -983,6 +983,11 @@ public class Robot {
         return closestSector;
     }
 
+    public boolean hasResources(int mana, int adamantium, int elixir) {
+        return rc.getResourceAmount(ResourceType.MANA) >= mana &&
+                rc.getResourceAmount(ResourceType.ADAMANTIUM) >= adamantium &&
+                rc.getResourceAmount(ResourceType.ELIXIR) >= elixir;
+    }
     // For debugging right now. Prints found adam wells
     public void findWells() throws GameActionException {
         for (int i = 0; i < numSectors; i++) {
