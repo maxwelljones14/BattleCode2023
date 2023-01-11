@@ -13,6 +13,7 @@ public class Carrier extends Robot {
 
     ResourceType resourceTarget;
     MapLocation seenIsland;
+    WellInfo closestWell;
 
     public Carrier(RobotController r) throws GameActionException {
         super(r);
@@ -21,6 +22,7 @@ public class Carrier extends Robot {
         } else {
             resourceTarget = ResourceType.MANA;
         }
+        closestWell = null;
     }
 
     public MapLocation findUnconqueredIsland() throws GameActionException {
@@ -100,6 +102,7 @@ public class Carrier extends Robot {
             if (rc.canTransferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget))) {
                 Debug.printString("at home to transfer");
                 rc.transferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget));
+                closestWell = null;
             } else {
                 Pathfinding.move(home);
             }
@@ -108,7 +111,6 @@ public class Carrier extends Robot {
 
         // If we can see a well, move towards it
         WellInfo[] wells = rc.senseNearbyWells(resourceTarget);
-        WellInfo closestWell = null;
         int closestDist = Integer.MAX_VALUE;
         for (WellInfo well : wells) {
             recordWell(well);
