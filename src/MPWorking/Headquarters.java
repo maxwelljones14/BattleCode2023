@@ -382,13 +382,14 @@ public class Headquarters extends Robot {
         int combatSectorIndex = 0;
         int exploreSectorIndex = 0;
 
-        // Preserve combat sectors which still have enemies
+        // Preserve combat sectors which still have enemies or are claimed
         while (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS) {
             int sector = Comms.readCombatSectorIndex(combatSectorIndex);
             if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
                 break;
             }
-            if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS) {
+            if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS &&
+                    Comms.readCombatSectorClaimStatus(sector) == Comms.ClaimStatus.UNCLAIMED) {
                 break;
             }
             combatSectorIndex++;
@@ -428,15 +429,17 @@ public class Headquarters extends Robot {
             if (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS
                     && controlStatus >= Comms.ControlStatus.MIN_ENEMY_STATUS) {
                 Comms.writeCombatSectorIndex(combatSectorIndex, i);
+                Comms.writeCombatSectorClaimStatus(combatSectorIndex, Comms.ClaimStatus.UNCLAIMED);
                 combatSectorIndex++;
 
-                // Preserve combat sectors which still have enemies
+                // Preserve combat sectors which still have enemies or are claimed
                 while (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS) {
                     int sector = Comms.readCombatSectorIndex(combatSectorIndex);
                     if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
                         break;
                     }
-                    if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS) {
+                    if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS &&
+                            Comms.readCombatSectorClaimStatus(sector) == Comms.ClaimStatus.UNCLAIMED) {
                         break;
                     }
                     combatSectorIndex++;

@@ -878,6 +878,56 @@ public class Robot {
     }
 
     /**
+     * Returns nearest combat sector or UNDEFINED_SECTOR_INDEX otherwise
+     * Should only be called by amplifiers
+     * 
+     * @return
+     * @throws GameActionException
+     */
+    public int getNearestUnclaimedCombatSector() throws GameActionException {
+        int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
+        int closestDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int nearestSector = Comms.readCombatSectorIndex(i);
+            // Break if no more combat sectors exist
+            if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            if (Comms.readCombatSectorClaimStatus(nearestSector) == Comms.ClaimStatus.CLAIMED) {
+                continue;
+            }
+            int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestSector = nearestSector;
+            }
+        }
+        return closestSector;
+    }
+
+    /**
+     * Only claims if it can currently write
+     * WARNING: Combat sectors MUST be unclaimed at some point. Otherwise
+     * they will never be removed from comms.
+     * In particular, a sector should be unclaimed if the unit has any chance
+     * of dying.
+     */
+    public void claimSector(int sectorIdx) throws GameActionException {
+        if (rc.canWriteSharedArray(0, 0)) {
+            Comms.writeCombatSectorClaimStatus(sectorIdx, Comms.ClaimStatus.CLAIMED);
+        }
+    }
+
+    /**
+     * Only unclaims if it can currently write
+     */
+    public void unclaimSector(int sectorIdx) throws GameActionException {
+        if (rc.canWriteSharedArray(0, 0)) {
+            Comms.writeCombatSectorClaimStatus(sectorIdx, Comms.ClaimStatus.UNCLAIMED);
+        }
+    }
+
+    /**
      * Returns nearest combat sector outside of sectorToAvoid or
      * UNDEFINED_SECTOR_INDEX otherwise
      * 
@@ -988,6 +1038,7 @@ public class Robot {
                 rc.getResourceAmount(ResourceType.ADAMANTIUM) >= adamantium &&
                 rc.getResourceAmount(ResourceType.ELIXIR) >= elixir;
     }
+
     // For debugging right now. Prints found adam wells
     public void findWells() throws GameActionException {
         for (int i = 0; i < numSectors; i++) {

@@ -26,6 +26,7 @@ SCHEMA = {
     'combat_sector': {
         'slots': 8,
         'bits': {
+            'claim_status': 1,
             'index': 7,
         }
     },
@@ -241,6 +242,7 @@ def capitalize(s):
     return ''.join(x.capitalize() for x in s.split('_'))
 
 # Inits index fields of sectors to UNDEFINED_SECTOR_IDX
+# Inits claim_status fields of sectors to 0
 def gen_init_sectors():
     shmem = '0'*1024
     out = """    public static void initPrioritySectors() throws GameActionException {"""
