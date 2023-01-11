@@ -192,19 +192,12 @@ public class Headquarters extends Robot {
             rc.buildRobot(RobotType.CARRIER, newLoc);
             carrierCount++;
             if (currentState != State.INIT) {
-                // decide next carrier assignment based on the most required resource right now
-                // probabilistically make the next one be that resource with 70% chance
-                int preference;
-                if (rc.getResourceAmount(ResourceType.ADAMANTIUM) < rc.getResourceAmount(ResourceType.MANA)) {
-                    preference = Comms.HQFlag.CARRIER_ADAMENTIUM;
-                } else {
-                    preference = Comms.HQFlag.CARRIER_MANA;
-                }
+                // probabilistically make the next one be mana with 70% chance
                 int nextCarrierAssignment;
                 if (Util.rng.nextFloat() < 0.7) {
-                    nextCarrierAssignment = preference;
+                    nextCarrierAssignment = Comms.HQFlag.CARRIER_MANA;
                 } else {
-                    nextCarrierAssignment = 1 - preference;
+                    nextCarrierAssignment = Comms.HQFlag.CARRIER_ADAMENTIUM;
                 }
                 nextFlag = nextCarrierAssignment;
             }
