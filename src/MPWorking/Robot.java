@@ -1011,12 +1011,8 @@ public class Robot {
     }
 
     /**
-     * Get the nearest sector that satisfies the given control status, encoded as
-     * follows:
-     * 0: unknown; 1: we control; 2: enemy controls; 3: ??.
      * Get the nearest sector that satisfies the given control status, encoded by
-     * `Comms.ControlStatus`.
-     * 
+     * `Comms.ControlStatus`. Returns UNDEFINED_SECTOR_INDEX if no such sector
      */
     public int getNearestSectorByControlStatus(int status) throws GameActionException {
         int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
@@ -1028,6 +1024,32 @@ public class Robot {
                     closestDistance = distance;
                     closestSector = i;
                 }
+            }
+        }
+        return closestSector;
+    }
+
+    /**
+     * Get the nearest combat sector that satisfies the given control status,
+     * encoded by `Comms.ControlStatus`.
+     * Returns UNDEFINED_SECTOR_INDEX if no such sector
+     */
+    public int getNearestCombatSectorByControlStatus(int status) throws GameActionException {
+        int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
+        int closestDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int nearestSector = Comms.readCombatSectorIndex(i);
+            // Break if no more combat sectors exist
+            if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            if (Comms.readSectorControlStatus(i) != status) {
+                break;
+            }
+            int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestSector = nearestSector;
             }
         }
         return closestSector;
