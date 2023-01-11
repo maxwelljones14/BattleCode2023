@@ -210,7 +210,7 @@ public class Headquarters extends Robot {
     public void doStateAction() throws GameActionException {
         Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
         // spawn as far away from us as possible
-        MapLocation newLoc = rc.getLocation().add(dir).add(dir).add(dir);
+        MapLocation newLoc = rc.getLocation().add(dir).add(dir);
         while (!rc.sensePassability(newLoc)) {
             newLoc = Util.moveTowardsMe(newLoc);
         }
