@@ -59,8 +59,8 @@ public class Robot {
         if (robotType == RobotType.HEADQUARTERS) {
             home = rc.getLocation();
         } else {
-            RobotInfo[] sensableWithin2 = rc.senseNearbyRobots(2, rc.getTeam());
-            for (RobotInfo robot : sensableWithin2) {
+            RobotInfo[] sensableWithinVisionRad = rc.senseNearbyRobots(visionRadiusSquared, rc.getTeam());
+            for (RobotInfo robot : sensableWithinVisionRad) {
                 if (robot.getType() == RobotType.HEADQUARTERS) {
                     MapLocation robotLoc = robot.getLocation();
                     home = robotLoc;

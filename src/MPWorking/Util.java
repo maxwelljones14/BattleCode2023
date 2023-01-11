@@ -52,6 +52,20 @@ public class Util {
         return rc.getLocation().translate(-dx, -dy);
     }
 
+    // Returns the location rotated 90 degrees clockwise wrt to your own location
+    static MapLocation rotateLoc90(MapLocation loc) {
+        int dx = loc.x - rc.getLocation().x;
+        int dy = loc.y - rc.getLocation().y;
+        int rotated_dx = dy;
+        int rotated_dy = -dx;
+        return rc.getLocation().translate(rotated_dx, rotated_dy);
+    }
+
+    static MapLocation moveTowardsMe(MapLocation loc) {
+        Direction dirToMe = loc.directionTo(rc.getLocation());
+        return loc.add(dirToMe);
+    }
+
     static int clip(int n, int lo, int hi) {
         return Math.min(Math.max(n, lo), hi);
     }

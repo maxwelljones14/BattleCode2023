@@ -62,6 +62,7 @@ public class Carrier extends Robot {
         if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
             Debug.printString("At capacity, going home");
             if (rc.canTransferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget))) {
+                Debug.printString("at home to transfer");
                 rc.transferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget));
             } else {
                 Pathfinding.move(home);
@@ -102,7 +103,8 @@ public class Carrier extends Robot {
             } else {
                 Pathfinding.move(seenIsland);
             }
-        } else if (closestWell != null) {
+        } else if (closestWell != null && rc.getAnchor() == null) {
+            // only go to a well if we have ava
             Debug.printString("Moving towards well at " + closestWell.getMapLocation());
             // TODO: canCollectResource is broken right now
             // It does not confirm the adjacency condition
