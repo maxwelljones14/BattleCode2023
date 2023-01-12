@@ -127,6 +127,7 @@ public class Robot {
         EnemySensable = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         FriendlySensable = rc.senseNearbyRobots(-1, rc.getTeam());
         currLoc = rc.getLocation();
+        Debug.setIndicatorDot(Debug.INDICATORS, home, 0, 255, 0);
         setSectorStates();
     }
 
@@ -1185,5 +1186,33 @@ public class Robot {
             }
         }
         return enemySectorLoc;
+    }
+
+    /**
+     * Gets the nearest unvisited combat sector by prioritized control status
+     */
+    public int getPrioritizedCombatSectorIdx() throws GameActionException {
+        int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
+        int closestDistance = Integer.MAX_VALUE;
+        int closestStatus = -1;
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int sectorIdx = Comms.readCombatSectorIndex(i);
+            // Break if no more combat sectors exist
+            if (sectorIdx == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            int status = Comms.readSectorControlStatus(sectorIdx);
+            if (status < closestStatus)
+                continue;
+            if (sectorDatabase.at(sectorIdx).hasVisitedRecently())
+                continue;
+            int distance = currLoc.distanceSquaredTo(sectorCenters[sectorIdx]);
+            if (distance < closestDistance || status > closestStatus) {
+                closestDistance = distance;
+                closestSector = sectorIdx;
+                closestStatus = status;
+            }
+        }
+        return closestSector;
     }
 }

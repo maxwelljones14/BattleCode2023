@@ -51,41 +51,8 @@ public class Launcher extends Robot {
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
 
-        closestEnemyLocation = getCombatSector();
-
         trySwitchState();
         doStateAction();
-    }
-
-    public void switchCombatSectorIfCurrentEmpty(MapLocation target) throws GameActionException {
-        // UNDER DEVELOPMENT
-        if (currLoc.distanceSquaredTo(target) <= actionRadiusSquared / 2) {
-            // if there exists a target closest enemy loc and you're near it, check for
-            // enemy islands or enemy troops
-            for (int idx : rc.senseNearbyIslands()) {
-                if (rc.senseTeamOccupyingIsland(idx) == rc.getTeam().opponent()) {
-                    return;
-                }
-            }
-            if (EnemySensable.length > 0) {
-                // if the only thing we can see is the headquarters, then we should still leave
-                // if we are in the switchCombatSector function, we should have an EnemySensable
-                // length of 0 UNLESS it's length 1 and there's a headquarters and theres more
-                // than 8
-                // troops closer to the headquarters than we are
-                if (EnemySensable.length > 1 || EnemySensable[0].getType() != RobotType.HEADQUARTERS) {
-                    return;
-                }
-            }
-            // now we know theres no enemies at the target location, so set a new target
-            // sector
-            int newTargetSectorIdx = getNextNearestCombatSector(sectorCenterIdx);
-            if (newTargetSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
-                closestEnemyLocation = sectorCenters[newTargetSectorIdx];
-                Debug.printString("Changing location" + closestEnemyLocation);
-
-            }
-        }
     }
 
     public void switchSymmetryLocationIfCurrentEmpty(MapLocation target) throws GameActionException {
@@ -237,17 +204,10 @@ public class Launcher extends Robot {
                     // if (closestEnemyLocation != null) {
                     // return false;
                     // }
-                    int numTroopsCloser = 0;
                     closestEnemyLocation = closestEnemy.getLocation();
                     int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
-                    for (int i = 0; i < FriendlySensable.length; i++) {
-                        RobotInfo friendlyRobot = FriendlySensable[i];
-                        int currDist = friendlyRobot.getLocation().distanceSquaredTo(closestEnemyLocation);
-                        if (currDist < ourDist) {
-                            numTroopsCloser++;
-                        }
-                    }
-                    if (numTroopsCloser >= 10) {
+                    int numTroopsCloser = rc.senseNearbyRobots(closestEnemyLocation, ourDist - 1, rc.getTeam()).length;
+                    if (numTroopsCloser >= 4) {
                         Debug.printString("many close");
                         return false;
                     } else {
@@ -388,12 +348,11 @@ public class Launcher extends Robot {
 
     public void launcherExplore() throws GameActionException {
         MapLocation target;
-        boolean goingToSector = false;
-        if (closestEnemyLocation != null) {
-            goingToSector = true;
+
+        int combatSectorIdx = getPrioritizedCombatSectorIdx();
+        if (combatSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
             Debug.printString("going for it");
-            switchCombatSectorIfCurrentEmpty(closestEnemyLocation);
-            target = closestEnemyLocation;
+            target = sectorCenters[combatSectorIdx];
         } else {
             MapLocation symmetricLoc = chooseSymmetricLoc();
             if (symmetricLoc != null) {
@@ -406,6 +365,8 @@ public class Launcher extends Robot {
                 Debug.printString("Exploring: " + target.toString());
             }
         }
+
+        Debug.setIndicatorLine(Debug.INDICATORS, currLoc, target, 255, 0, 200);
         if (currLoc.distanceSquaredTo(target) <= Util.JUST_OUTSIDE_OF_VISION_RADIUS) {
             Pathfinding.move(target); // tryMoveSafely
             Debug.printString("saf mov");
@@ -436,15 +397,16 @@ public class Launcher extends Robot {
                         if (possibleFlip
                                 .distanceSquaredTo(newHQLoc) < RobotType.HEADQUARTERS.visionRadiusSquared) {
                             IsOk = false;
+                            break;
                         }
                     }
                     if (IsOk && rc.onTheMap(possibleFlip)) {
                         possibleLocs.add(possibleFlip);
-                        possibleLocs.updateIterable();
                     }
                 }
             }
         }
+        possibleLocs.updateIterable();
         possibleEnemyHQLocs = new MapLocation[possibleLocs.size];
         System.arraycopy(possibleLocs.locs, 0, possibleEnemyHQLocs, 0, possibleLocs.size);
         seenEnemyHQLocs = new FastLocSet(12);

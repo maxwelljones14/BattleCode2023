@@ -19,6 +19,9 @@ public class SectorInfo {
     private int enemies;
     private int lastRoundEnemyAdded;
 
+    private int lastRoundVisited;
+    private static final int VISITED_TIMEOUT = 50;
+
     private boolean controlStatusSet[];
 
     private static final int MAX_SECTOR_AREA = 36;
@@ -39,6 +42,7 @@ public class SectorInfo {
         enemies = 0;
         lastRoundEnemyAdded = 0;
         controlStatusSet = new boolean[Comms.ControlStatus.NUM_CONTROL_STATUS];
+        lastRoundVisited = Integer.MIN_VALUE;
     }
 
     public boolean hasReports() {
@@ -160,8 +164,13 @@ public class SectorInfo {
     }
 
     public void exploreSector() {
+        lastRoundVisited = Robot.rc.getRoundNum();
         found = true;
         setControlStatus(Comms.ControlStatus.EMPTY);
+    }
+
+    public boolean hasVisitedRecently() {
+        return Robot.rc.getRoundNum() < lastRoundVisited + VISITED_TIMEOUT;
     }
 
     public int numAdamWells() {
