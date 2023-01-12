@@ -58,24 +58,25 @@ public class Launcher extends Robot {
 
     public void switchCombatSectorIfCurrentEmpty(MapLocation target) throws GameActionException {
         // UNDER DEVELOPMENT
-        // if (currLoc.distanceSquaredTo(target) <= actionRadiusSquared / 2) {
-        // // if there exists a target closest enemy loc and you're near it, check for
-        // // enemy islands or enemy troops
-        // for (int idx : rc.senseNearbyIslands()) {
-        // if (rc.senseTeamOccupyingIsland(idx) != rc.getTeam()) {
-        // return;
-        // }
-        // }
-        // if (enemyAttackable.length > 0) {
-        // return;
-        // }
-        // // now we know theres no enemies at the target location, so set a new target
-        // // sector
-        // int newTargetSectorIdx = getNextNearestCombatSector(sectorCenterIdx);
-        // if (newTargetSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
-        // closestEnemyLocation = sectorCenters[newTargetSectorIdx];
-        // }
-        // }
+        if (currLoc.distanceSquaredTo(target) <= actionRadiusSquared / 2) {
+            // if there exists a target closest enemy loc and you're near it, check for
+            // enemy islands or enemy troops
+            for (int idx : rc.senseNearbyIslands()) {
+                if (rc.senseTeamOccupyingIsland(idx) != rc.getTeam()) {
+                    return;
+                }
+            }
+            if (EnemySensable.length > 0) {
+                return;
+            }
+            // now we know theres no enemies at the target location, so set a new target
+            // sector
+            Debug.printString("Changing location");
+            int newTargetSectorIdx = getNextNearestCombatSector(sectorCenterIdx);
+            if (newTargetSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
+                closestEnemyLocation = sectorCenters[newTargetSectorIdx];
+            }
+        }
     }
 
     public void switchSymmetryLocationIfCurrentEmpty(MapLocation target) throws GameActionException {
