@@ -15,8 +15,8 @@ public class Launcher extends Robot {
     static LauncherState currState;
 
     static int numEnemyLaunchers;
-    static int overallEnemyLauncherDx;
-    static int overallEnemyLauncherDy;
+    static double overallEnemyLauncherDx;
+    static double overallEnemyLauncherDy;
 
     static int numFriendlyLaunchers;
     static RobotInfo closestEnemy;
@@ -104,15 +104,17 @@ public class Launcher extends Robot {
 
         int closestLauncherDist = Integer.MAX_VALUE;
         RobotInfo closestEnemyInfo = null;
+        int numAttackingEnemyCount = 0;
         for (int i = 0; i < EnemySensable.length; i++) {
             RobotInfo bot = EnemySensable[i];
             MapLocation candidateLoc = bot.getLocation();
             int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
             RobotType botType = bot.getType();
             if (botType == RobotType.LAUNCHER || botType == RobotType.DESTABILIZER) {
-                overallEnemyLauncherDx += (candidateLoc.x - currLoc.x);
-                overallEnemyLauncherDy += (candidateLoc.y - currLoc.y);
                 if (candidateDist <= actionRadiusSquared /* && canAttack */) {
+                    numAttackingEnemyCount += 1;
+                    overallEnemyLauncherDx += (candidateLoc.x - currLoc.x);
+                    overallEnemyLauncherDy += (candidateLoc.y - currLoc.y);
                     numEnemyLaunchersAttackingUs++;
                 }
                 if (candidateDist < closestLauncherDist) {
@@ -122,6 +124,9 @@ public class Launcher extends Robot {
                 }
             }
         }
+        overallEnemyLauncherDx = overallEnemyLauncherDx / numAttackingEnemyCount;
+        overallEnemyLauncherDy = overallEnemyLauncherDy / numAttackingEnemyCount;
+
         MapLocation closestEnemyLocation = currLoc;
         if (closestAttackingEnemy != null) {
             closestEnemyLocation = closestAttackingEnemy;
@@ -130,14 +135,21 @@ public class Launcher extends Robot {
             healthHigh = rc.getHealth() >= 5 + enemyHealth;
             // NOTE: subject to chage as I'm not sure what the optimal health parameters are
             // for this game
-
         }
+
+        if (overallEnemyLauncherDx == 0 && overallEnemyLauncherDy == 0) {
+            overallEnemyLauncherDx += (closestAttackingEnemy.x - currLoc.x);
+            overallEnemyLauncherDy += (closestAttackingEnemy.y - currLoc.y);
+        }
+
         for (RobotInfo Fbot : FriendlySensable) {
             RobotType FbotType = Fbot.getType();
             if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
                 MapLocation FbotLocation = Fbot.getLocation();
                 // Debug.printString(" " + FbotLocation + " ");
                 if ((FbotLocation).distanceSquaredTo(closestEnemyLocation) <= FbotType.visionRadiusSquared) {
+                    overallEnemyLauncherDx += (FbotLocation.x - currLoc.x);
+                    overallEnemyLauncherDy += (FbotLocation.y - currLoc.y);
                     numFriendlies++;
                 }
             }
@@ -201,7 +213,7 @@ public class Launcher extends Robot {
             boolean attackFirst = false;
             if (shouldRunAway()) {
                 attackFirst = true;
-                dest = currLoc.translate(-overallEnemyLauncherDx, -overallEnemyLauncherDy);// (overallFriendlyLauncherDx,
+                dest = currLoc.translate(-(int) (overallEnemyLauncherDx), -(int) (overallEnemyLauncherDy));// (overallFriendlyLauncherDx,
                 // overallFriendlyLauncherDy);
                 Direction possibleDir = currLoc.directionTo(dest);
                 dir = chooseBackupDirection(possibleDir);
