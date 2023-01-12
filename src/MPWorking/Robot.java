@@ -299,7 +299,7 @@ public class Robot {
         if (rc.canWriteSharedArray(0, 0)) {
             Comms.initBufferPool();
             int numSectorsReported = 0;
-            final int MAX_SECTORS_REPORTED = 10;
+            final int MAX_SECTORS_REPORTED = 50;
 
             while (sectorToReport < numSectors &&
                     numSectorsReported < MAX_SECTORS_REPORTED &&
@@ -1056,6 +1056,12 @@ public class Robot {
         return rc.getResourceAmount(ResourceType.MANA) >= mana &&
                 rc.getResourceAmount(ResourceType.ADAMANTIUM) >= adamantium &&
                 rc.getResourceAmount(ResourceType.ELIXIR) >= elixir;
+    }
+
+    public boolean hasResources(int mana, int adamantium, int elixir, Anchor anchor) {
+        return (mana == anchor.manaCost || rc.getResourceAmount(ResourceType.MANA) >= mana) &&
+                (adamantium == anchor.adamantiumCost || rc.getResourceAmount(ResourceType.ADAMANTIUM) >= adamantium) &&
+                (elixir == anchor.elixirCost || rc.getResourceAmount(ResourceType.ELIXIR) >= elixir);
     }
 
     // For debugging right now. Prints found adam wells

@@ -210,6 +210,11 @@ public class Launcher extends Robot {
                 dest = closestEnemy.getLocation();
                 RobotType closestEnemyType = closestEnemy.getType();
                 if (closestEnemyType == RobotType.HEADQUARTERS) {
+                    // if we can go to a sector, leave the headquarters (this amounts to returning
+                    // false and going to the soldierExplore function)
+                    // if (closestEnemyLocation != null) {
+                    // return false;
+                    // }
                     int numTroopsCloser = 0;
                     closestEnemyLocation = closestEnemy.getLocation();
                     int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);

@@ -553,6 +553,6 @@ public class Headquarters extends Robot {
     public boolean canBuildRobotTypeAndAnchor(RobotType robotType, Anchor anchor) {
         return hasResources(robotType.buildCostMana + anchor.manaCost,
                 robotType.buildCostAdamantium + anchor.adamantiumCost,
-                robotType.buildCostElixir + anchor.elixirCost);
+                robotType.buildCostElixir + anchor.elixirCost, anchor);
     }
 }
