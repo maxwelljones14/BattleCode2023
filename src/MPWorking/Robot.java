@@ -13,6 +13,7 @@ public class Robot {
     static int roundNum;
     static RobotType robotType;
 
+    int homeIdx;
     static MapLocation home;
     static MapLocation[] headquarterLocations;
     static RobotInfo[] EnemySensable;
@@ -81,6 +82,15 @@ public class Robot {
         if (home == null) {
             home = rc.getLocation();
         }
+
+        homeIdx = 0;
+        for (int i = 0; i < 4; i++) {
+            if (Comms.readOurHqLocation(i).equals(home)) {
+                homeIdx = i;
+                break;
+            }
+        }
+
         setupSectors();
         precomputeSectorCenters();
         sectorResources = new int[numSectors];

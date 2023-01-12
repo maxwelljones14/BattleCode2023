@@ -49,6 +49,8 @@ public class Pathfinding {
         target = loc;
         if (!BugNav.move())
             greedyPath();
+        if (!rc.isMovementReady())
+            return;
         BugNav.move();
     }
 

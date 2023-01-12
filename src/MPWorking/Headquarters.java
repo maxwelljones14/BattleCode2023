@@ -85,6 +85,8 @@ public class Headquarters extends Robot {
         updateclosestEnemyHQ();
         toggleState();
         Debug.printString("current state: " + currentState);
+        Debug.printString("A: " + adamCarrierTracker.size());
+        Debug.printString("M: " + manaCarrierTracker.size());
         Comms.writeOurHqFlag(myHqNum, nextFlag);
         nextFlag = 0;
         doStateAction();
@@ -221,18 +223,31 @@ public class Headquarters extends Robot {
                 return;
             }
 
-            if (currentState != State.INIT) {
-                // probabilistically make the next one be mana with 70% chance
-                if (manaCarrierTracker.size() * MANA_TO_ADAM_CARRIER_RATIO <= adamCarrierTracker.size()) {
-                    Debug.println("Not enough mana carriers, making new one");
-                    nextFlag = Comms.HQFlag.CARRIER_MANA;
-                } else {
-                    if (Util.rng.nextFloat() < 0.7) {
+            if (currentState == State.INIT) {
+                if (nearestMnWell != null && nearestAdWell == null) {
+                    // if theres an mn but not an ad, the first 2 should be mn and the second should
+                    // be ad
+                    if (carrierCount <= 2) {
+                        // next should be an mn carrier
                         nextFlag = Comms.HQFlag.CARRIER_MANA;
                     } else {
                         nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
                     }
+                } else {
+                    // if theres both ad and mn, or neither, then first 2 should be ad and second 2
+                    // should be mn
+                    if (carrierCount <= 2) {
+                        // next should be an ad carrier
+                        nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                    } else {
+                        // next should be an mn carrier
+                        nextFlag = Comms.HQFlag.CARRIER_MANA;
+                    }
                 }
+            } else if (manaCarrierTracker.size() <= adamCarrierTracker.size() * MANA_TO_ADAM_CARRIER_RATIO) {
+                nextFlag = Comms.HQFlag.CARRIER_MANA;
+            } else {
+                nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
             }
 
             if (nextFlag == Comms.HQFlag.CARRIER_MANA) {
@@ -288,28 +303,6 @@ public class Headquarters extends Robot {
                     locToBuild = Util.rotateLoc90(locToBuild);
                 }
             }
-
-            if (nearestMnWell != null && nearestAdWell == null) {
-                // if theres an mn but not an ad, the first 2 should be mn and the second should
-                // be ad
-                if (carrierCount <= 2) {
-                    // next should be an mn carrier
-                    nextFlag = Comms.HQFlag.CARRIER_MANA;
-                } else {
-                    nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                }
-            } else {
-                // if theres both ad and mn, or neither, then first 2 should be ad and second 2
-                // should be mn
-                if (carrierCount <= 2) {
-                    // next should be an ad carrier
-                    nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                } else {
-                    // next should be an mn carrier
-                    nextFlag = Comms.HQFlag.CARRIER_MANA;
-                }
-            }
-
             return;
         }
 
