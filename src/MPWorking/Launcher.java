@@ -74,21 +74,38 @@ public class Launcher extends Robot {
         int numAttackingEnemyCount = 0;
         for (int i = 0; i < EnemySensable.length; i++) {
             RobotInfo bot = EnemySensable[i];
+            int botHealth = bot.getHealth();
             MapLocation candidateLoc = bot.getLocation();
             int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
+            int lowestHealth = Integer.MAX_VALUE;
+            boolean inActionRadius = false;
             RobotType botType = bot.getType();
             if (botType == RobotType.LAUNCHER || botType == RobotType.DESTABILIZER) {
                 if (candidateDist <= actionRadiusSquared /* && canAttack */) {
+                    inActionRadius = true;
                     numAttackingEnemyCount += 1;
                     overallEnemyLauncherDx += (candidateLoc.x - currLoc.x);
                     overallEnemyLauncherDy += (candidateLoc.y - currLoc.y);
                     numEnemyLaunchersAttackingUs++;
+
+                    if (botHealth < lowestHealth
+                            || (botHealth == lowestHealth && candidateDist < closestLauncherDist)) {
+                        closestLauncherDist = candidateDist;
+                        closestAttackingEnemy = candidateLoc;
+                        closestEnemyInfo = bot;
+                        lowestHealth = botHealth;
+                    }
+
+                } else {
+                    if (!inActionRadius && botHealth < lowestHealth
+                            || (botHealth == lowestHealth && candidateDist < closestLauncherDist)) {
+                        closestLauncherDist = candidateDist;
+                        closestAttackingEnemy = candidateLoc;
+                        closestEnemyInfo = bot;
+                        lowestHealth = botHealth;
+                    }
                 }
-                if (candidateDist < closestLauncherDist) {
-                    closestLauncherDist = candidateDist;
-                    closestAttackingEnemy = candidateLoc;
-                    closestEnemyInfo = bot;
-                }
+
             }
         }
         overallEnemyLauncherDx = overallEnemyLauncherDx / numAttackingEnemyCount;
