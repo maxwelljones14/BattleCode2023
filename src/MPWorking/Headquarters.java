@@ -110,10 +110,10 @@ public class Headquarters extends Robot {
 
         for (WellInfo well : wellsNearMe) {
             int dist = currLoc.distanceSquaredTo(well.getMapLocation());
-            if (well.getResourceType() == ResourceType.ADAMANTIUM && dist < closestAdWellDistance) {
+            if (well.getResourceType() == ResourceType.ADAMANTIUM && dist <= closestAdWellDistance) {
                 closestAdWellDistance = dist;
                 nearestAdWell = well.getMapLocation();
-            } else if (well.getResourceType() == ResourceType.MANA && dist < closestMnWellDistance) {
+            } else if (well.getResourceType() == ResourceType.MANA && dist <= closestMnWellDistance) {
                 closestMnWellDistance = dist;
                 nearestMnWell = well.getMapLocation();
             }
