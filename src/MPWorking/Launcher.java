@@ -122,8 +122,8 @@ public class Launcher extends Robot {
         }
 
         if (overallEnemyLauncherDx == 0 && overallEnemyLauncherDy == 0) {
-            overallEnemyLauncherDx += (closestAttackingEnemy.x - currLoc.x);
-            overallEnemyLauncherDy += (closestAttackingEnemy.y - currLoc.y);
+            overallEnemyLauncherDx += (closestEnemyLocation.x - currLoc.x);
+            overallEnemyLauncherDy += (closestEnemyLocation.y - currLoc.y);
         }
 
         for (RobotInfo Fbot : FriendlySensable) {
