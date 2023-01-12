@@ -63,19 +63,27 @@ public class Launcher extends Robot {
             // if there exists a target closest enemy loc and you're near it, check for
             // enemy islands or enemy troops
             for (int idx : rc.senseNearbyIslands()) {
-                if (rc.senseTeamOccupyingIsland(idx) != rc.getTeam()) {
+                if (rc.senseTeamOccupyingIsland(idx) == rc.getTeam().opponent()) {
                     return;
                 }
             }
             if (EnemySensable.length > 0) {
-                return;
+                // if the only thing we can see is the headquarters, then we should still leave
+                // if we are in the switchCombatSector function, we should have an EnemySensable
+                // length of 0 UNLESS it's length 1 and there's a headquarters and theres more
+                // than 8
+                // troops closer to the headquarters than we are
+                if (EnemySensable.length > 1 || EnemySensable[0].getType() != RobotType.HEADQUARTERS) {
+                    return;
+                }
             }
             // now we know theres no enemies at the target location, so set a new target
             // sector
-            Debug.printString("Changing location");
             int newTargetSectorIdx = getNextNearestCombatSector(sectorCenterIdx);
             if (newTargetSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
                 closestEnemyLocation = sectorCenters[newTargetSectorIdx];
+                Debug.printString("Changing location" + closestEnemyLocation);
+
             }
         }
     }
@@ -370,13 +378,16 @@ public class Launcher extends Robot {
         MapLocation target;
         boolean goingToSector = false;
         if (closestEnemyLocation != null) {
-            target = closestEnemyLocation;
             goingToSector = true;
             Debug.printString("going for it");
+            switchCombatSectorIfCurrentEmpty(closestEnemyLocation);
+            target = closestEnemyLocation;
         } else {
             MapLocation symmetricLoc = chooseSymmetricLoc();
             if (symmetricLoc != null) {
                 target = symmetricLoc;
+                switchSymmetryLocationIfCurrentEmpty(target);
+
                 Debug.printString("going to symmetric Loc: " + target.toString());
             } else {
                 target = Explore.getExploreTarget();
@@ -391,11 +402,6 @@ public class Launcher extends Robot {
             Debug.printString("reg mov");
         }
         tryAttackBestEnemy(getBestEnemy());
-        if (goingToSector) {
-            switchCombatSectorIfCurrentEmpty(target);
-        } else {
-            switchSymmetryLocationIfCurrentEmpty(target);
-        }
 
     }
 
