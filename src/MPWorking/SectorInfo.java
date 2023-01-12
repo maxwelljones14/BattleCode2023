@@ -28,9 +28,9 @@ public class SectorInfo {
         adamWells = new FastLocSet(MAX_SECTOR_AREA);
         manaWells = new FastLocSet(MAX_SECTOR_AREA);
         elxrWells = new FastLocSet(MAX_SECTOR_AREA);
-        neutralIslands = new FastIntSet(MAX_SECTOR_AREA);
-        friendlyIslands = new FastIntSet(MAX_SECTOR_AREA);
-        enemyIslands = new FastIntSet(MAX_SECTOR_AREA);
+        neutralIslands = new FastIntSet();
+        friendlyIslands = new FastIntSet();
+        enemyIslands = new FastIntSet();
         unsetAdamWells = false;
         unsetManaWells = false;
         unsetNeutralIslands = false;

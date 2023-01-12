@@ -5,9 +5,8 @@ import MPWorking.Util.*;
 import MPWorking.Comms.*;
 import MPWorking.Debug.*;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 
-import org.omg.PortableInterceptor.NON_EXISTENT;
+import MPWorking.fast.*;
 
 public class Headquarters extends Robot {
     static enum State {
@@ -43,6 +42,11 @@ public class Headquarters extends Robot {
     static MapLocation[] locsToBuildCarriers;
     static MapLocation[] locsToBuildLaunchers;
 
+    static final double MANA_TO_ADAM_CARRIER_RATIO = 0.7 / 0.3;
+    static final int ROUNDS_TO_STALE_UNIT = 50;
+    FastUnitTracker adamCarrierTracker;
+    FastUnitTracker manaCarrierTracker;
+
     public Headquarters(RobotController r) throws GameActionException {
         super(r);
         stateStack = new ArrayDeque<State>();
@@ -63,10 +67,15 @@ public class Headquarters extends Robot {
         launcherCount = 0;
         anchorCount = 0;
         nextFlag = 0;
+
+        adamCarrierTracker = new FastUnitTracker(rc, ROUNDS_TO_STALE_UNIT);
+        manaCarrierTracker = new FastUnitTracker(rc, ROUNDS_TO_STALE_UNIT);
     }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        adamCarrierTracker.update();
+        manaCarrierTracker.update();
         computeHqNum();
         clearOldEnemyInfo();
         setPrioritySectors();
@@ -203,15 +212,30 @@ public class Headquarters extends Robot {
         if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
             rc.buildRobot(RobotType.CARRIER, newLoc);
             carrierCount++;
+            RobotInfo newCarrier = rc.senseRobotAtLocation(newLoc);
+            if (newCarrier == null) {
+                Debug.printString("ERROR: built carrier but can't sense it");
+                return;
+            }
+
             if (currentState != State.INIT) {
                 // probabilistically make the next one be mana with 70% chance
-                int nextCarrierAssignment;
-                if (Util.rng.nextFloat() < 0.7) {
-                    nextCarrierAssignment = Comms.HQFlag.CARRIER_MANA;
+                if (manaCarrierTracker.size() * MANA_TO_ADAM_CARRIER_RATIO <= adamCarrierTracker.size()) {
+                    Debug.println("Not enough mana carriers, making new one");
+                    nextFlag = Comms.HQFlag.CARRIER_MANA;
                 } else {
-                    nextCarrierAssignment = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                    if (Util.rng.nextFloat() < 0.7) {
+                        nextFlag = Comms.HQFlag.CARRIER_MANA;
+                    } else {
+                        nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                    }
                 }
-                nextFlag = nextCarrierAssignment;
+            }
+
+            if (nextFlag == Comms.HQFlag.CARRIER_MANA) {
+                manaCarrierTracker.add(newCarrier.ID);
+            } else {
+                adamCarrierTracker.add(newCarrier.ID);
             }
         }
     }

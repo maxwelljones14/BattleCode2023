@@ -4,17 +4,10 @@ import battlecode.common.*;
 
 public class FastIntIntMap {
     public StringBuilder keyVals;
-    public int maxlen;
     public int size;
-    private int earliestRemoved;
 
     public FastIntIntMap() {
-        this(100);
-    }
-
-    public FastIntIntMap(int len) {
         keyVals = new StringBuilder();
-        maxlen = len;
     }
 
     private String keyToStr(int key) {
@@ -28,8 +21,8 @@ public class FastIntIntMap {
     public void add(int key, int val) {
         String keyTemp = keyToStr(key);
         if (keyVals.indexOf(keyTemp) == -1) {
-            String keyVal = keyValToStr(key, val);
-            keyVals.append(keyVal);
+            keyVals.append(keyTemp);
+            keyVals.append((char) (val + 0x100));
             size++;
         }
     }
@@ -43,6 +36,21 @@ public class FastIntIntMap {
         }
     }
 
+    public void addReplace(int key, int val) {
+        String keyTemp = keyToStr(key);
+        int index = keyVals.indexOf(keyTemp);
+        switch (index) {
+            case -1:
+                keyVals.append(keyTemp);
+                keyVals.append((char) (val + 0x100));
+                size++;
+                break;
+            default:
+                keyVals.setCharAt(index + 2, (char) (val + 0x100));
+                break;
+        }
+    }
+
     public boolean contains(int key) {
         return keyVals.indexOf(keyToStr(key)) >= 0;
     }
@@ -50,7 +58,6 @@ public class FastIntIntMap {
     public void clear() {
         size = 0;
         keyVals = new StringBuilder();
-        earliestRemoved = 0;
     }
 
     public int getVal(int key) {

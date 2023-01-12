@@ -2,17 +2,11 @@ package MPWorking.fast;
 
 public class FastIntSet {
     public StringBuilder keys;
-    public int maxlen;
     public int size;
 
     public FastIntSet() {
-        this(500);
-    }
-
-    public FastIntSet(int len) {
         keys = new StringBuilder();
         size = 0;
-        maxlen = len;
     }
 
     public int size() {
