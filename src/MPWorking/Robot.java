@@ -5,6 +5,8 @@ import MPWorking.Util.*;
 import MPWorking.Comms.*;
 import MPWorking.Debug.*;
 
+import MPWorking.fast.*;
+
 public class Robot {
     static RobotController rc;
     static int turnCount;
@@ -1038,7 +1040,7 @@ public class Robot {
             if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
                 break;
             }
-            if (Comms.readSectorControlStatus(i) != status) {
+            if (Comms.readSectorControlStatus(nearestSector) != status) {
                 continue;
             }
             int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
@@ -1089,5 +1091,82 @@ public class Robot {
             Debug.println("Combat sector " + i + " at " + sectorCenters[sectorIdx] + " with status "
                     + controlStatus + " and claim " + claimStatus);
         }
+    }
+
+    public void printEnemyCombatSectors() throws GameActionException {
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int idx = Comms.readCombatSectorIndex(i);
+            if (idx != Comms.UNDEFINED_SECTOR_INDEX) {
+                Debug.println("Enemy Combat sector " + i + " at " + sectorCenters[idx] + " with status "
+                        + Comms.readSectorControlStatus(idx));
+            }
+        }
+    }
+
+    public static MapLocation[] guessEnemyLoc(MapLocation ourLoc) throws GameActionException {
+        MapLocation[] results;
+
+        int height = rc.getMapHeight();
+        int width = rc.getMapWidth();
+
+        MapLocation verticalFlip = new MapLocation(ourLoc.x, height - ourLoc.y - 1);
+        MapLocation horizontalFlip = new MapLocation(width - ourLoc.x - 1, ourLoc.y);
+        MapLocation rotation = new MapLocation(width - ourLoc.x - 1, height - ourLoc.y - 1);
+
+        results = new MapLocation[] { verticalFlip, horizontalFlip, rotation };
+        return results;
+    }
+
+    public MapLocation getClosestEnemyHQGuess() throws GameActionException {
+        MapLocation bestLoc = null;
+        int bestDist = Integer.MAX_VALUE;
+
+        MapLocation[] listOfHQs = new MapLocation[] { Comms.readOurHqLocation(0),
+                Comms.readOurHqLocation(1),
+                Comms.readOurHqLocation(2),
+                Comms.readOurHqLocation(3) };
+        for (int i = 0; i < 4; i++) {
+            MapLocation HQLoc = listOfHQs[i];
+            if (rc.onTheMap(HQLoc)) {
+                MapLocation[] possibleFlips = guessEnemyLoc(HQLoc);
+                for (int j = 0; j < possibleFlips.length; j++) {
+                    MapLocation possibleFlip = possibleFlips[j];
+                    boolean IsOk = true;
+                    for (int k = 0; k < listOfHQs.length; k++) {
+                        if (possibleFlip
+                                .distanceSquaredTo(HQLoc) < RobotType.HEADQUARTERS.visionRadiusSquared) {
+                            IsOk = false;
+                        }
+                    }
+                    if (IsOk && rc.onTheMap(possibleFlip) && currLoc.distanceSquaredTo(possibleFlip) < bestDist) {
+                        bestDist = currLoc.distanceSquaredTo(possibleFlip);
+                        bestLoc = possibleFlip;
+                    }
+                }
+            }
+        }
+        return bestLoc;
+    }
+
+    public MapLocation getCombatSector() throws GameActionException {
+        MapLocation enemySectorLoc = null;
+        int sectorCenterIdx = getNearestCombatSectorByControlStatus(Comms.ControlStatus.ENEMY_AGGRESIVE);
+        if (sectorCenterIdx != Comms.UNDEFINED_SECTOR_INDEX) {
+            Debug.printString("aggro");
+            enemySectorLoc = sectorCenters[sectorCenterIdx];
+        } else {
+            sectorCenterIdx = getNearestCombatSectorByControlStatus(Comms.ControlStatus.ENEMY_ISLAND);
+            if (sectorCenterIdx != Comms.UNDEFINED_SECTOR_INDEX) {
+                Debug.printString("enemyisl");
+                enemySectorLoc = sectorCenters[sectorCenterIdx];
+            } else {
+                sectorCenterIdx = getNearestCombatSectorByControlStatus(Comms.ControlStatus.ENEMY_PASSIVE);
+                if (sectorCenterIdx != Comms.UNDEFINED_SECTOR_INDEX) {
+                    Debug.printString("enemypass");
+                    enemySectorLoc = sectorCenters[sectorCenterIdx];
+                }
+            }
+        }
+        return enemySectorLoc;
     }
 }

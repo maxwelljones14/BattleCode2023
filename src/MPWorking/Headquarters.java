@@ -36,6 +36,8 @@ public class Headquarters extends Robot {
 
     static int nextFlag;
 
+    static MapLocation closestEnemyHQGuess;
+
     static MapLocation nearestAdWell;
     static MapLocation nearestMnWell;
     static MapLocation[] locsToBuildCarriers;
@@ -68,6 +70,7 @@ public class Headquarters extends Robot {
         computeHqNum();
         clearOldEnemyInfo();
         setPrioritySectors();
+        updateclosestEnemyHQ();
         toggleState();
         Debug.printString("current state: " + currentState);
         Comms.writeOurHqFlag(myHqNum, nextFlag);
@@ -76,6 +79,13 @@ public class Headquarters extends Robot {
         // findWells();
         // printEnemySectors();
         // printCombatSectors();
+        // printEnemyCombatSectors();
+    }
+
+    public void updateclosestEnemyHQ() throws GameActionException {
+        if (rc.getRoundNum() == 2) {
+            closestEnemyHQGuess = getClosestEnemyHQGuess();
+        }
     }
 
     public void setupNearestWellsAndSpawnLocs() throws GameActionException {
@@ -206,6 +216,31 @@ public class Headquarters extends Robot {
         }
     }
 
+    public MapLocation getLauncherLocation() throws GameActionException {
+        MapLocation target = getCombatSector();
+        Direction dir = null;
+        if (target == null) {
+            target = closestEnemyHQGuess;
+            Debug.printString("dir of HQ " + target);
+        }
+        if (target == null) {
+            Debug.printString("ERROR: no HQ guesses");
+            dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
+        } else {
+            dir = currLoc.directionTo(target);
+        }
+        MapLocation newLoc = rc.getLocation().add(dir).add(dir);
+        int count = 0;
+        while (!rc.onTheMap(newLoc) || !rc.sensePassability(newLoc)) {
+            newLoc = Util.moveTowardsMe(newLoc);
+            count++;
+            if (count >= 4) {
+                break;
+            }
+        }
+        return newLoc;
+    }
+
     public void buildLauncher(MapLocation newLoc) throws GameActionException {
         Debug.printString("Trying to build a launcher");
         if (rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) {
@@ -253,7 +288,7 @@ public class Headquarters extends Robot {
 
         // set up locations for first launchers in the 4 cardinal directions
         if (launcherCount < initLaunchersWanted) {
-            MapLocation locToBuild = locsToBuildLaunchers[launcherCount];
+            MapLocation locToBuild = getLauncherLocation(); // locsToBuildLaunchers[launcherCount];
             for (int rot = 0; rot < 4; rot++) {
                 if (rc.canBuildRobot(RobotType.LAUNCHER, locToBuild)) {
                     buildLauncher(locToBuild);
@@ -270,8 +305,17 @@ public class Headquarters extends Robot {
         Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
         // spawn as far away from us as possible
         MapLocation newLoc = rc.getLocation().add(dir).add(dir);
+        int count = 0;
         while (!rc.onTheMap(newLoc) || !rc.sensePassability(newLoc)) {
+            count++;
             newLoc = Util.moveTowardsMe(newLoc);
+            if (newLoc.equals(currLoc)) {
+                dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
+                newLoc = rc.getLocation().add(dir).add(dir);
+            }
+            if (count >= 4) {
+                break;
+            }
         }
         switch (currentState) {
             case INIT:
@@ -279,15 +323,10 @@ public class Headquarters extends Robot {
                 break;
             case CHILLING:
                 if (canBuildRobotType(RobotType.LAUNCHER)) {
-                    buildLauncher(newLoc);
+                    buildLauncher(getLauncherLocation());
                 }
-                // Pick a direction to build in.
-                if (rc.getRoundNum() % 2 == 0) {
-                    // Let's try to build a carrier.
+                if (canBuildRobotType(RobotType.CARRIER)) {
                     buildCarrier(newLoc);
-                } else {
-                    // Let's try to build a launcher.
-                    buildLauncher(newLoc);
                 }
                 break;
             case BUILDING_ANCHOR:
@@ -299,7 +338,7 @@ public class Headquarters extends Robot {
                     anchorCount++;
                 } else {
                     if (canBuildRobotTypeAndAnchor(RobotType.LAUNCHER, Anchor.STANDARD)) {
-                        buildLauncher(newLoc);
+                        buildLauncher(getLauncherLocation());
                     } else if (canBuildRobotTypeAndAnchor(RobotType.CARRIER, Anchor.STANDARD)) {
                         buildCarrier(newLoc);
                     }

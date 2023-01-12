@@ -49,10 +49,9 @@ public class Launcher extends Robot {
 
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
-        sectorCenterIdx = getNearestCombatSector();
-        if (sectorCenterIdx != Comms.UNDEFINED_SECTOR_INDEX) {
-            closestEnemyLocation = sectorCenters[sectorCenterIdx];
-        }
+
+        closestEnemyLocation = getCombatSector();
+
         trySwitchState();
         doStateAction();
     }
@@ -101,10 +100,10 @@ public class Launcher extends Robot {
             int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
             RobotType botType = bot.getType();
             if (botType == RobotType.LAUNCHER || botType == RobotType.DESTABILIZER) {
+                overallEnemyLauncherDx += (candidateLoc.x - currLoc.x);
+                overallEnemyLauncherDy += (candidateLoc.y - currLoc.y);
                 if (candidateDist <= actionRadiusSquared /* && canAttack */) {
                     numEnemyLaunchersAttackingUs++;
-                    overallEnemyLauncherDx += (candidateLoc.x - currLoc.x);
-                    overallEnemyLauncherDy += (candidateLoc.y - currLoc.y);
                 }
                 if (candidateDist < closestLauncherDist) {
                     closestLauncherDist = candidateDist;
@@ -192,8 +191,6 @@ public class Launcher extends Robot {
             boolean attackFirst = false;
             if (shouldRunAway()) {
                 attackFirst = true;
-                // Positive so that we move towards the point mass. adding a 3 times multiplier
-                // so that directoTo dest is not CENTER
                 dest = currLoc.translate(-overallEnemyLauncherDx, -overallEnemyLauncherDy);// (overallFriendlyLauncherDx,
                 // overallFriendlyLauncherDy);
                 Direction possibleDir = currLoc.directionTo(dest);
@@ -212,7 +209,28 @@ public class Launcher extends Robot {
             } else {
                 dest = closestEnemy.getLocation();
                 RobotType closestEnemyType = closestEnemy.getType();
-                if (closestEnemyType == RobotType.CARRIER || closestEnemyType == RobotType.HEADQUARTERS
+                if (closestEnemyType == RobotType.HEADQUARTERS) {
+                    int numTroopsCloser = 0;
+                    closestEnemyLocation = closestEnemy.getLocation();
+                    int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
+                    for (int i = 0; i < FriendlySensable.length; i++) {
+                        RobotInfo friendlyRobot = FriendlySensable[i];
+                        int currDist = friendlyRobot.getLocation().distanceSquaredTo(closestEnemyLocation);
+                        if (currDist < ourDist) {
+                            numTroopsCloser++;
+                        }
+                    }
+                    if (numTroopsCloser >= 10) {
+                        Debug.printString("many close");
+                        return false;
+                    } else {
+                        if (currLoc.distanceSquaredTo(closestEnemyLocation) > 2) {
+                            Debug.printString("closing in");
+                            Pathfinding.move(closestEnemyLocation);
+                        }
+                        return true;
+                    }
+                } else if (closestEnemyType == RobotType.CARRIER
                         || closestEnemyType == RobotType.AMPLIFIER || closestEnemyType == RobotType.BOOSTER) {
 
                     dir = Util.getFirstValidInOrderDirection(currLoc.directionTo(dest)); // navTo
@@ -277,6 +295,7 @@ public class Launcher extends Robot {
                 Direction extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
                 MapLocation targetLoc = currLoc.add(newDir).add(extraDir);
                 boolean isPassible = rc.sensePassability(targetLoc);
+                // boolean noClouds = rc.senseMapInfo(currLoc.add(newDir)).hasCloud();
                 int currEnemiesSeen = 0;
                 for (int i = enemyAttackable.length; --i >= 0;) {
                     enemy = enemyAttackable[i];
@@ -373,20 +392,6 @@ public class Launcher extends Robot {
 
     }
 
-    public static MapLocation[] guessEnemyLoc(MapLocation ourLoc) throws GameActionException {
-        MapLocation[] results;
-
-        int height = rc.getMapHeight();
-        int width = rc.getMapWidth();
-
-        MapLocation verticalFlip = new MapLocation(ourLoc.x, height - ourLoc.y - 1);
-        MapLocation horizontalFlip = new MapLocation(width - ourLoc.x - 1, ourLoc.y);
-        MapLocation rotation = new MapLocation(width - ourLoc.x - 1, height - ourLoc.y - 1);
-
-        results = new MapLocation[] { verticalFlip, horizontalFlip, rotation };
-        return results;
-    }
-
     public void guessAndSortSymmetryLocs() throws GameActionException {
         FastIterableLocSet possibleLocs = new FastIterableLocSet(12);
 
@@ -400,7 +405,6 @@ public class Launcher extends Robot {
                 MapLocation[] possibleFlips = guessEnemyLoc(HQLoc);
                 for (int j = 0; j < possibleFlips.length; j++) {
                     MapLocation possibleFlip = possibleFlips[j];
-                    Debug.printString("pF: " + possibleFlip);
                     boolean IsOk = true;
                     for (int k = 0; k < listOfHQs.length; k++) {
                         if (possibleFlip
@@ -437,4 +441,5 @@ public class Launcher extends Robot {
         }
         return bestLoc;
     }
+
 }
