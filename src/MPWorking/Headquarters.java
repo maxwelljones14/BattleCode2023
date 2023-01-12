@@ -75,6 +75,7 @@ public class Headquarters extends Robot {
         doStateAction();
         // findWells();
         // printEnemySectors();
+        // printCombatSectors();
     }
 
     public void setupNearestWellsAndSpawnLocs() throws GameActionException {
@@ -426,8 +427,15 @@ public class Headquarters extends Robot {
         for (int i = startIdx; i < endIdx; i++) {
             int controlStatus = Comms.readSectorControlStatus(i);
             // Combat sector
-            if (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS
+            combatSector: if (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS
                     && controlStatus >= Comms.ControlStatus.MIN_ENEMY_STATUS) {
+                // If the sector is already a combat sector, don't add it again
+                for (int j = Comms.COMBAT_SECTOR_SLOTS - 1; j >= 0; j--) {
+                    if (Comms.readCombatSectorIndex(j) == i) {
+                        break combatSector;
+                    }
+                }
+
                 Comms.writeCombatSectorIndex(combatSectorIndex, i);
                 Comms.writeCombatSectorClaimStatus(combatSectorIndex, Comms.ClaimStatus.UNCLAIMED);
                 combatSectorIndex++;
@@ -446,8 +454,15 @@ public class Headquarters extends Robot {
                 }
             }
             // Explore sector
-            if (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
+            exploreSector: if (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
                     && controlStatus == Comms.ControlStatus.UNKNOWN) {
+                // If the sector is already a explore sector, don't add it again
+                for (int j = Comms.EXPLORE_SECTOR_SLOTS - 1; j >= 0; j--) {
+                    if (Comms.readExploreSectorIndex(j) == i) {
+                        break exploreSector;
+                    }
+                }
+
                 Comms.writeExploreSectorIndex(exploreSectorIndex, i);
                 Comms.writeExploreSectorClaimStatus(exploreSectorIndex, Comms.ClaimStatus.UNCLAIMED);
                 exploreSectorIndex++;

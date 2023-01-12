@@ -316,10 +316,13 @@ public class Robot {
                             | (entry.numElxrWells() > 0 ? 1 : 0));
                     Comms.writeBPSectorElixirFlag(sectorToReport, hasElixirWell);
 
-                    int hasIsland = (entry.numIslands() > 0 ? 1 : 0);
+                    int hasIsland = Comms.readSectorIslands(sectorToReport)
+                            | (entry.numIslands() > 0 ? 1 : 0);
                     Comms.writeBPSectorIslands(sectorToReport, hasIsland);
 
-                    Comms.writeBPSectorControlStatus(sectorToReport, entry.getControlStatus());
+                    int oldControlStatus = Comms.readSectorControlStatus(sectorToReport);
+                    int newControlStatus = Math.max(oldControlStatus, entry.getControlStatus());
+                    Comms.writeBPSectorControlStatus(sectorToReport, newControlStatus);
 
                     entry.reset();
                     numSectorsReported++;
@@ -1068,6 +1071,23 @@ public class Robot {
                 Debug.println("Enemy sector " + i + " at " + sectorCenters[i] + " with status "
                         + Comms.readSectorControlStatus(i));
             }
+        }
+    }
+
+    public void printCombatSectors() throws GameActionException {
+        if (rc.getRoundNum() == 1)
+            return;
+
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int sectorIdx = Comms.readCombatSectorIndex(i);
+
+            if (sectorIdx == Comms.UNDEFINED_SECTOR_INDEX)
+                break;
+
+            int claimStatus = Comms.readCombatSectorClaimStatus(i);
+            int controlStatus = Comms.readSectorControlStatus(sectorIdx);
+            Debug.println("Combat sector " + i + " at " + sectorCenters[sectorIdx] + " with status "
+                    + controlStatus + " and claim " + claimStatus);
         }
     }
 }

@@ -24,15 +24,20 @@ public class SectorInfo {
     private static final int MAX_SECTOR_AREA = 36;
 
     public SectorInfo() {
+        found = false;
         adamWells = new FastLocSet(MAX_SECTOR_AREA);
         manaWells = new FastLocSet(MAX_SECTOR_AREA);
         elxrWells = new FastLocSet(MAX_SECTOR_AREA);
         neutralIslands = new FastIntSet(MAX_SECTOR_AREA);
         friendlyIslands = new FastIntSet(MAX_SECTOR_AREA);
         enemyIslands = new FastIntSet(MAX_SECTOR_AREA);
+        unsetAdamWells = false;
+        unsetManaWells = false;
+        unsetNeutralIslands = false;
+        unsetFriendlyIslands = false;
+        unsetEnemyIslands = false;
         enemies = 0;
         lastRoundEnemyAdded = 0;
-        found = false;
         controlStatusSet = new boolean[Comms.ControlStatus.NUM_CONTROL_STATUS];
     }
 
@@ -129,10 +134,10 @@ public class SectorInfo {
 
         if (controlStatusSet[Comms.ControlStatus.ENEMY_AGGRESIVE] && !isEnemyInfoStale) {
             return Comms.ControlStatus.ENEMY_AGGRESIVE;
-        } else if (controlStatusSet[Comms.ControlStatus.ENEMY_PASSIVE] && !isEnemyInfoStale) {
-            return Comms.ControlStatus.ENEMY_PASSIVE;
         } else if (controlStatusSet[Comms.ControlStatus.ENEMY_ISLAND]) {
             return Comms.ControlStatus.ENEMY_ISLAND;
+        } else if (controlStatusSet[Comms.ControlStatus.ENEMY_PASSIVE] && !isEnemyInfoStale) {
+            return Comms.ControlStatus.ENEMY_PASSIVE;
         } else if (controlStatusSet[Comms.ControlStatus.FRIENDLY_ISLAND]) {
             return Comms.ControlStatus.FRIENDLY_ISLAND;
         } else if (controlStatusSet[Comms.ControlStatus.NEUTRAL_ISLAND]) {
