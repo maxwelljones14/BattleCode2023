@@ -32,6 +32,7 @@ public class Launcher extends Robot {
     static RobotInfo[] enemyAttackable;
 
     static MapLocation[] possibleEnemyHQLocs;
+    static MapLocation globalOptimumEnemyHQLoc;
     static FastLocSet seenEnemyHQLocs;
 
     static int sectorCenterIdx;
@@ -427,10 +428,28 @@ public class Launcher extends Robot {
             }
         }
         possibleEnemyHQLocs = new MapLocation[possibleLocs.size];
-        for (int i = 0; i < possibleLocs.size; i++) {
-            possibleEnemyHQLocs[i] = possibleLocs.locs[i];
-        }
+        System.arraycopy(possibleLocs.locs, 0, possibleEnemyHQLocs, 0, possibleLocs.size);
         seenEnemyHQLocs = new FastLocSet(12);
+        /*
+         * int totalX = 0;
+         * int totalY = 0;
+         * for (int i = 0; i < possibleEnemyHQLocs.length; i++) {
+         * totalX += possibleEnemyHQLocs[i].x;
+         * totalY += possibleEnemyHQLocs[i].y;
+         * }
+         * MapLocation centroid = new MapLocation(totalX / possibleEnemyHQLocs.length,
+         * totalY / possibleEnemyHQLocs.length);
+         * int closestIdx = -1;
+         * int closestDistance = Integer.MAX_VALUE;
+         * for (int i = 0; i < possibleEnemyHQLocs.length; i++) {
+         * int distance = centroid.distanceSquaredTo(possibleEnemyHQLocs[i]);
+         * if (distance < closestDistance) {
+         * closestDistance = distance;
+         * closestIdx = i;
+         * }
+         * }
+         * globalOptimumEnemyHQLoc = possibleEnemyHQLocs[closestIdx];
+         */
     }
 
     public MapLocation chooseSymmetricLoc() throws GameActionException {
@@ -447,6 +466,15 @@ public class Launcher extends Robot {
             }
         }
         return bestLoc;
+        /*
+         * if (bestLoc == null
+         * || globalOptimumEnemyHQLoc.distanceSquaredTo(currLoc) * 0.75 <
+         * bestLoc.distanceSquaredTo(currLoc)) {
+         * return globalOptimumEnemyHQLoc;
+         * } else {
+         * return bestLoc;
+         * }
+         */
     }
 
 }
