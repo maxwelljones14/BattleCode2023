@@ -1139,8 +1139,9 @@ public class Robot {
                     MapLocation possibleFlip = possibleFlips[j];
                     boolean IsOk = true;
                     for (int k = 0; k < listOfHQs.length; k++) {
+                        MapLocation newHQLoc = listOfHQs[k];
                         if (possibleFlip
-                                .distanceSquaredTo(HQLoc) < RobotType.HEADQUARTERS.visionRadiusSquared) {
+                                .distanceSquaredTo(newHQLoc) < RobotType.HEADQUARTERS.visionRadiusSquared) {
                             IsOk = false;
                         }
                     }

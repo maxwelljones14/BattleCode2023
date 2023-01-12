@@ -74,6 +74,9 @@ public class Headquarters extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
+        // if (rc.getRoundNum() == 20) {
+        // rc.resign();
+        // }
         adamCarrierTracker.update();
         manaCarrierTracker.update();
         computeHqNum();
