@@ -21,6 +21,7 @@ public class Launcher extends Robot {
     static int numFriendlyLaunchers;
     static RobotInfo closestEnemy;
     static int numFriendlies;
+    static int numCloseFriendlies;
     static int numEnemies;
     static MapLocation closestAttackingEnemy;
     static MapLocation closestEnemyLocation;
@@ -64,6 +65,7 @@ public class Launcher extends Robot {
     public void resetShouldRunAway() throws GameActionException {
         numEnemyLaunchersAttackingUs = 0;
         numFriendlies = 0;
+        numCloseFriendlies = 0;
         closestAttackingEnemy = null;
         numEnemies = 0;
         overallEnemyLauncherDx = 0;
@@ -108,8 +110,10 @@ public class Launcher extends Robot {
 
             }
         }
-        overallEnemyLauncherDx = overallEnemyLauncherDx / numAttackingEnemyCount;
-        overallEnemyLauncherDy = overallEnemyLauncherDy / numAttackingEnemyCount;
+        if (numAttackingEnemyCount != 0) {
+            overallEnemyLauncherDx = overallEnemyLauncherDx / numAttackingEnemyCount;
+            overallEnemyLauncherDy = overallEnemyLauncherDy / numAttackingEnemyCount;
+        }
 
         MapLocation closestEnemyLocation = currLoc;
         if (closestAttackingEnemy != null) {
@@ -135,6 +139,7 @@ public class Launcher extends Robot {
                     overallEnemyLauncherDx += (FbotLocation.x - currLoc.x);
                     overallEnemyLauncherDy += (FbotLocation.y - currLoc.y);
                     numFriendlies++;
+
                 }
             }
         }
