@@ -192,8 +192,9 @@ public class Headquarters extends Robot {
                 if (carrierCount >= initCarriersWanted && launcherCount >= initLaunchersWanted) {
                     changeState(State.CHILLING);
                 }
+                break;
             case CHILLING:
-                if (carrierCount >= minCarriersBeforeAnchor && rc.getAnchor() == null) {
+                if (carrierCount >= minCarriersBeforeAnchor && rc.getNumAnchors(Anchor.STANDARD) == 0) {
                     // start saving for anchor if you have minCarriersBeforeAnchor carriers already
                     stateStack.push(currentState);
                     changeState(State.BUILDING_ANCHOR);
