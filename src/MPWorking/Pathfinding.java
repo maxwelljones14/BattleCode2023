@@ -187,8 +187,10 @@ public class Pathfinding {
                             // Debug.println("Inferring rot dir around: " + lastObstacleFound, id);
                             if (MapTracker.canInferRotationAroundObstacle(lastObstacleFound)) {
                                 shouldGuessRotation = false;
-                                rotateRight = MapTracker.shouldRotateRightAroundObstacle(lastObstacleFound, myLoc,
-                                        target);
+                                if (!MapTracker.isAdjacentToPOI(myLoc, lastObstacleFound)) {
+                                    rotateRight = MapTracker.shouldRotateRightAroundObstacle(
+                                            lastObstacleFound, myLoc, target);
+                                }
                                 // Debug.println("Inferred: " + rotateRight, id);
                             }
                         }

@@ -195,6 +195,12 @@ public class MapTracker {
             return locsToDists.getVal(rightLoc) < locsToDists.getVal(leftLoc);
         }
 
+        public boolean isAdjacentToPOI(MapLocation loc) {
+            if (!finishedProcessing)
+                return false;
+            return loc.isAdjacentTo(poi1) || loc.isAdjacentTo(poi2);
+        }
+
         public boolean process() throws GameActionException {
             // Debug.println("Processing obstacle: " + this, id);
             if (!calcedPoi1) {
@@ -412,7 +418,6 @@ public class MapTracker {
                 obstacles[idx].needToBeSeen.add(neighbor);
             }
         }
-
     }
 
     /**
@@ -427,6 +432,15 @@ public class MapTracker {
         // Debug.println("Checking inference for obstacle idx: " + idx + " at " +
         // obstacles[idx], id);
         return obstacles[idx].canInferRotation();
+    }
+
+    public static boolean isAdjacentToPOI(MapLocation loc, MapLocation obstacle) {
+        if (!initialized)
+            return false;
+        int idx = obstacleIdx[obstacle.x][obstacle.y];
+        if (idx <= 0)
+            return false;
+        return obstacles[idx].isAdjacentToPOI(loc);
     }
 
     /**

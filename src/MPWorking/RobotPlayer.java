@@ -36,7 +36,7 @@ public strictfp class RobotPlayer {
         MapTracker.init(rc);
         Explore.init(rc);
         Pathfinding.init(rc);
-        // Nav.init(rc);
+        Nav.init(rc);
 
         // You can also use indicators to save debug notes in replays.
         switch (rc.getType()) {

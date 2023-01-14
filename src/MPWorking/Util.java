@@ -15,6 +15,8 @@ public class Util {
 
     static final int CLEAR_ENEMY_INFO_PERIOD = 100;
 
+    static final double MIN_COOLDOWN_MULT_DIFF = 0.1;
+
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
             Direction.NORTH,
@@ -70,10 +72,10 @@ public class Util {
             MapLocation mainLoc3 = mainLoc2.add(dir);
             return new MapLocation[] { mainLoc3, mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()),
                     mainLoc2,
-                    loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1};
+                    loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1 };
         } else {
-            return new MapLocation[] {mainLoc2,
-                loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1};
+            return new MapLocation[] { mainLoc2,
+                    loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1 };
         }
     }
 
@@ -135,4 +137,49 @@ public class Util {
         return Direction.CENTER;
     }
 
+    static boolean isDirAdj(Direction dir, Direction dir2) {
+        switch (dir) {
+            case NORTH:
+                return dir2 == Direction.NORTHEAST || dir2 == Direction.NORTHWEST;
+            case NORTHEAST:
+                return dir2 == Direction.NORTH || dir2 == Direction.EAST;
+            case EAST:
+                return dir2 == Direction.NORTHEAST || dir2 == Direction.SOUTHEAST;
+            case SOUTHEAST:
+                return dir2 == Direction.EAST || dir2 == Direction.SOUTH;
+            case SOUTH:
+                return dir2 == Direction.SOUTHWEST || dir2 == Direction.SOUTHEAST;
+            case SOUTHWEST:
+                return dir2 == Direction.SOUTH || dir2 == Direction.WEST;
+            case WEST:
+                return dir2 == Direction.NORTHWEST || dir2 == Direction.SOUTHWEST;
+            case NORTHWEST:
+                return dir2 == Direction.WEST || dir2 == Direction.NORTH;
+            default:
+                return false;
+        }
+    }
+
+    // Gets the cooldown for a square, assuming you're traveling in a direction dir
+    static double getCooldownMultiplier(MapLocation loc, Direction dir) throws GameActionException {
+        double cooldown = 100;
+        if (!rc.onTheMap(loc) || !rc.sensePassability(loc))
+            return cooldown;
+
+        // This shouldn't happen, but just in case
+        if (!rc.canSenseLocation(loc))
+            return 1;
+
+        MapInfo info = rc.senseMapInfo(loc);
+        Direction currentDir = info.getCurrentDirection();
+        cooldown = info.getCooldownMultiplier(rc.getTeam());
+
+        if (Util.isDirAdj(currentDir, dir)) {
+            cooldown *= 0.5;
+        } else if (Util.isDirAdj(currentDir, dir.opposite())) {
+            cooldown *= 2;
+        }
+
+        return cooldown;
+    }
 }
