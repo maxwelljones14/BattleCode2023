@@ -333,7 +333,7 @@ public class Launcher extends Robot {
 
     public Direction chooseBackupDirection(Direction Dir) throws GameActionException {
         Direction[] dirsToConsider = Util.getInOrderDirections(Dir);
-        Debug.printString("dir:" + Dir + " " + rc.getMovementCooldownTurns());
+        Debug.printString("back dir:" + Dir + " " + rc.getMovementCooldownTurns());
         Direction bestDirSoFar = null;
         int bestEnemiesStillSeen = Integer.MAX_VALUE;
         RobotInfo enemy;
@@ -342,7 +342,7 @@ public class Launcher extends Robot {
             if (rc.canMove(newDir)) {
                 Direction extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
                 MapLocation targetLoc = currLoc.add(newDir).add(extraDir);
-                Debug.printString("best dir " + newDir);
+                // Debug.printString("best dir " + newDir);
                 boolean isPassible = rc.sensePassability(targetLoc);
                 int currEnemiesStillSeen = 0;
                 for (int i = enemyAttackable.length; --i >= 0;) {
@@ -375,11 +375,52 @@ public class Launcher extends Robot {
         if (combatSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
             Debug.printString("going for it");
             target = sectorCenters[combatSectorIdx];
+            // int numCloseFriendlies = 0;
+            // boolean iAmClosest = true;
+            // for (RobotInfo Fbot : FriendlySensable) {
+            // RobotType FbotType = Fbot.getType();
+            // if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
+            // MapLocation FbotLocation = Fbot.getLocation();
+            // numCloseFriendlies++;
+            // if (Util.distance(target, FbotLocation) <= Util.distance(target, currLoc)) {
+            // iAmClosest = false;
+            // }
+            // }
+            // }
+            // if (numCloseFriendlies != 0
+            // && iAmClosest
+            // && Util.distance(target, currLoc) <= Math.sqrt((double)
+            // (rc.getType().visionRadiusSquared) * 1.5)) {
+            // Debug.printString("waiting for friend");
+            // tryAttackBestEnemy(getBestEnemy());
+            // return;
+            // }
+
         } else {
             MapLocation symmetricLoc = chooseSymmetricLoc();
             if (symmetricLoc != null) {
                 target = symmetricLoc;
                 switchSymmetryLocationIfCurrentEmpty(target);
+                // int numCloseFriendlies = 0;
+                // boolean iAmClosest = true;
+                // for (RobotInfo Fbot : FriendlySensable) {
+                // RobotType FbotType = Fbot.getType();
+                // if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
+                // MapLocation FbotLocation = Fbot.getLocation();
+                // numCloseFriendlies++;
+                // if (Util.distance(target, FbotLocation) <= Util.distance(target, currLoc)) {
+                // iAmClosest = false;
+                // }
+                // }
+                // }
+                // if (numCloseFriendlies != 0
+                // && iAmClosest
+                // && Util.distance(target, currLoc) <= Math
+                // .sqrt((double) (rc.getType().visionRadiusSquared) * 1.5)) {
+                // Debug.printString("waiting for friend");
+                // tryAttackBestEnemy(getBestEnemy());
+                // return;
+                // }
 
                 Debug.printString("going to symmetric Loc: " + target.toString());
             } else {

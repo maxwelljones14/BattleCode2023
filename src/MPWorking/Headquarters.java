@@ -272,16 +272,53 @@ public class Headquarters extends Robot {
         } else {
             dir = currLoc.directionTo(target);
         }
-        MapLocation newLoc = rc.getLocation().add(dir).add(dir);
+
         int count = 0;
-        while (!rc.onTheMap(newLoc) || !rc.sensePassability(newLoc)) {
-            newLoc = Util.moveTowardsMe(newLoc);
-            count++;
-            if (count >= 4) {
-                break;
+        MapLocation buildLocation = null;
+        while (count < 8 && buildLocation == null) {
+            MapLocation[] possibleLocations = Util.findInitLocation(currLoc, dir);
+            for (int x = 0; x < possibleLocations.length; x++) {
+                MapLocation newLoc = possibleLocations[x];
+                if (rc.onTheMap(newLoc) && rc.sensePassability(newLoc) && rc.senseRobotAtLocation(newLoc) == null) {
+                    buildLocation = newLoc;
+                    break;
+                }
             }
+            count++;
+            dir = dir.rotateRight();
         }
-        return newLoc;
+        return buildLocation;
+    }
+
+    public MapLocation getCarrierLocation() throws GameActionException {
+        MapLocation target = getCombatSector();
+        Direction dir = null;
+        if (target == null) {
+            target = closestEnemyHQGuess;
+            Debug.printString("dir of HQ " + target);
+        }
+        if (target == null) {
+            Debug.printString("ERROR: no HQ guesses");
+            dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
+        } else {
+            dir = currLoc.directionTo(target);
+        }
+
+        int count = 0;
+        MapLocation buildLocation = null;
+        while (count < 8 && buildLocation == null) {
+            MapLocation[] possibleLocations = Util.findInitLocation(currLoc, dir);
+            for (int x = 0; x < possibleLocations.length; x++) {
+                MapLocation newLoc = possibleLocations[x];
+                if (rc.onTheMap(newLoc) && rc.sensePassability(newLoc) && rc.senseRobotAtLocation(newLoc) == null) {
+                    buildLocation = newLoc;
+                    break;
+                }
+            }
+            count++;
+            dir = dir.rotateRight();
+        }
+        return buildLocation;
     }
 
     public void buildLauncher(MapLocation newLoc) throws GameActionException {

@@ -193,14 +193,14 @@ public class Headquarters extends Robot {
                     changeState(State.CHILLING);
                 }
             case CHILLING:
-                if (carrierCount >= minCarriersBeforeAnchor && rc.getAnchor() == null) {
+                if (carrierCount >= minCarriersBeforeAnchor && rc.getNumAnchors(Anchor.STANDARD) == 0) {
                     // start saving for anchor if you have minCarriersBeforeAnchor carriers already
                     stateStack.push(currentState);
                     changeState(State.BUILDING_ANCHOR);
                 }
                 break;
             case BUILDING_ANCHOR:
-                if (rc.getAnchor() != null) {
+                if (rc.getNumAnchors(Anchor.STANDARD) != 0) {
                     // we have an anchor already
                     changeState(stateStack.pop());
                 }
@@ -354,7 +354,7 @@ public class Headquarters extends Robot {
                 if (rc.canBuildAnchor(Anchor.STANDARD)) {
                     // If we can build an anchor do it!
                     rc.buildAnchor(Anchor.STANDARD);
-                    Debug.printString("Building anchor! " + rc.getAnchor());
+                    Debug.printString("Building anchor! ");
                     anchorCount++;
                 } else {
                     if (canBuildRobotTypeAndAnchor(RobotType.LAUNCHER, Anchor.STANDARD)) {

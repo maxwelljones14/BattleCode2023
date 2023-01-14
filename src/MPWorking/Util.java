@@ -59,6 +59,20 @@ public class Util {
         return rc.getLocation().translate(rotated_dx, rotated_dy);
     }
 
+    static MapLocation[] findInitLocation(MapLocation loc, Direction dir) {
+        MapLocation mainLoc1 = loc.add(dir);
+        MapLocation mainLoc2 = mainLoc1.add(dir);
+        if (dir == Direction.NORTH || dir == Direction.EAST || dir == Direction.SOUTH || dir == Direction.WEST) {
+            MapLocation mainLoc3 = mainLoc2.add(dir);
+            return new MapLocation[] { mainLoc3, mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()),
+                    mainLoc2,
+                    loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1};
+        } else {
+            return new MapLocation[] {mainLoc2,
+                loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1};
+        }
+    }
+
     static MapLocation moveTowardsMe(MapLocation loc) {
         Direction dirToMe = loc.directionTo(rc.getLocation());
         return loc.add(dirToMe);
