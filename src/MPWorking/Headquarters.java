@@ -26,10 +26,12 @@ public class Headquarters extends Robot {
     static int carrierCount;
     static int launcherCount;
     static int anchorCount;
+    static int amplifierCount;
 
     static final int initCarriersWanted = 4;
     static final int initLaunchersWanted = 4;
     static final int minCarriersBeforeAnchor = 20;
+    static final int amplifierCooldown = 50;
 
     static MapLocation currLoc;
 
@@ -46,6 +48,8 @@ public class Headquarters extends Robot {
     static final int ROUNDS_TO_STALE_UNIT = 50;
     FastUnitTracker adamCarrierTracker;
     FastUnitTracker manaCarrierTracker;
+
+    static int roundsSinceLastAmplifier;
 
     public Headquarters(RobotController r) throws GameActionException {
         super(r);
@@ -94,6 +98,7 @@ public class Headquarters extends Robot {
         // printEnemySectors();
         // printCombatSectors();
         // printEnemyCombatSectors();
+        roundsSinceLastAmplifier++;
     }
 
     public void updateclosestEnemyHQ() throws GameActionException {
@@ -329,6 +334,14 @@ public class Headquarters extends Robot {
         }
     }
 
+    public void buildAmplifier(MapLocation newLoc) throws GameActionException {
+        Debug.printString("Trying to build an amplifier");
+        if (rc.canBuildRobot(RobotType.AMPLIFIER, newLoc)) {
+            rc.buildRobot(RobotType.AMPLIFIER, newLoc);
+            amplifierCount++;
+        }
+    }
+
     public void firstRounds() throws GameActionException {
         // build carriers
         if (carrierCount < initCarriersWanted) {
@@ -380,6 +393,12 @@ public class Headquarters extends Robot {
                 firstRounds();
                 break;
             case CHILLING:
+                if (launcherCount > Util.MIN_LAUNCHERS_BEFORE_AMPLIFIER
+                        && (amplifierCount == 0 || roundsSinceLastAmplifier >= amplifierCooldown)
+                        && canBuildRobotType(RobotType.AMPLIFIER)) {
+                    roundsSinceLastAmplifier = 0;
+                    buildAmplifier(newLoc);
+                }
                 if (canBuildRobotType(RobotType.LAUNCHER)) {
                     buildLauncher(getLauncherLocation());
                 }

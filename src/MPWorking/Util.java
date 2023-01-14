@@ -28,6 +28,9 @@ public class Util {
     };
 
     static final int JUST_OUTSIDE_OF_VISION_RADIUS = 34;
+    static final int AMP_JUST_OUTSIDE_OF_VISION_RADIUS = 45;
+
+    static final int MIN_LAUNCHERS_BEFORE_AMPLIFIER = 15;
 
     static void init(RobotController r) {
         rc = r;
@@ -66,10 +69,10 @@ public class Util {
             MapLocation mainLoc3 = mainLoc2.add(dir);
             return new MapLocation[] { mainLoc3, mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()),
                     mainLoc2,
-                    loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1};
+                    loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1 };
         } else {
-            return new MapLocation[] {mainLoc2,
-                loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1};
+            return new MapLocation[] { mainLoc2,
+                    loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1 };
         }
     }
 
