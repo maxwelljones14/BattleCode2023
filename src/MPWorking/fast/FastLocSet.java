@@ -4,17 +4,11 @@ import battlecode.common.*;
 
 public class FastLocSet {
     public StringBuilder keys;
-    public int maxlen;
     public int size;
 
     public FastLocSet() {
-        this(100);
-    }
-
-    public FastLocSet(int len) {
         keys = new StringBuilder();
         size = 0;
-        maxlen = len;
     }
 
     public int size() {
@@ -75,5 +69,19 @@ public class FastLocSet {
     public void replace(String newSet) {
         keys.replace(0, keys.length(), newSet);
         size = newSet.length() / 3;
+    }
+
+    public void union(FastLocSet s) {
+        for (int i = 1; i < s.keys.length(); i += 3) {
+            add((int) s.keys.charAt(i), (int) s.keys.charAt(i + 1));
+        }
+    }
+
+    public MapLocation[] getKeys() {
+        MapLocation[] locs = new MapLocation[size];
+        for (int i = 1; i < keys.length(); i += 3) {
+            locs[i / 3] = new MapLocation((int) keys.charAt(i), (int) keys.charAt(i + 1));
+        }
+        return locs;
     }
 }

@@ -132,9 +132,9 @@ public class Robot {
     }
 
     public void endTurn() throws GameActionException {
-        Explore.initialize();
+        MapTracker.initialize();
         flushSectorDatabase();
-        Explore.markSeen();
+        MapTracker.markSeen();
     }
 
     /*

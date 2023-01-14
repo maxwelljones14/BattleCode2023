@@ -1,5 +1,7 @@
 package MPWorking;
 
+import MPWorking.fast.*;
+
 import battlecode.common.*;
 
 import java.util.HashSet;
@@ -117,7 +119,7 @@ public class Pathfinding {
         static int minDistToEnemy = INF; // minimum distance I've been to the enemy while going around an obstacle
         static MapLocation prevTarget = null; // previous target
         static HashSet<Integer> visited = new HashSet<>();
-        static int id = 10304;
+        static int id = 12316;
 
         static boolean move() {
             try {
@@ -125,15 +127,16 @@ public class Pathfinding {
                 if (prevTarget == null || target.distanceSquaredTo(prevTarget) > 0) {
                     // Debug.println("New target: " + target, id);
                     resetPathfinding();
-                    shouldGuessRotation = true;
                 }
 
                 // If I'm at a minimum distance to the target, I'm free!
                 MapLocation myLoc = rc.getLocation();
-                int d = myLoc.distanceSquaredTo(target);
-                if (d <= minDistToEnemy) {
-                    // Debug.println("New min dist", id);
+                // int d = myLoc.distanceSquaredTo(target);
+                int d = Util.distance(myLoc, target);
+                if (d < minDistToEnemy) {
+                    // Debug.println("New min dist: " + d + " Old: " + minDistToEnemy, id);
                     resetPathfinding();
+                    minDistToEnemy = d;
                 }
 
                 int code = getCode();
@@ -146,13 +149,12 @@ public class Pathfinding {
 
                 // Update data
                 prevTarget = target;
-                minDistToEnemy = Math.min(d, minDistToEnemy);
 
                 // If there's an obstacle I try to go around it [until I'm free] instead of
                 // going to the target directly
                 Direction dir = myLoc.directionTo(target);
                 if (lastObstacleFound != null) {
-                    // Debug.println("Last obstacle found", id);
+                    // Debug.println("Last obstacle found: " + lastObstacleFound, id);
                     dir = myLoc.directionTo(lastObstacleFound);
                 }
                 if (canMove(dir)) {
@@ -180,9 +182,18 @@ public class Pathfinding {
                         // - It's on the map
                         // - It's not passable
                         lastObstacleFound = myLoc.add(dir);
-                    }
-
-                    if (shouldGuessRotation) {
+                        // Debug.println("Found obstacle: " + lastObstacleFound, id);
+                        if (shouldGuessRotation) {
+                            // Debug.println("Inferring rot dir around: " + lastObstacleFound, id);
+                            if (MapTracker.canInferRotationAroundObstacle(lastObstacleFound)) {
+                                shouldGuessRotation = false;
+                                rotateRight = MapTracker.shouldRotateRightAroundObstacle(lastObstacleFound, myLoc,
+                                        target);
+                                // Debug.println("Inferred: " + rotateRight, id);
+                            }
+                        }
+                    } else if (shouldGuessRotation) {
+                        // Guessing rotation not on an obstacle is different.
                         shouldGuessRotation = false;
                         // Debug.println("Guessing rot dir", id);
                         // Rotate left and right and find the first dir that you can move in
@@ -237,9 +248,11 @@ public class Pathfinding {
 
         // clear some of the previous data
         static void resetPathfinding() {
+            // Debug.println("Resetting pathfinding", id);
             lastObstacleFound = null;
             minDistToEnemy = INF;
             visited.clear();
+            shouldGuessRotation = true;
         }
 
         static int getCode() {

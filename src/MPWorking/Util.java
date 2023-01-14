@@ -43,6 +43,10 @@ public class Util {
         return Math.max(Math.abs(A.x - B.x), Math.abs(A.y - B.y));
     }
 
+    static int manhattan(MapLocation A, MapLocation B) {
+        return Math.abs(A.x - B.x) + Math.abs(A.y - B.y);
+    }
+
     // Returns the location on the opposite side from loc wrt to your own location
     static MapLocation invertLocation(MapLocation loc) {
         int dx = loc.x - rc.getLocation().x;
@@ -93,6 +97,11 @@ public class Util {
     public static boolean onTheMap(MapLocation location) {
         return 0 <= location.x && location.x < MAP_WIDTH &&
                 0 <= location.y && location.y < MAP_HEIGHT;
+    }
+
+    public static boolean onEdgeOfMap(MapLocation location) {
+        return location.x == 0 || location.x == MAP_WIDTH - 1 ||
+                location.y == 0 || location.y == MAP_HEIGHT - 1;
     }
 
     static Direction randomDirection() {

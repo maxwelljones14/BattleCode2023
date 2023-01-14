@@ -3,17 +3,26 @@ package MPWorking.fast;
 import battlecode.common.*;
 
 public class FastDirectionSet {
-    public int set;
+    public static final int NUM_DIRECTIONS = 9;
+    public boolean[] set;
 
     public FastDirectionSet() {
-        set = 0;
+        set = new boolean[NUM_DIRECTIONS];
     }
 
     public void add(Direction dir) {
-        set |= 1 << dir.ordinal();
+        set[dir.ordinal()] = true;
     }
 
     public void remove(Direction dir) {
-        set &= ~(1 << dir.ordinal());
+        set[dir.ordinal()] = false;
+    }
+
+    public boolean contains(Direction dir) {
+        return set[dir.ordinal()];
+    }
+
+    public void reset() {
+        set = new boolean[NUM_DIRECTIONS];
     }
 }

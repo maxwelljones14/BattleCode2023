@@ -474,7 +474,7 @@ public class Launcher extends Robot {
         possibleLocs.updateIterable();
         possibleEnemyHQLocs = new MapLocation[possibleLocs.size];
         System.arraycopy(possibleLocs.locs, 0, possibleEnemyHQLocs, 0, possibleLocs.size);
-        seenEnemyHQLocs = new FastLocSet(12);
+        seenEnemyHQLocs = new FastLocSet();
         /*
          * int totalX = 0;
          * int totalY = 0;
