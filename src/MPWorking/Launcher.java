@@ -171,14 +171,16 @@ public class Launcher extends Robot {
         boolean tooManyEnemies = numFriendlies + 1 < numEnemies;
         boolean healthTooLowForEqualFight = numFriendlies + 1 == numEnemies && healthLow;
         boolean healthReallyLow = rc.getHealth() <= 6;
-        return healthReallyLow || numEnemyLaunchersAttackingUs > 0 || tooManyEnemies || healthTooLowForEqualFight; // ||
-                                                                                                                   // numFriendlySages
-                                                                                                                   // <
-                                                                                                                   // numEnemySages;
+        return healthReallyLow || (numEnemyLaunchersAttackingUs > 0 && numFriendlies <= numEnemies)
+                || tooManyEnemies || healthTooLowForEqualFight; // ||
+        // numFriendlySages
+        // <
+        // numEnemySages;
     }
 
     public boolean shouldStandGround() {
-        return numFriendlies + 1 == numEnemies && !healthHigh && !(closestEnemy.getHealth() <= 6);
+        return (numFriendlies + 1 == numEnemies && !healthHigh && !(closestEnemy.getHealth() <= 6))
+                || numEnemyLaunchersAttackingUs > 0;
         // stand ground if its an even match and you don't have an overwhelming health
         // advantage and you can't one shot enemy
     }
