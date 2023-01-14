@@ -136,8 +136,8 @@ public class Launcher extends Robot {
                 MapLocation FbotLocation = Fbot.getLocation();
                 // Debug.printString(" " + FbotLocation + " ");
                 if ((FbotLocation).distanceSquaredTo(closestEnemyLocation) <= FbotType.visionRadiusSquared) {
-                    overallEnemyLauncherDx += (FbotLocation.x - currLoc.x);
-                    overallEnemyLauncherDy += (FbotLocation.y - currLoc.y);
+                    overallEnemyLauncherDx += (closestEnemyLocation.x - FbotLocation.x);
+                    overallEnemyLauncherDy += (closestEnemyLocation.y - FbotLocation.y);
                     numFriendlies++;
 
                 }
