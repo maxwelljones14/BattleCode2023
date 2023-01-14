@@ -39,8 +39,18 @@ public class Debug {
         }
     }
 
+    static void println(boolean cond, String s, int id) {
+        if (VERBOSE && cond && (id < 0 || rc.getID() == id)) {
+            System.out.println(s);
+        }
+    }
+
     static void println(String s) {
         Debug.println(Debug.INFO, s);
+    }
+
+    static void println(String s, int id) {
+        Debug.println(Debug.INFO, s, id);
     }
 
     static void print(boolean cond, String s) {

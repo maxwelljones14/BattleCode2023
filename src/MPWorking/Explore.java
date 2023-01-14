@@ -10,13 +10,8 @@ public class Explore {
     static final int MAX_MAP_SIZE = 60;
     static final int MAX_MAP_SIZE_SQ = MAX_MAP_SIZE * MAX_MAP_SIZE;
     static final int MAX_MAP_SIZE2 = 2 * MAX_MAP_SIZE;
-    static boolean[][] visited = new boolean[MAX_MAP_SIZE][];
 
     static int visionRadius;
-    static boolean initialized = false;
-    static int initRow = 0;
-    static final int INIT_BC_LEFT = 1000;
-    static final int VISITED_BC_LEFT = 500;
 
     static MapLocation exploreTarget = null;
 
@@ -27,7 +22,6 @@ public class Explore {
     public static void init(RobotController r) {
         rc = r;
         visionRadius = rc.getType().visionRadiusSquared;
-        fillDirPath();
         Math.random(); // for some reason the first entry is buggy...
         initExploreDir();
     }
@@ -58,19 +52,6 @@ public class Explore {
         assignExplore3Dir(Util.directions[Util.rng.nextInt(Util.directions.length)]);
     }
 
-    static void initialize() {
-        if (initialized)
-            return;
-
-        while (initRow < MAX_MAP_SIZE) {
-            if (Clock.getBytecodesLeft() < INIT_BC_LEFT)
-                return;
-            visited[initRow] = new boolean[MAX_MAP_SIZE];
-            initRow++;
-        }
-        initialized = true;
-    }
-
     // Finds a new target anywhere on the map outside of the vision radius
     // Only used when visited hasn't been initialized yet
     static void emergencyTarget(int tries) {
@@ -90,7 +71,7 @@ public class Explore {
     }
 
     static MapLocation getExploreTarget() {
-        if (!initialized)
+        if (!MapTracker.initialized)
             emergencyTarget(10);
         else
             getNewTarget(10);
@@ -114,7 +95,7 @@ public class Explore {
             y += Math.sin(angle) * EXPLORE_DIST;
             explore3Target = new MapLocation((int) x, (int) y);
             explore3Target = Util.clipToWithinMap(explore3Target);
-            if (!hasVisited(explore3Target))
+            if (!MapTracker.hasVisited(explore3Target))
                 return;
         }
     }
@@ -209,14 +190,8 @@ public class Explore {
         }
     }
 
-    static boolean hasVisited(MapLocation loc) {
-        if (!initialized)
-            return false;
-        return visited[loc.x][loc.y];
-    }
-
     static void getNewTarget(int tries) {
-        if (exploreTarget != null && Util.onTheMap(exploreTarget) && !hasVisited(exploreTarget))
+        if (exploreTarget != null && Util.onTheMap(exploreTarget) && !MapTracker.hasVisited(exploreTarget))
             return;
         MapLocation currLoc = rc.getLocation();
         for (int i = tries; i-- > 0;) {
@@ -224,75 +199,8 @@ public class Explore {
             int dy = 4 * (int) (Util.rng.nextInt(16) - 8);
             exploreTarget = new MapLocation(currLoc.x + dx, currLoc.y + dy);
             exploreTarget = Util.clipToWithinMap(exploreTarget);
-            if (!hasVisited(exploreTarget))
+            if (!MapTracker.hasVisited(exploreTarget))
                 return;
-        }
-    }
-
-    static void markSeen() {
-        if (!initialized)
-            return;
-        try {
-            MapLocation loc = rc.getLocation();
-            for (int i = dirPath.length; i-- > 0;) {
-                if (Clock.getBytecodesLeft() < VISITED_BC_LEFT)
-                    return;
-                loc = loc.add(dirPath[i]);
-                // TODO: We can't sense clouds right now :(
-                try {
-                    if (rc.onTheMap(loc))
-                        visited[loc.x][loc.y] = true;
-                } catch (GameActionException e) {
-                    // Debug.println("Found a cloud :(");
-                    break;
-                }
-            }
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-    }
-
-    // Spiral pattern for markSeen
-    static void fillDirPath() {
-        switch (visionRadius) {
-            case 20:
-                dirPath = new Direction[] { Direction.NORTHWEST, Direction.NORTHWEST, Direction.NORTH, Direction.NORTH,
-                        Direction.NORTH, Direction.NORTH, Direction.NORTHEAST, Direction.NORTHEAST, Direction.EAST,
-                        Direction.EAST, Direction.EAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTHEAST,
-                        Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTHWEST,
-                        Direction.SOUTHWEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.NORTHWEST,
-                        Direction.NORTHWEST, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH,
-                        Direction.NORTHEAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST,
-                        Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH,
-                        Direction.SOUTHWEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.NORTHWEST,
-                        Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.EAST,
-                        Direction.EAST, Direction.EAST, Direction.EAST, Direction.SOUTH, Direction.SOUTH,
-                        Direction.SOUTH, Direction.SOUTH, Direction.WEST, Direction.WEST, Direction.WEST,
-                        Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.EAST, Direction.EAST,
-                        Direction.SOUTH, Direction.SOUTH, Direction.WEST, Direction.NORTH, Direction.CENTER };
-                break;
-            default:
-                dirPath = new Direction[] { Direction.NORTHWEST, Direction.NORTHWEST, Direction.NORTHWEST,
-                        Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTHEAST,
-                        Direction.NORTHEAST, Direction.NORTHEAST, Direction.EAST, Direction.EAST, Direction.EAST,
-                        Direction.EAST, Direction.SOUTHEAST, Direction.SOUTHEAST, Direction.SOUTHEAST, Direction.SOUTH,
-                        Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTHWEST, Direction.SOUTHWEST,
-                        Direction.SOUTHWEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.NORTHWEST,
-                        Direction.NORTHWEST, Direction.NORTHWEST, Direction.NORTH, Direction.NORTH, Direction.NORTH,
-                        Direction.NORTH, Direction.NORTHEAST, Direction.NORTHEAST, Direction.EAST, Direction.EAST,
-                        Direction.EAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTHEAST, Direction.SOUTH,
-                        Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTHWEST, Direction.SOUTHWEST,
-                        Direction.WEST, Direction.WEST, Direction.WEST, Direction.NORTHWEST, Direction.NORTHWEST,
-                        Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTHEAST,
-                        Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.SOUTHEAST,
-                        Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTHWEST,
-                        Direction.WEST, Direction.WEST, Direction.WEST, Direction.NORTHWEST, Direction.NORTH,
-                        Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.EAST, Direction.EAST,
-                        Direction.EAST, Direction.EAST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH,
-                        Direction.SOUTH, Direction.WEST, Direction.WEST, Direction.WEST, Direction.NORTH,
-                        Direction.NORTH, Direction.NORTH, Direction.EAST, Direction.EAST, Direction.SOUTH,
-                        Direction.SOUTH, Direction.WEST, Direction.NORTH, Direction.CENTER };
-                break;
         }
     }
 }

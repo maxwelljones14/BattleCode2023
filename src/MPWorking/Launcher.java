@@ -237,7 +237,7 @@ public class Launcher extends Robot {
                     } else {
                         if (currLoc.distanceSquaredTo(closestEnemyLocation) > 2) {
                             Debug.printString("closing in");
-                            Pathfinding.move(closestEnemyLocation);
+                            Nav.move(closestEnemyLocation);
                         }
                         return true;
                     }
@@ -433,10 +433,10 @@ public class Launcher extends Robot {
 
         Debug.setIndicatorLine(Debug.INDICATORS, currLoc, target, 255, 0, 200);
         if (currLoc.distanceSquaredTo(target) <= Util.JUST_OUTSIDE_OF_VISION_RADIUS) {
-            Pathfinding.move(target); // tryMoveSafely
+            Nav.move(target); // tryMoveSafely
             Debug.printString("saf mov");
         } else {
-            Pathfinding.move(target);
+            Nav.move(target);
             Debug.printString("reg mov");
         }
         tryAttackBestEnemy(getBestEnemy());
@@ -474,7 +474,7 @@ public class Launcher extends Robot {
         possibleLocs.updateIterable();
         possibleEnemyHQLocs = new MapLocation[possibleLocs.size];
         System.arraycopy(possibleLocs.locs, 0, possibleEnemyHQLocs, 0, possibleLocs.size);
-        seenEnemyHQLocs = new FastLocSet(12);
+        seenEnemyHQLocs = new FastLocSet();
         /*
          * int totalX = 0;
          * int totalY = 0;

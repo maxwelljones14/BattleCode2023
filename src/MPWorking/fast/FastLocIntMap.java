@@ -23,6 +23,21 @@ public class FastLocIntMap {
         }
     }
 
+    public void addReplace(MapLocation loc, int val) {
+        String key = locToStr(loc);
+        int index = keys.indexOf(key);
+        switch (index) {
+            case -1:
+                keys.append(key);
+                keys.append((char) (val + 0x100));
+                size++;
+                break;
+            default:
+                keys.setCharAt(index + 2, (char) (val + 0x100));
+                break;
+        }
+    }
+
     public void add(int x, int y, int val) {
         String key = "^" + (char) x + (char) y;
         if (keys.indexOf(key) == -1) {

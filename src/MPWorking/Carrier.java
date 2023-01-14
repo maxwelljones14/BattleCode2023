@@ -10,6 +10,7 @@ public class Carrier extends Robot {
         MINING,
         PLACING_ANCHOR,
         REPORTING,
+        DEPOSITING,
     }
 
     CarrierState currState;
@@ -122,9 +123,18 @@ public class Carrier extends Robot {
                 }
                 break;
             case REPORTING:
-                if (rc.getAnchor() != null) {
-                    currState = CarrierState.PLACING_ANCHOR;
-                } else if (sectorToReport == 0) {
+                if (sectorToReport == 0) {
+                    if (rc.getAnchor() != null) {
+                        currState = CarrierState.PLACING_ANCHOR;
+                    } else if (rc.getResourceAmount(resourceTarget) != 0) {
+                        currState = CarrierState.DEPOSITING;
+                    } else {
+                        currState = CarrierState.MINING;
+                    }
+                }
+                break;
+            case DEPOSITING:
+                if (rc.getResourceAmount(resourceTarget) == 0) {
                     currState = CarrierState.MINING;
                 }
                 break;
@@ -140,7 +150,7 @@ public class Carrier extends Robot {
                 if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
                     Debug.printString("At capacity");
                     if (!transfer()) {
-                        Pathfinding.move(home);
+                        Nav.move(home);
                         transfer();
                     }
                     break;
@@ -162,7 +172,7 @@ public class Carrier extends Robot {
                     Debug.printString("Found well at " + closestWell.getMapLocation());
                     if (!collect()) {
                         Debug.printString("Moving");
-                        Pathfinding.move(closestWell.getMapLocation());
+                        Nav.move(closestWell.getMapLocation());
                         collect();
                     }
                 } else {
@@ -177,7 +187,7 @@ public class Carrier extends Robot {
                     } else {
                         Debug.printString("Known well at " + target);
                     }
-                    Pathfinding.move(target);
+                    Nav.move(target);
                 }
                 break;
             case PLACING_ANCHOR:
@@ -206,15 +216,21 @@ public class Carrier extends Robot {
                     break;
 
                 if (seenIsland != null) {
-                    Pathfinding.move(seenIsland);
+                    Nav.move(seenIsland);
                 } else if (!returnAnchor()) {
                     // No anchor. Go home
-                    Pathfinding.move(home);
+                    Nav.move(home);
                     returnAnchor();
                 }
                 break;
             case REPORTING:
-                Pathfinding.move(home);
+                Nav.move(home);
+                break;
+            case DEPOSITING:
+                if (!transfer()) {
+                    Nav.move(home);
+                    transfer();
+                }
                 break;
         }
     }
@@ -274,24 +290,39 @@ public class Carrier extends Robot {
         return false;
     }
 
+    /**
+     * Attacks the loc if possible.
+     * Returns true if the attack was successful.
+     */
+    public boolean attack(MapLocation loc) throws GameActionException {
+        // Throw resource at any enemy you see and run.
+        if (rc.getWeight() > 0 && rc.canAttack(closestEnemy.location)) {
+            rc.attack((closestEnemy.location));
+            Debug.printString("Attacked " + closestEnemy.location);
+            Debug.setIndicatorLine(Debug.INFO, currLoc, closestEnemy.location, 255, 0, 0);
+            return true;
+        }
+        return false;
+    }
+
     public void killClosestEnemy() throws GameActionException {
         if (closestEnemy == null)
             return;
 
         // Throw resource at any enemy you see and run.
-        if (rc.getWeight() > 0 && rc.canAttack(closestEnemy.location)) {
-            rc.attack((closestEnemy.location));
-            Debug.setIndicatorLine(Debug.INFO, currLoc, closestEnemy.location, 255, 0, 0);
-        }
+        attack(closestEnemy.location);
 
         // Move towards an enemy if you can kill it
         if (rc.getWeight() * GameConstants.CARRIER_DAMAGE_FACTOR >= closestEnemy.health &&
                 rc.isActionReady()) {
-            Pathfinding.move(closestEnemy.location);
-            currLoc = rc.getLocation();
-            if (rc.canAttack(closestEnemy.location)) {
-                rc.attack(closestEnemy.location);
-                Debug.setIndicatorLine(Debug.INFO, currLoc, closestEnemy.location, 255, 0, 0);
+            Direction dir = Nav.getBestDir(closestEnemy.location);
+            if (rc.canMove(dir)) {
+                MapLocation newLoc = rc.getLocation().add(dir);
+                if (newLoc.distanceSquaredTo(closestEnemy.location) <= RobotType.CARRIER.actionRadiusSquared) {
+                    rc.move(dir);
+                    currLoc = rc.getLocation();
+                    attack(closestEnemy.location);
+                }
             }
         }
     }

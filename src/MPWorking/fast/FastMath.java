@@ -70,8 +70,20 @@ public class FastMath {
         return a.dx * b.dx + a.dy * b.dy;
     }
 
+    public static int crossVec(MapLocation a, MapLocation b) {
+        return a.x * b.y - a.y * b.x;
+    }
+
     public static Direction dirFromVec(MapLocation a) {
         MapLocation origin = new MapLocation(0, 0);
         return origin.directionTo(a);
+    }
+
+    // Positive for counterclockwise, negative for clockwise
+    public static double angleBetweenVectors(MapLocation a, MapLocation b) {
+        double dot = dotVec(a, b);
+        double det = crossVec(a, b);
+        double angle = Math.atan2(det, dot);
+        return angle;
     }
 }
