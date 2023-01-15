@@ -75,7 +75,7 @@ public class Util {
                     loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1 };
         } else {
             return new MapLocation[] { mainLoc2,
-                    loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1 };
+                    mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()), mainLoc1 };
         }
     }
 
