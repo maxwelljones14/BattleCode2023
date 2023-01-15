@@ -31,7 +31,7 @@ SCHEMA = {
         }
     },
     'explore_sector': {
-        'slots': 10,
+        'slots': 13,
         'bits': {
             'claim_status': 1,
             'index': 7,

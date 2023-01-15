@@ -32,15 +32,8 @@ public class Launcher extends Robot {
 
     static RobotInfo[] enemyAttackable;
 
-    static MapLocation[] possibleEnemyHQLocs;
-    static MapLocation globalOptimumEnemyHQLoc;
-    static FastLocSet seenEnemyHQLocs;
-
-    static int sectorCenterIdx;
-
     public Launcher(RobotController r) throws GameActionException {
         super(r);
-        guessAndSortSymmetryLocs();
         currState = LauncherState.EXPLORING;
     }
 
@@ -54,12 +47,6 @@ public class Launcher extends Robot {
 
         trySwitchState();
         doStateAction();
-    }
-
-    public void switchSymmetryLocationIfCurrentEmpty(MapLocation target) throws GameActionException {
-        if (currLoc.distanceSquaredTo(target) <= actionRadiusSquared / 2) {
-            seenEnemyHQLocs.add(target);
-        }
     }
 
     public void resetShouldRunAway() throws GameActionException {
@@ -399,10 +386,9 @@ public class Launcher extends Robot {
             // }
 
         } else {
-            MapLocation symmetricLoc = chooseSymmetricLoc();
-            if (symmetricLoc != null) {
-                target = symmetricLoc;
-                switchSymmetryLocationIfCurrentEmpty(target);
+            int exploreSector = getNearestExploreSector();
+            if (exploreSector != Comms.UNDEFINED_SECTOR_INDEX) {
+                target = sectorCenters[exploreSector];
                 // int numCloseFriendlies = 0;
                 // boolean iAmClosest = true;
                 // for (RobotInfo Fbot : FriendlySensable) {
@@ -442,84 +428,4 @@ public class Launcher extends Robot {
         tryAttackBestEnemy(getBestEnemy());
 
     }
-
-    public void guessAndSortSymmetryLocs() throws GameActionException {
-        FastIterableLocSet possibleLocs = new FastIterableLocSet(12);
-
-        MapLocation[] listOfHQs = new MapLocation[] { Comms.readOurHqLocation(0),
-                Comms.readOurHqLocation(1),
-                Comms.readOurHqLocation(2),
-                Comms.readOurHqLocation(3) };
-        for (int i = 0; i < 4; i++) {
-            MapLocation HQLoc = listOfHQs[i];
-            if (rc.onTheMap(HQLoc)) {
-                MapLocation[] possibleFlips = guessEnemyLoc(HQLoc);
-                for (int j = 0; j < possibleFlips.length; j++) {
-                    MapLocation possibleFlip = possibleFlips[j];
-                    boolean IsOk = true;
-                    for (int k = 0; k < listOfHQs.length; k++) {
-                        MapLocation newHQLoc = listOfHQs[k];
-                        if (possibleFlip
-                                .distanceSquaredTo(newHQLoc) < RobotType.HEADQUARTERS.visionRadiusSquared) {
-                            IsOk = false;
-                            break;
-                        }
-                    }
-                    if (IsOk && rc.onTheMap(possibleFlip)) {
-                        possibleLocs.add(possibleFlip);
-                    }
-                }
-            }
-        }
-        possibleLocs.updateIterable();
-        possibleEnemyHQLocs = new MapLocation[possibleLocs.size];
-        System.arraycopy(possibleLocs.locs, 0, possibleEnemyHQLocs, 0, possibleLocs.size);
-        seenEnemyHQLocs = new FastLocSet();
-        /*
-         * int totalX = 0;
-         * int totalY = 0;
-         * for (int i = 0; i < possibleEnemyHQLocs.length; i++) {
-         * totalX += possibleEnemyHQLocs[i].x;
-         * totalY += possibleEnemyHQLocs[i].y;
-         * }
-         * MapLocation centroid = new MapLocation(totalX / possibleEnemyHQLocs.length,
-         * totalY / possibleEnemyHQLocs.length);
-         * int closestIdx = -1;
-         * int closestDistance = Integer.MAX_VALUE;
-         * for (int i = 0; i < possibleEnemyHQLocs.length; i++) {
-         * int distance = centroid.distanceSquaredTo(possibleEnemyHQLocs[i]);
-         * if (distance < closestDistance) {
-         * closestDistance = distance;
-         * closestIdx = i;
-         * }
-         * }
-         * globalOptimumEnemyHQLoc = possibleEnemyHQLocs[closestIdx];
-         */
-    }
-
-    public MapLocation chooseSymmetricLoc() throws GameActionException {
-        MapLocation bestLoc = null;
-        int bestDist = Integer.MAX_VALUE;
-        for (int i = 0; i < possibleEnemyHQLocs.length; i++) {
-            MapLocation possibleLoc = possibleEnemyHQLocs[i];
-            int currDist = currLoc.distanceSquaredTo(possibleLoc);
-            boolean notTraversed = Comms
-                    .readSectorControlStatus(whichSector(possibleLoc)) == Comms.ControlStatus.UNKNOWN;
-            if (!seenEnemyHQLocs.contains(possibleLoc.x, possibleLoc.y) && currDist < bestDist && notTraversed) {
-                bestLoc = possibleLoc;
-                bestDist = currDist;
-            }
-        }
-        return bestLoc;
-        /*
-         * if (bestLoc == null
-         * || globalOptimumEnemyHQLoc.distanceSquaredTo(currLoc) * 0.75 <
-         * bestLoc.distanceSquaredTo(currLoc)) {
-         * return globalOptimumEnemyHQLoc;
-         * } else {
-         * return bestLoc;
-         * }
-         */
-    }
-
 }

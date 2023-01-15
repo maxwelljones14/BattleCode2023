@@ -148,6 +148,8 @@ public class SectorInfo {
             return Comms.ControlStatus.NEUTRAL_ISLAND;
         } else if (controlStatusSet[Comms.ControlStatus.EMPTY]) {
             return Comms.ControlStatus.EMPTY;
+        } else if (controlStatusSet[Comms.ControlStatus.EXPLORING]) {
+            return Comms.ControlStatus.EXPLORING;
         } else {
             return Comms.ControlStatus.UNKNOWN;
         }
@@ -167,6 +169,10 @@ public class SectorInfo {
         lastRoundVisited = Robot.rc.getRoundNum();
         found = true;
         setControlStatus(Comms.ControlStatus.EMPTY);
+    }
+
+    public boolean hasVisited() {
+        return lastRoundVisited >= 0;
     }
 
     public boolean hasVisitedRecently() {

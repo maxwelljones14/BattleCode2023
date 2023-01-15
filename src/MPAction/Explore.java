@@ -239,14 +239,8 @@ public class Explore {
                 if (Clock.getBytecodesLeft() < VISITED_BC_LEFT)
                     return;
                 loc = loc.add(dirPath[i]);
-                // TODO: We can't sense clouds right now :(
-                try {
-                    if (rc.onTheMap(loc))
-                        visited[loc.x][loc.y] = true;
-                } catch (GameActionException e) {
-                    // Debug.println("Found a cloud :(");
-                    break;
-                }
+                if (rc.onTheMap(loc))
+                    visited[loc.x][loc.y] = true;
             }
         } catch (Throwable e) {
             e.printStackTrace();

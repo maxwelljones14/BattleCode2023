@@ -85,6 +85,9 @@ public class Headquarters extends Robot {
         manaCarrierTracker.update();
         computeHqNum();
         clearOldEnemyInfo();
+        if (rc.getRoundNum() == 2) {
+            setInitialExploreSectors();
+        }
         setPrioritySectors();
         updateclosestEnemyHQ();
         toggleState();
@@ -99,6 +102,7 @@ public class Headquarters extends Robot {
         // printCombatSectors();
         // printEnemyCombatSectors();
         roundsSinceLastAmplifier++;
+        // displayExploreSectors();
     }
 
     public void updateclosestEnemyHQ() throws GameActionException {
@@ -398,7 +402,9 @@ public class Headquarters extends Robot {
             if (controlStatus == Comms.ControlStatus.ENEMY_PASSIVE
                     || controlStatus == Comms.ControlStatus.ENEMY_AGGRESIVE) {
                 int newControlStatus = Comms.readSectorIslands(sectorIdx) == 1 ? Comms.ControlStatus.FRIENDLY_ISLAND
-                        : Comms.ControlStatus.UNKNOWN;
+                        : Comms.ControlStatus.EXPLORING;
+                // Mark old combat sectors as need to be explored.
+                // Debug.println("Clearing combat sector at : " + sectorCenters[sectorIdx]);
                 Comms.writeSectorControlStatus(sectorIdx, newControlStatus);
             }
         }
@@ -414,28 +420,8 @@ public class Headquarters extends Robot {
         if (rc.getRoundNum() == 1)
             return;
 
-        int combatSectorIndex = 0;
-        int exploreSectorIndex = 0;
-
-        // Preserve combat sectors which still have enemies or are claimed
-        while (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS) {
-            int sector = Comms.readCombatSectorIndex(combatSectorIndex);
-            if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
-                break;
-            }
-            if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS &&
-                    Comms.readCombatSectorClaimStatus(sector) == Comms.ClaimStatus.UNCLAIMED) {
-                break;
-            }
-            combatSectorIndex++;
-        }
-
-        // Preserve explore sectors which still have not been claimed
-        while (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
-                && Comms.readExploreSectorIndex(exploreSectorIndex) != Comms.UNDEFINED_SECTOR_INDEX
-                && Comms.readExploreSectorClaimStatus(exploreSectorIndex) == Comms.ClaimStatus.UNCLAIMED) {
-            exploreSectorIndex++;
-        }
+        int combatSectorIndex = getNextEmptyCombatSectorIdx(0);
+        int exploreSectorIndex = getNextEmptyExploreSectorIdx(0);
 
         // Alternate sweeping each half of the sectors every turn
         int mode = (myHqNum + rc.getRoundNum()) % 3;
@@ -472,24 +458,11 @@ public class Headquarters extends Robot {
 
                 Comms.writeCombatSectorIndex(combatSectorIndex, i);
                 Comms.writeCombatSectorClaimStatus(combatSectorIndex, Comms.ClaimStatus.UNCLAIMED);
-                combatSectorIndex++;
-
-                // Preserve combat sectors which still have enemies or are claimed
-                while (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS) {
-                    int sector = Comms.readCombatSectorIndex(combatSectorIndex);
-                    if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
-                        break;
-                    }
-                    if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS &&
-                            Comms.readCombatSectorClaimStatus(sector) == Comms.ClaimStatus.UNCLAIMED) {
-                        break;
-                    }
-                    combatSectorIndex++;
-                }
+                combatSectorIndex = getNextEmptyCombatSectorIdx(combatSectorIndex + 1);
             }
             // Explore sector
             exploreSector: if (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
-                    && controlStatus == Comms.ControlStatus.UNKNOWN) {
+                    && controlStatus == Comms.ControlStatus.EXPLORING) {
                 // If the sector is already a explore sector, don't add it again
                 for (int j = Comms.EXPLORE_SECTOR_SLOTS - 1; j >= 0; j--) {
                     if (Comms.readExploreSectorIndex(j) == i) {
@@ -499,14 +472,7 @@ public class Headquarters extends Robot {
 
                 Comms.writeExploreSectorIndex(exploreSectorIndex, i);
                 Comms.writeExploreSectorClaimStatus(exploreSectorIndex, Comms.ClaimStatus.UNCLAIMED);
-                exploreSectorIndex++;
-
-                // Preserve explore sectors which still have not been claimed
-                while (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
-                        && Comms.readExploreSectorIndex(exploreSectorIndex) != Comms.UNDEFINED_SECTOR_INDEX
-                        && Comms.readExploreSectorClaimStatus(exploreSectorIndex) == Comms.ClaimStatus.UNCLAIMED) {
-                    exploreSectorIndex++;
-                }
+                exploreSectorIndex = getNextEmptyExploreSectorIdx(exploreSectorIndex + 1);
             }
         }
     }
@@ -525,5 +491,44 @@ public class Headquarters extends Robot {
         return hasResources(robotType.buildCostMana + anchor.manaCost,
                 robotType.buildCostAdamantium + anchor.adamantiumCost,
                 robotType.buildCostElixir + anchor.elixirCost, anchor);
+    }
+
+    public void displayExploreSectors() throws GameActionException {
+        for (int i = 0; i < Comms.EXPLORE_SECTOR_SLOTS; i++) {
+            int sector = Comms.readExploreSectorIndex(i);
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX)
+                break;
+            MapLocation loc = sectorCenters[sector];
+            rc.setIndicatorDot(loc, 0, 0, 255);
+        }
+    }
+
+    /**
+     * Sets initial explore sectors to center and symmetry locs
+     */
+    public void setInitialExploreSectors() throws GameActionException {
+        int exploreSectorIndex = getNextEmptyExploreSectorIdx(0);
+
+        // Add the center and the 3 reflections of your HQ
+        MapLocation[] symmetryLocs = guessEnemyLoc(currLoc);
+        int centerSector = whichSector(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
+        int ySector = whichSector(symmetryLocs[0]);
+        int xSector = whichSector(symmetryLocs[1]);
+        int xySector = whichSector(symmetryLocs[2]);
+        int[] sectors = { centerSector, xySector, xSector, ySector };
+
+        for (int i = 0; i < 4; i++) {
+            int sector = sectors[i];
+            int controlStatus = Comms.readSectorControlStatus(sector);
+            if (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
+                    && controlStatus == Comms.ControlStatus.UNKNOWN) {
+                Comms.writeExploreSectorIndex(exploreSectorIndex, sector);
+                Comms.writeExploreSectorClaimStatus(exploreSectorIndex, Comms.ClaimStatus.UNCLAIMED);
+                Comms.writeSectorControlStatus(sector, Comms.ControlStatus.EXPLORING);
+                // Debug.println("Added explore sector: " + sectorCenters[sector] + " at index:
+                // " + exploreSectorIndex);
+                exploreSectorIndex = getNextEmptyExploreSectorIdx(exploreSectorIndex + 1);
+            }
+        }
     }
 }
