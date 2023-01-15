@@ -65,7 +65,7 @@ public class Util {
         return rc.getLocation().translate(rotated_dx, rotated_dy);
     }
 
-    static MapLocation[] findInitLocation(MapLocation loc, Direction dir) {
+    static MapLocation[] findInitLocationPossibilities(MapLocation loc, Direction dir) {
         MapLocation mainLoc1 = loc.add(dir);
         MapLocation mainLoc2 = mainLoc1.add(dir);
         if (dir == Direction.NORTH || dir == Direction.EAST || dir == Direction.SOUTH || dir == Direction.WEST) {
@@ -77,6 +77,24 @@ public class Util {
             return new MapLocation[] { mainLoc2,
                     loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1 };
         }
+    }
+
+    static MapLocation findInitLocation(MapLocation currLoc, Direction dir) throws GameActionException {
+        int count = 0;
+        MapLocation buildLocation = null;
+        while (count < 8 && buildLocation == null) {
+            MapLocation[] possibleLocations = Util.findInitLocationPossibilities(currLoc, dir);
+            for (int x = 0; x < possibleLocations.length; x++) {
+                MapLocation newLoc = possibleLocations[x];
+                if (rc.onTheMap(newLoc) && rc.sensePassability(newLoc) && rc.senseRobotAtLocation(newLoc) == null) {
+                    buildLocation = newLoc;
+                    break;
+                }
+            }
+            count++;
+            dir = dir.rotateRight();
+        }
+        return buildLocation;
     }
 
     static MapLocation moveTowardsMe(MapLocation loc) {

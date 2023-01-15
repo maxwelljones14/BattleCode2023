@@ -50,37 +50,6 @@ public class Carrier extends Robot {
         return null;
     }
 
-    public MapLocation findClosestWell() throws GameActionException {
-        MapLocation closestLoc = null;
-        int closestDistance = Integer.MAX_VALUE;
-        if (resourceTarget == ResourceType.ADAMANTIUM) {
-            for (int x = 0; x < numSectors; x++) {
-                MapLocation sectorLoc = sectorCenters[x];
-                int currDistance = currLoc.distanceSquaredTo(sectorLoc);
-                if (currDistance < closestDistance) {
-                    int flag = Comms.readSectorAdamantiumFlag(x);
-                    if (flag == 1) {
-                        closestDistance = currDistance;
-                        closestLoc = sectorLoc;
-                    }
-                }
-            }
-        } else {
-            for (int x = 0; x < numSectors; x++) {
-                MapLocation sectorLoc = sectorCenters[x];
-                int currDistance = currLoc.distanceSquaredTo(sectorLoc);
-                if (currDistance < closestDistance) {
-                    int flag = Comms.readSectorManaFlag(x);
-                    if (flag == 1) {
-                        closestDistance = currDistance;
-                        closestLoc = sectorLoc;
-                    }
-                }
-            }
-        }
-        return closestLoc;
-    }
-
     public void takeTurn() throws GameActionException {
         super.takeTurn();
 
@@ -177,7 +146,7 @@ public class Carrier extends Robot {
                     }
                 } else {
                     if (closestWellLoc == null) {
-                        closestWellLoc = findClosestWell();
+                        closestWellLoc = findClosestWell(resourceTarget);
                     }
                     MapLocation target = closestWellLoc;
                     // If there is no visible well, just explore.

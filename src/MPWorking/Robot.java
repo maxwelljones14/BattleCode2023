@@ -1369,4 +1369,35 @@ public class Robot {
         }
         return closestSector;
     }
+
+    public MapLocation findClosestWell(ResourceType resourceTarget) throws GameActionException {
+        MapLocation closestLoc = null;
+        int closestDistance = Integer.MAX_VALUE;
+        if (resourceTarget == ResourceType.ADAMANTIUM) {
+            for (int x = 0; x < numSectors; x++) {
+                MapLocation sectorLoc = sectorCenters[x];
+                int currDistance = currLoc.distanceSquaredTo(sectorLoc);
+                if (currDistance < closestDistance) {
+                    int flag = Comms.readSectorAdamantiumFlag(x);
+                    if (flag == 1) {
+                        closestDistance = currDistance;
+                        closestLoc = sectorLoc;
+                    }
+                }
+            }
+        } else {
+            for (int x = 0; x < numSectors; x++) {
+                MapLocation sectorLoc = sectorCenters[x];
+                int currDistance = currLoc.distanceSquaredTo(sectorLoc);
+                if (currDistance < closestDistance) {
+                    int flag = Comms.readSectorManaFlag(x);
+                    if (flag == 1) {
+                        closestDistance = currDistance;
+                        closestLoc = sectorLoc;
+                    }
+                }
+            }
+        }
+        return closestLoc;
+    }
 }

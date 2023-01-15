@@ -61,7 +61,7 @@ public class Headquarters extends Robot {
         nearestMnWell = null;
         locsToBuildCarriers = new MapLocation[initCarriersWanted];
         locsToBuildLaunchers = new MapLocation[initLaunchersWanted];
-        setupNearestWellsAndSpawnLocs();
+        findClosestVisibleWells();
 
         carrierCount = 0;
         launcherCount = 0;
@@ -102,7 +102,7 @@ public class Headquarters extends Robot {
         }
     }
 
-    public void setupNearestWellsAndSpawnLocs() throws GameActionException {
+    public void findClosestVisibleWells() throws GameActionException {
         // find nearest wells
         WellInfo[] wellsNearMe = rc.senseNearbyWells(visionRadiusSquared);
         int closestAdWellDistance = visionRadiusSquared;
@@ -118,72 +118,78 @@ public class Headquarters extends Robot {
                 nearestMnWell = well.getMapLocation();
             }
         }
+    }
 
+    public int getNextCarrierType() throws GameActionException {
+        int carrierType;
+        if (currentState == State.INIT) {
+            if (nearestMnWell != null && nearestAdWell == null) {
+                // if theres an mn but not an ad, the first 2 should be mn and the second should
+                // be ad
+                if (carrierCount < 2) {
+                    // next should be an mn carrier
+                    carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else {
+                    carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                }
+            } else {
+                // if theres both ad and mn, or neither, then first 2 should be ad and second 2
+                // should be mn
+                if (carrierCount < 2) {
+                    // next should be an ad carrier
+                    carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                } else {
+                    // next should be an mn carrier
+                    carrierType = Comms.HQFlag.CARRIER_MANA;
+                }
+            }
+        } else {
+            if (manaCarrierTracker.size() <= adamCarrierTracker.size() * MANA_TO_ADAM_CARRIER_RATIO) {
+                carrierType = Comms.HQFlag.CARRIER_MANA;
+            } else {
+                carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+            }
+        }
+        return carrierType;
+    }
+
+    public MapLocation getNextCarrierLocation(int carrierType) throws GameActionException {
         /*
-         * set up 4 locations to build carriers with priority of:
-         * 1. on nearest ad well
-         * 2. next to nearest ad well
-         * 3. on nearest mn well
-         * 4. next to nearest mn well
-         * 5. in the 4 cardinal directions as far away from us as possible
+         * 1. figure out next carrier type
+         * in firstRounds make the first 2 AD and the second 2 MN
+         * otherwise copy the buildCarrier logic
+         * 
+         * 2. based on this, find closest of that well
+         * 3. get locations for this using Util.findInitLocation(currLoc, dir from 2)
          */
-        int i = 0;
-        if (nearestAdWell != null) {
-            MapLocation adWellLocInsideActionRadius = nearestAdWell;
-            while (adWellLocInsideActionRadius.distanceSquaredTo(currLoc) > actionRadiusSquared) {
-                adWellLocInsideActionRadius = Util.moveTowardsMe(adWellLocInsideActionRadius);
-            }
-            locsToBuildCarriers[i] = adWellLocInsideActionRadius;
-            i++;
-            // find location closest to carrier that i can build but 1 square towards me
-            // each time
-            MapLocation translated = Util.moveTowardsMe(adWellLocInsideActionRadius);
-            while (!rc.sensePassability(translated)) {
-                translated = Util.moveTowardsMe(translated);
-            }
-            locsToBuildCarriers[i] = translated;
-            i++;
-        }
-        if (nearestMnWell != null) {
-            MapLocation mnWellLocInsideActionRadius = nearestMnWell;
-            while (mnWellLocInsideActionRadius.distanceSquaredTo(currLoc) > actionRadiusSquared) {
-                mnWellLocInsideActionRadius = Util.moveTowardsMe(mnWellLocInsideActionRadius);
-            }
-            locsToBuildCarriers[i] = mnWellLocInsideActionRadius;
-            i++;
-            // find location closest to carrier that i can build but 1 square towards me
-            // each time
-            MapLocation translated = Util.moveTowardsMe(mnWellLocInsideActionRadius);
-            while (!rc.sensePassability(translated)) {
-                translated = Util.moveTowardsMe(translated);
-            }
-            locsToBuildCarriers[i] = translated;
-            i++;
-        }
-        // cardinal directions if locations array not full yet
-        MapLocation startingRandomLocation = currLoc.translate((int) (Math.sqrt(actionRadiusSquared)), 0);
-        while (i < initCarriersWanted) {
-            MapLocation candidate = startingRandomLocation;
-            while (!rc.onTheMap(candidate) || !rc.sensePassability(candidate)) {
-                candidate = Util.moveTowardsMe(candidate);
-            }
-            locsToBuildCarriers[i] = candidate;
-            i++;
-            startingRandomLocation = Util.rotateLoc90(startingRandomLocation);
-        }
 
-        int j = 0;
-        startingRandomLocation = currLoc.translate((int) (Math.sqrt(actionRadiusSquared)) - 1,
-                (int) (Math.sqrt(actionRadiusSquared)) - 1);
-        while (j < initLaunchersWanted) {
-            MapLocation candidate = startingRandomLocation;
-            while (!rc.onTheMap(candidate) || !rc.sensePassability(candidate)) {
-                candidate = Util.moveTowardsMe(candidate);
+        Direction dirToBuild = null;
+        if (carrierType == Comms.HQFlag.CARRIER_ADAMANTIUM) {
+            if (nearestAdWell != null) {
+                dirToBuild = currLoc.directionTo(nearestAdWell);
+            } else {
+                // look in sectors for nearest ad well
+                MapLocation nearestAdWellSector = findClosestWell(ResourceType.ADAMANTIUM);
+                if (nearestAdWellSector != null) {
+                    dirToBuild = currLoc.directionTo(nearestAdWellSector);
+                } else {
+                    dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
+                }
             }
-            locsToBuildLaunchers[j] = candidate;
-            j++;
-            startingRandomLocation = Util.rotateLoc90(startingRandomLocation);
+        } else {
+            if (nearestMnWell != null) {
+                dirToBuild = currLoc.directionTo(nearestMnWell);
+            } else {
+                // look in sectors for nearest mn well
+                MapLocation nearestMnWellSector = findClosestWell(ResourceType.MANA);
+                if (nearestMnWellSector != null) {
+                    dirToBuild = currLoc.directionTo(nearestMnWellSector);
+                } else {
+                    dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
+                }
+            }
         }
+        return Util.findInitLocation(currLoc, dirToBuild);
     }
 
     public void toggleState() throws GameActionException {
@@ -213,8 +219,13 @@ public class Headquarters extends Robot {
         currentState = newState;
     }
 
-    public void buildCarrier(MapLocation newLoc) throws GameActionException {
+    public void buildCarrier() throws GameActionException {
         Debug.printString("Trying to build a carrier");
+
+        // get predetermined next carrier type and location
+        int carrierType = getNextCarrierType();
+        MapLocation newLoc = getNextCarrierLocation(carrierType);
+
         if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
             rc.buildRobot(RobotType.CARRIER, newLoc);
             carrierCount++;
@@ -224,34 +235,9 @@ public class Headquarters extends Robot {
                 return;
             }
 
-            if (currentState == State.INIT) {
-                if (nearestMnWell != null && nearestAdWell == null) {
-                    // if theres an mn but not an ad, the first 2 should be mn and the second should
-                    // be ad
-                    if (carrierCount <= 2) {
-                        // next should be an mn carrier
-                        nextFlag = Comms.HQFlag.CARRIER_MANA;
-                    } else {
-                        nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                    }
-                } else {
-                    // if theres both ad and mn, or neither, then first 2 should be ad and second 2
-                    // should be mn
-                    if (carrierCount <= 2) {
-                        // next should be an ad carrier
-                        nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                    } else {
-                        // next should be an mn carrier
-                        nextFlag = Comms.HQFlag.CARRIER_MANA;
-                    }
-                }
-            } else if (manaCarrierTracker.size() <= adamCarrierTracker.size() * MANA_TO_ADAM_CARRIER_RATIO) {
-                nextFlag = Comms.HQFlag.CARRIER_MANA;
-            } else {
-                nextFlag = Comms.HQFlag.CARRIER_ADAMANTIUM;
-            }
+            nextFlag = carrierType;
 
-            if (nextFlag == Comms.HQFlag.CARRIER_MANA) {
+            if (carrierType == Comms.HQFlag.CARRIER_MANA) {
                 manaCarrierTracker.add(newCarrier.ID);
             } else {
                 adamCarrierTracker.add(newCarrier.ID);
@@ -273,52 +259,7 @@ public class Headquarters extends Robot {
             dir = currLoc.directionTo(target);
         }
 
-        int count = 0;
-        MapLocation buildLocation = null;
-        while (count < 8 && buildLocation == null) {
-            MapLocation[] possibleLocations = Util.findInitLocation(currLoc, dir);
-            for (int x = 0; x < possibleLocations.length; x++) {
-                MapLocation newLoc = possibleLocations[x];
-                if (rc.onTheMap(newLoc) && rc.sensePassability(newLoc) && rc.senseRobotAtLocation(newLoc) == null) {
-                    buildLocation = newLoc;
-                    break;
-                }
-            }
-            count++;
-            dir = dir.rotateRight();
-        }
-        return buildLocation;
-    }
-
-    public MapLocation getCarrierLocation() throws GameActionException {
-        MapLocation target = getCombatSector();
-        Direction dir = null;
-        if (target == null) {
-            target = closestEnemyHQGuess;
-            Debug.printString("dir of HQ " + target);
-        }
-        if (target == null) {
-            Debug.printString("ERROR: no HQ guesses");
-            dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
-        } else {
-            dir = currLoc.directionTo(target);
-        }
-
-        int count = 0;
-        MapLocation buildLocation = null;
-        while (count < 8 && buildLocation == null) {
-            MapLocation[] possibleLocations = Util.findInitLocation(currLoc, dir);
-            for (int x = 0; x < possibleLocations.length; x++) {
-                MapLocation newLoc = possibleLocations[x];
-                if (rc.onTheMap(newLoc) && rc.sensePassability(newLoc) && rc.senseRobotAtLocation(newLoc) == null) {
-                    buildLocation = newLoc;
-                    break;
-                }
-            }
-            count++;
-            dir = dir.rotateRight();
-        }
-        return buildLocation;
+        return Util.findInitLocation(currLoc, dir);
     }
 
     public void buildLauncher(MapLocation newLoc) throws GameActionException {
@@ -336,49 +277,19 @@ public class Headquarters extends Robot {
     public void firstRounds() throws GameActionException {
         // build carriers
         if (carrierCount < initCarriersWanted) {
-            MapLocation locToBuild = locsToBuildCarriers[carrierCount];
-            for (int rot = 0; rot < 4; rot++) {
-                if (rc.canBuildRobot(RobotType.CARRIER, locToBuild)) {
-                    buildCarrier(locToBuild);
-                    break;
-                } else if (rc.isActionReady()) {
-                    locToBuild = Util.rotateLoc90(locToBuild);
-                }
-            }
+            buildCarrier();
             return;
         }
 
         // set up locations for first launchers in the 4 cardinal directions
         if (launcherCount < initLaunchersWanted) {
-            MapLocation locToBuild = getLauncherLocation(); // locsToBuildLaunchers[launcherCount];
-            for (int rot = 0; rot < 4; rot++) {
-                if (rc.canBuildRobot(RobotType.LAUNCHER, locToBuild)) {
-                    buildLauncher(locToBuild);
-                    break;
-                } else if (rc.isActionReady()) {
-                    locToBuild = Util.rotateLoc90(locToBuild);
-                }
-            }
+            MapLocation locToBuild = getLauncherLocation();
+            buildLauncher(locToBuild);
             return;
         }
     }
 
     public void doStateAction() throws GameActionException {
-        Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
-        // spawn as far away from us as possible
-        MapLocation newLoc = rc.getLocation().add(dir).add(dir);
-        int count = 0;
-        while (!rc.onTheMap(newLoc) || !rc.sensePassability(newLoc)) {
-            count++;
-            newLoc = Util.moveTowardsMe(newLoc);
-            if (newLoc.equals(currLoc)) {
-                dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
-                newLoc = rc.getLocation().add(dir).add(dir);
-            }
-            if (count >= 4) {
-                break;
-            }
-        }
         switch (currentState) {
             case INIT:
                 firstRounds();
@@ -388,7 +299,7 @@ public class Headquarters extends Robot {
                     buildLauncher(getLauncherLocation());
                 }
                 if (canBuildRobotType(RobotType.CARRIER)) {
-                    buildCarrier(newLoc);
+                    buildCarrier();
                 }
                 break;
             case BUILDING_ANCHOR:
@@ -402,7 +313,7 @@ public class Headquarters extends Robot {
                     if (canBuildRobotTypeAndAnchor(RobotType.LAUNCHER, Anchor.STANDARD)) {
                         buildLauncher(getLauncherLocation());
                     } else if (canBuildRobotTypeAndAnchor(RobotType.CARRIER, Anchor.STANDARD)) {
-                        buildCarrier(newLoc);
+                        buildCarrier();
                     }
                 }
                 break;
