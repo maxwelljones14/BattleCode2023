@@ -138,39 +138,156 @@ public class Robot {
         MapTracker.markSeen();
     }
 
-    public void carrierExploit() throws GameActionException {
-        int x = rc.getLocation().x;
-        int y = rc.getLocation().y;
-
-        // canAttack works different for carriers.
-        // It returns true for impassable squares
-        // We need to be out of a cloud to attack so that we can sense passability
-        if (rc.senseMapInfo(rc.getLocation()).hasCloud()) {
-            return;
-        }
-
-        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), actionRadiusSquared)) {
-            if (rc.canAttack(loc) && (rc.senseMapInfo(loc).hasCloud() || rc.sensePassability(loc))) {
-                rc.attack(loc);
-                break;
-            }
-        }
-    }
-
-    public void launcherExploit() throws GameActionException {
-        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), actionRadiusSquared)) {
-            if (rc.canAttack(loc)) {
-                rc.attack(loc);
-                break;
-            }
-        }
-    }
-
     public void attackCloudExploit() throws GameActionException {
-        if (rc.getType() == RobotType.CARRIER) {
-            carrierExploit();
-        } else if (rc.getType() == RobotType.LAUNCHER) {
-            launcherExploit();
+        if (rc.getType() == RobotType.LAUNCHER) {
+            int x = rc.getLocation().x;
+            int y = rc.getLocation().y;
+            do {
+                if (rc.canAttack(new MapLocation(x + 4, y + 0))) {
+                    rc.attack(new MapLocation(x + 4, y + 0));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 0, y + 4))) {
+                    rc.attack(new MapLocation(x + 0, y + 4));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 0, y + -4))) {
+                    rc.attack(new MapLocation(x + 0, y + -4));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -4, y + 0))) {
+                    rc.attack(new MapLocation(x + -4, y + 0));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 3, y + 2))) {
+                    rc.attack(new MapLocation(x + 3, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 3, y + -2))) {
+                    rc.attack(new MapLocation(x + 3, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + 3))) {
+                    rc.attack(new MapLocation(x + 2, y + 3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + -3))) {
+                    rc.attack(new MapLocation(x + 2, y + -3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + 3))) {
+                    rc.attack(new MapLocation(x + -2, y + 3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + -3))) {
+                    rc.attack(new MapLocation(x + -2, y + -3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -3, y + 2))) {
+                    rc.attack(new MapLocation(x + -3, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -3, y + -2))) {
+                    rc.attack(new MapLocation(x + -3, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 3, y + 1))) {
+                    rc.attack(new MapLocation(x + 3, y + 1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 3, y + -1))) {
+                    rc.attack(new MapLocation(x + 3, y + -1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 1, y + 3))) {
+                    rc.attack(new MapLocation(x + 1, y + 3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 1, y + -3))) {
+                    rc.attack(new MapLocation(x + 1, y + -3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -1, y + 3))) {
+                    rc.attack(new MapLocation(x + -1, y + 3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -1, y + -3))) {
+                    rc.attack(new MapLocation(x + -1, y + -3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -3, y + 1))) {
+                    rc.attack(new MapLocation(x + -3, y + 1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -3, y + -1))) {
+                    rc.attack(new MapLocation(x + -3, y + -1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 3, y + 0))) {
+                    rc.attack(new MapLocation(x + 3, y + 0));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 0, y + 3))) {
+                    rc.attack(new MapLocation(x + 0, y + 3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 0, y + -3))) {
+                    rc.attack(new MapLocation(x + 0, y + -3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -3, y + 0))) {
+                    rc.attack(new MapLocation(x + -3, y + 0));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + 2))) {
+                    rc.attack(new MapLocation(x + 2, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + -2))) {
+                    rc.attack(new MapLocation(x + 2, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + 2))) {
+                    rc.attack(new MapLocation(x + -2, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + -2))) {
+                    rc.attack(new MapLocation(x + -2, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + 1))) {
+                    rc.attack(new MapLocation(x + 2, y + 1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + -1))) {
+                    rc.attack(new MapLocation(x + 2, y + -1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 1, y + 2))) {
+                    rc.attack(new MapLocation(x + 1, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 1, y + -2))) {
+                    rc.attack(new MapLocation(x + 1, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -1, y + 2))) {
+                    rc.attack(new MapLocation(x + -1, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -1, y + -2))) {
+                    rc.attack(new MapLocation(x + -1, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + 1))) {
+                    rc.attack(new MapLocation(x + -2, y + 1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + -1))) {
+                    rc.attack(new MapLocation(x + -2, y + -1));
+                    break;
+                }
+            } while (false);
         }
     }
 
