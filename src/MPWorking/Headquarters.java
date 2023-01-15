@@ -487,17 +487,33 @@ public class Headquarters extends Robot {
     public void setInitialExploreSectors() throws GameActionException {
         int exploreSectorIndex = getNextEmptyExploreSectorIdx(0);
 
+        MapLocation[] listOfHQs = new MapLocation[] { Comms.readOurHqLocation(0),
+                Comms.readOurHqLocation(1),
+                Comms.readOurHqLocation(2),
+                Comms.readOurHqLocation(3) };
+
         // Add the center and the 3 reflections of your HQ
         MapLocation[] symmetryLocs = guessEnemyLoc(currLoc);
-        int centerSector = whichSector(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
-        int ySector = whichSector(symmetryLocs[0]);
-        int xSector = whichSector(symmetryLocs[1]);
-        int xySector = whichSector(symmetryLocs[2]);
-        int[] sectors = { centerSector, xySector, xSector, ySector };
+        MapLocation[] locs = { new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2),
+                symmetryLocs[0], symmetryLocs[1], symmetryLocs[2] };
+        int[] sectors = { whichSector(locs[0]), whichSector(locs[1]), whichSector(locs[2]), whichSector(locs[3]) };
 
         for (int i = 0; i < 4; i++) {
+            MapLocation loc = locs[i];
             int sector = sectors[i];
             int controlStatus = Comms.readSectorControlStatus(sector);
+
+            boolean isOk = true;
+            for (int k = 0; k < listOfHQs.length; k++) {
+                MapLocation newHQLoc = listOfHQs[k];
+                if (loc.distanceSquaredTo(newHQLoc) < RobotType.HEADQUARTERS.visionRadiusSquared) {
+                    isOk = false;
+                }
+            }
+
+            if (!isOk)
+                continue;
+
             if (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
                     && controlStatus == Comms.ControlStatus.UNKNOWN) {
                 Comms.writeExploreSectorIndex(exploreSectorIndex, sector);
