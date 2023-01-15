@@ -28,7 +28,7 @@ public class Headquarters extends Robot {
     static int anchorCount;
 
     static final int initCarriersWanted = 4;
-    static final int initLaunchersWanted = 4;
+    static final int initLaunchersWanted = 3;
     static final int minCarriersBeforeAnchor = 20;
 
     static MapLocation currLoc;
@@ -329,6 +329,10 @@ public class Headquarters extends Robot {
         }
     }
 
+    // WARNING: If the cost of initCarriersWanted or initLaunchersWanted exceed
+    // that of starting resources. We will get stuck in INIT until we passively
+    // gain enough resources to build the troops.
+    // TODO: Restructure?
     public void firstRounds() throws GameActionException {
         // build carriers
         if (carrierCount < initCarriersWanted) {
