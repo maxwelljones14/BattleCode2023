@@ -122,11 +122,10 @@ public class Launcher extends Robot {
             if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
                 MapLocation FbotLocation = Fbot.getLocation();
                 // Debug.printString(" " + FbotLocation + " ");
+                overallEnemyLauncherDx += (closestEnemyLocation.x - FbotLocation.x);
+                overallEnemyLauncherDy += (closestEnemyLocation.y - FbotLocation.y);
                 if ((FbotLocation).distanceSquaredTo(closestEnemyLocation) <= FbotType.visionRadiusSquared) {
-                    overallEnemyLauncherDx += (closestEnemyLocation.x - FbotLocation.x);
-                    overallEnemyLauncherDy += (closestEnemyLocation.y - FbotLocation.y);
                     numFriendlies++;
-
                 }
             }
         }
@@ -293,7 +292,8 @@ public class Launcher extends Robot {
                 Direction extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
                 MapLocation targetLoc = currLoc.add(newDir).add(extraDir);
                 boolean isPassible = rc.sensePassability(targetLoc);
-                // boolean noClouds = rc.senseMapInfo(currLoc.add(newDir)).hasCloud();
+                boolean hasCloud = rc.senseMapInfo(currLoc.add(newDir)).hasCloud();
+                boolean currLocHasCloud = rc.senseMapInfo(currLoc).hasCloud();
                 int currEnemiesSeen = 0;
                 for (int i = enemyAttackable.length; --i >= 0;) {
                     enemy = enemyAttackable[i];
@@ -302,7 +302,8 @@ public class Launcher extends Robot {
                         currEnemiesSeen++;
                     }
                 }
-                if (isPassible && (currEnemiesSeen <= bestEnemiesSeen || bestEnemiesSeen == 0)) {
+                if (isPassible && (currLocHasCloud || !hasCloud)
+                        && (currEnemiesSeen <= bestEnemiesSeen || bestEnemiesSeen == 0)) {
                     if (currEnemiesSeen != 0) {
                         if (currEnemiesSeen < bestEnemiesSeen || bestEnemiesSeen == 0) {
                             bestDirSoFar = newDir;
