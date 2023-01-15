@@ -226,7 +226,7 @@ public class Headquarters extends Robot {
         int carrierType = getNextCarrierType();
         MapLocation newLoc = getNextCarrierLocation(carrierType);
 
-        if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
+        if (newLoc != null && rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
             rc.buildRobot(RobotType.CARRIER, newLoc);
             carrierCount++;
             RobotInfo newCarrier = rc.senseRobotAtLocation(newLoc);
@@ -264,7 +264,7 @@ public class Headquarters extends Robot {
 
     public void buildLauncher(MapLocation newLoc) throws GameActionException {
         Debug.printString("Trying to build a launcher");
-        if (rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) {
+        if (newLoc != null && rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) {
             rc.buildRobot(RobotType.LAUNCHER, newLoc);
             launcherCount++;
         }
