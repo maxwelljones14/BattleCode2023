@@ -303,6 +303,9 @@ public class Headquarters extends Robot {
     }
 
     public void doStateAction() throws GameActionException {
+        Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
+        // spawn as far away from us as possible
+        MapLocation newLoc = Util.findInitLocation(currLoc, dir);
         switch (currentState) {
             case INIT:
                 firstRounds();
