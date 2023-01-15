@@ -30,6 +30,7 @@ public class Util {
     };
 
     static final int JUST_OUTSIDE_OF_VISION_RADIUS = 34;
+    static final int AMP_JUST_INSIDE_VISION_RADIUS = RobotType.AMPLIFIER.visionRadiusSquared - 7;
 
     static final int MIN_LAUNCHERS_BEFORE_AMPLIFIER = 15;
 

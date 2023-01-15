@@ -213,7 +213,7 @@ public class Amplifier extends Robot {
 
         Debug.setIndicatorLine(Debug.INDICATORS, currLoc, target, 255, 0, 200);
         // oscillate near just outside of sector
-        if (currLoc.distanceSquaredTo(target) <= visionRadiusSquared && !goingToFriends) {
+        if (currLoc.distanceSquaredTo(target) <= Util.AMP_JUST_INSIDE_VISION_RADIUS && !goingToFriends) {
             // only move away if ur close to combat sector or ur NOT moving towards friends,
             // if ur going to friends then u should go directly to that location
             Pathfinding.move(home);
