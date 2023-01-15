@@ -277,7 +277,7 @@ public class Headquarters extends Robot {
 
     public void buildAmplifier(MapLocation newLoc) throws GameActionException {
         Debug.printString("Trying to build an amplifier");
-        if (rc.canBuildRobot(RobotType.AMPLIFIER, newLoc)) {
+        if (newLoc != null && rc.canBuildRobot(RobotType.AMPLIFIER, newLoc)) {
             rc.buildRobot(RobotType.AMPLIFIER, newLoc);
             amplifierCount++;
         }
