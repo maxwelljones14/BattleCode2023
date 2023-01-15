@@ -132,9 +132,163 @@ public class Robot {
     }
 
     public void endTurn() throws GameActionException {
+        attackCloudExploit();
         MapTracker.initialize();
         flushSectorDatabase();
         MapTracker.markSeen();
+    }
+
+    public void attackCloudExploit() throws GameActionException {
+        if (rc.getType() == RobotType.LAUNCHER) {
+            int x = rc.getLocation().x;
+            int y = rc.getLocation().y;
+            do {
+                if (rc.canAttack(new MapLocation(x + 4, y + 0))) {
+                    rc.attack(new MapLocation(x + 4, y + 0));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 0, y + 4))) {
+                    rc.attack(new MapLocation(x + 0, y + 4));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 0, y + -4))) {
+                    rc.attack(new MapLocation(x + 0, y + -4));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -4, y + 0))) {
+                    rc.attack(new MapLocation(x + -4, y + 0));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 3, y + 2))) {
+                    rc.attack(new MapLocation(x + 3, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 3, y + -2))) {
+                    rc.attack(new MapLocation(x + 3, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + 3))) {
+                    rc.attack(new MapLocation(x + 2, y + 3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + -3))) {
+                    rc.attack(new MapLocation(x + 2, y + -3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + 3))) {
+                    rc.attack(new MapLocation(x + -2, y + 3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + -3))) {
+                    rc.attack(new MapLocation(x + -2, y + -3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -3, y + 2))) {
+                    rc.attack(new MapLocation(x + -3, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -3, y + -2))) {
+                    rc.attack(new MapLocation(x + -3, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 3, y + 1))) {
+                    rc.attack(new MapLocation(x + 3, y + 1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 3, y + -1))) {
+                    rc.attack(new MapLocation(x + 3, y + -1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 1, y + 3))) {
+                    rc.attack(new MapLocation(x + 1, y + 3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 1, y + -3))) {
+                    rc.attack(new MapLocation(x + 1, y + -3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -1, y + 3))) {
+                    rc.attack(new MapLocation(x + -1, y + 3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -1, y + -3))) {
+                    rc.attack(new MapLocation(x + -1, y + -3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -3, y + 1))) {
+                    rc.attack(new MapLocation(x + -3, y + 1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -3, y + -1))) {
+                    rc.attack(new MapLocation(x + -3, y + -1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 3, y + 0))) {
+                    rc.attack(new MapLocation(x + 3, y + 0));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 0, y + 3))) {
+                    rc.attack(new MapLocation(x + 0, y + 3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 0, y + -3))) {
+                    rc.attack(new MapLocation(x + 0, y + -3));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -3, y + 0))) {
+                    rc.attack(new MapLocation(x + -3, y + 0));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + 2))) {
+                    rc.attack(new MapLocation(x + 2, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + -2))) {
+                    rc.attack(new MapLocation(x + 2, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + 2))) {
+                    rc.attack(new MapLocation(x + -2, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + -2))) {
+                    rc.attack(new MapLocation(x + -2, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + 1))) {
+                    rc.attack(new MapLocation(x + 2, y + 1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 2, y + -1))) {
+                    rc.attack(new MapLocation(x + 2, y + -1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 1, y + 2))) {
+                    rc.attack(new MapLocation(x + 1, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + 1, y + -2))) {
+                    rc.attack(new MapLocation(x + 1, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -1, y + 2))) {
+                    rc.attack(new MapLocation(x + -1, y + 2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -1, y + -2))) {
+                    rc.attack(new MapLocation(x + -1, y + -2));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + 1))) {
+                    rc.attack(new MapLocation(x + -2, y + 1));
+                    break;
+                }
+                if (rc.canAttack(new MapLocation(x + -2, y + -1))) {
+                    rc.attack(new MapLocation(x + -2, y + -1));
+                    break;
+                }
+            } while (false);
+        }
     }
 
     /*
@@ -1214,5 +1368,36 @@ public class Robot {
             }
         }
         return closestSector;
+    }
+
+    public MapLocation findClosestWell(ResourceType resourceTarget) throws GameActionException {
+        MapLocation closestLoc = null;
+        int closestDistance = Integer.MAX_VALUE;
+        if (resourceTarget == ResourceType.ADAMANTIUM) {
+            for (int x = 0; x < numSectors; x++) {
+                MapLocation sectorLoc = sectorCenters[x];
+                int currDistance = currLoc.distanceSquaredTo(sectorLoc);
+                if (currDistance < closestDistance) {
+                    int flag = Comms.readSectorAdamantiumFlag(x);
+                    if (flag == 1) {
+                        closestDistance = currDistance;
+                        closestLoc = sectorLoc;
+                    }
+                }
+            }
+        } else {
+            for (int x = 0; x < numSectors; x++) {
+                MapLocation sectorLoc = sectorCenters[x];
+                int currDistance = currLoc.distanceSquaredTo(sectorLoc);
+                if (currDistance < closestDistance) {
+                    int flag = Comms.readSectorManaFlag(x);
+                    if (flag == 1) {
+                        closestDistance = currDistance;
+                        closestLoc = sectorLoc;
+                    }
+                }
+            }
+        }
+        return closestLoc;
     }
 }
