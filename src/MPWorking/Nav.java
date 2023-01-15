@@ -17,6 +17,9 @@ public class Nav {
 
     static final int GREEDY_TURNS = 4;
 
+    static final int DIST_TO_AVOID_CURRENTS = 8;
+    static final int DIST_FOR_EXACT_CURRENT = 20;
+
     static void init(RobotController r) {
         rc = r;
         turnsGreedy = 0;
@@ -71,11 +74,16 @@ public class Nav {
         // } else {
         // return getGreedyDirection(rc.getLocation().directionTo(dest));
         // }
-        return getGreedyDirection(rc.getLocation().directionTo(dest));
+
+        boolean avoidClouds = false;
+        boolean avoidCurrents = rc.getLocation().isWithinDistanceSquared(dest, DIST_TO_AVOID_CURRENTS);
+        boolean onlyExactCurrent = rc.getLocation().isWithinDistanceSquared(dest, DIST_FOR_EXACT_CURRENT);
+        return getGreedyDirection(rc.getLocation().directionTo(dest), avoidClouds, avoidCurrents, onlyExactCurrent);
     }
 
-    public static Direction getGreedyDirection(Direction dir) throws GameActionException {
-        Direction[] bestDirs = greedyDirection(dir);
+    public static Direction getGreedyDirection(Direction dir, boolean avoidClouds, boolean avoidCurrents,
+            boolean onlyExactCurrent) throws GameActionException {
+        Direction[] bestDirs = greedyDirection(dir, avoidClouds, avoidCurrents, onlyExactCurrent);
         if (bestDirs.length > 0) {
             return bestDirs[0];
         } else {
@@ -83,7 +91,8 @@ public class Nav {
         }
     }
 
-    public static Direction[] greedyDirection(Direction dir)
+    public static Direction[] greedyDirection(Direction dir, boolean avoidClouds, boolean avoidCurrents,
+            boolean onlyExactCurrent)
             throws GameActionException {
         Direction left = dir.rotateLeft();
         Direction right = dir.rotateRight();
@@ -99,15 +108,18 @@ public class Nav {
 
         int numToInsert = 0;
         if (rc.canMove(dir)) {
-            dirCDMult = Util.getCooldownMultiplier(loc, dir);
+            dirCDMult = Util.getCooldownMultiplier(loc,
+                    dir, avoidClouds, avoidCurrents, onlyExactCurrent);
             numToInsert++;
         }
         if (rc.canMove(dir)) {
-            leftCDMult = Util.getCooldownMultiplier(leftLoc, left);
+            leftCDMult = Util.getCooldownMultiplier(leftLoc,
+                    onlyExactCurrent ? dir : left, avoidClouds, avoidCurrents, onlyExactCurrent);
             numToInsert++;
         }
         if (rc.canMove(dir)) {
-            rightCDMult = Util.getCooldownMultiplier(rightLoc, right);
+            rightCDMult = Util.getCooldownMultiplier(rightLoc,
+                    onlyExactCurrent ? dir : right, avoidClouds, avoidCurrents, onlyExactCurrent);
             numToInsert++;
         }
 
@@ -145,7 +157,11 @@ public class Nav {
     }
 
     static MapLocation getGreedyTargetAway(MapLocation loc) throws GameActionException {
-        Direction[] dirs = greedyDirection(rc.getLocation().directionTo(loc).opposite());
+        boolean avoidClouds = false;
+        boolean avoidCurrents = rc.getLocation().isWithinDistanceSquared(loc, DIST_TO_AVOID_CURRENTS);
+        boolean onlyExactCurrent = !rc.getLocation().isWithinDistanceSquared(loc, DIST_FOR_EXACT_CURRENT);
+        Direction[] dirs = greedyDirection(rc.getLocation().directionTo(loc).opposite(), avoidClouds, avoidCurrents,
+                onlyExactCurrent);
         return rc.getLocation().add(Util.getFirstMoveableDir(dirs));
     }
 
@@ -178,14 +194,16 @@ public class Nav {
         }
     }
 
-    static void tryMoveSafely(MapLocation target) throws GameActionException {
+    static void tryMoveSafely(MapLocation target, boolean avoidClouds, boolean avoidCurrents,
+            boolean onlyExactCurrent) throws GameActionException {
         Debug.printString("Saf mov");
         MapLocation currLoc = rc.getLocation();
 
         Direction correctDir = currLoc.directionTo(target);
         Direction[] importantDirs = Util.getInOrderDirections(correctDir);
 
-        double currCooldown = Util.getCooldownMultiplier(currLoc, correctDir);
+        double currCooldown = Util.getCooldownMultiplier(currLoc, correctDir, avoidClouds, avoidCurrents,
+                onlyExactCurrent);
         double currBestDist = Integer.MAX_VALUE;
         double bestCooldown = Integer.MAX_VALUE;
         Direction currBestDirection = Direction.CENTER;
@@ -193,7 +211,8 @@ public class Nav {
         for (Direction possibleDir : importantDirs) {
             MapLocation targetLoc = currLoc.add(possibleDir);
             int targetLocDist = currLoc.distanceSquaredTo(targetLoc);
-            double nextCooldown = Util.getCooldownMultiplier(targetLoc, possibleDir);
+            double nextCooldown = Util.getCooldownMultiplier(targetLoc, possibleDir, avoidClouds, avoidCurrents,
+                    onlyExactCurrent);
             if (nextCooldown < currCooldown + Util.MIN_COOLDOWN_MULT_DIFF && rc.canMove(possibleDir)) {
                 if (nextCooldown < bestCooldown) {
                     bestCooldown = nextCooldown;
@@ -246,6 +265,7 @@ public class Nav {
             if (dir != null && rc.canMove(dir)) {
                 if (!VisitedTracker.check(rc.adjacentLocation(dir))) {
                     rc.move(dir);
+                    return;
                 } else {
                     activateGreedy();
                 }
@@ -261,11 +281,6 @@ public class Nav {
                 } else {
                     Debug.setIndicatorDot(true, rc.getLocation(), 255, 255, 255);
                     Debug.println("Didn't have enough BC");
-
-                    Direction dir = getGreedyDirection(rc.getLocation().directionTo(target));
-                    if (dir != null && rc.canMove(dir)) {
-                        rc.move(dir);
-                    }
                 }
                 break;
             default:
@@ -276,19 +291,6 @@ public class Nav {
                 } else {
                     Debug.setIndicatorDot(true, rc.getLocation(), 255, 255, 255);
                     Debug.println("Didn't have enough BC");
-
-                    Direction dir = getGreedyDirection(rc.getLocation().directionTo(target));
-                    if (dir != null && rc.canMove(dir)) {
-                        rc.move(dir);
-                    }
-
-                    if (!rc.isMovementReady())
-                        return;
-
-                    dir = getGreedyDirection(rc.getLocation().directionTo(target));
-                    if (dir != null && rc.canMove(dir)) {
-                        rc.move(dir);
-                    }
                 }
                 break;
         }

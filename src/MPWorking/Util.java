@@ -140,28 +140,30 @@ public class Util {
     static boolean isDirAdj(Direction dir, Direction dir2) {
         switch (dir) {
             case NORTH:
-                return dir2 == Direction.NORTHEAST || dir2 == Direction.NORTHWEST;
+                return dir2 == Direction.NORTHEAST || dir2 == Direction.NORTHWEST || dir2 == Direction.NORTH;
             case NORTHEAST:
-                return dir2 == Direction.NORTH || dir2 == Direction.EAST;
+                return dir2 == Direction.NORTH || dir2 == Direction.EAST || dir2 == Direction.NORTHEAST;
             case EAST:
-                return dir2 == Direction.NORTHEAST || dir2 == Direction.SOUTHEAST;
+                return dir2 == Direction.NORTHEAST || dir2 == Direction.SOUTHEAST || dir2 == Direction.EAST;
             case SOUTHEAST:
-                return dir2 == Direction.EAST || dir2 == Direction.SOUTH;
+                return dir2 == Direction.EAST || dir2 == Direction.SOUTH || dir2 == Direction.SOUTHEAST;
             case SOUTH:
-                return dir2 == Direction.SOUTHWEST || dir2 == Direction.SOUTHEAST;
+                return dir2 == Direction.SOUTHEAST || dir2 == Direction.SOUTHWEST || dir2 == Direction.SOUTH;
             case SOUTHWEST:
-                return dir2 == Direction.SOUTH || dir2 == Direction.WEST;
+                return dir2 == Direction.SOUTH || dir2 == Direction.WEST || dir2 == Direction.SOUTHWEST;
             case WEST:
-                return dir2 == Direction.NORTHWEST || dir2 == Direction.SOUTHWEST;
+                return dir2 == Direction.NORTHWEST || dir2 == Direction.SOUTHWEST || dir2 == Direction.WEST;
             case NORTHWEST:
-                return dir2 == Direction.WEST || dir2 == Direction.NORTH;
+                return dir2 == Direction.WEST || dir2 == Direction.NORTH || dir2 == Direction.NORTHWEST;
             default:
                 return false;
         }
     }
 
     // Gets the cooldown for a square, assuming you're traveling in a direction dir
-    static double getCooldownMultiplier(MapLocation loc, Direction dir) throws GameActionException {
+    static double getCooldownMultiplier(MapLocation loc, Direction dir, boolean avoidClouds, boolean avoidCurrents,
+            boolean onlyExactCurrent)
+            throws GameActionException {
         double cooldown = 100;
         if (!rc.onTheMap(loc) || !rc.sensePassability(loc))
             return cooldown;
@@ -171,11 +173,17 @@ public class Util {
             return 1;
 
         MapInfo info = rc.senseMapInfo(loc);
+        if (avoidClouds && info.hasCloud())
+            return cooldown;
+
         Direction currentDir = info.getCurrentDirection();
+        if (avoidCurrents && currentDir != Direction.CENTER)
+            return cooldown;
         cooldown = info.getCooldownMultiplier(rc.getTeam());
 
         if (Util.isDirAdj(currentDir, dir)) {
-            cooldown *= 0.5;
+            if (!onlyExactCurrent || currentDir == dir)
+                cooldown *= 0.5;
         } else if (Util.isDirAdj(currentDir, dir.opposite())) {
             cooldown *= 2;
         }
