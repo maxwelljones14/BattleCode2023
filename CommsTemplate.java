@@ -15,14 +15,15 @@ public class Comms {
     // ControlStatus priorities are in increasing priority.
     public class ControlStatus {
         public static final int UNKNOWN = 0;
-        public static final int EMPTY = 1;
-        public static final int FRIENDLY_ISLAND = 2;
-        public static final int NEUTRAL_ISLAND = 3;
+        public static final int EXPLORING = 1;
+        public static final int EMPTY = 2;
+        public static final int FRIENDLY_ISLAND = 3;
+        public static final int NEUTRAL_ISLAND = 4;
 
-        public static final int MIN_ENEMY_STATUS = 4;
-        public static final int ENEMY_PASSIVE = 4;
-        public static final int ENEMY_ISLAND = 5;
-        public static final int ENEMY_AGGRESIVE = 6;
+        public static final int MIN_ENEMY_STATUS = 5;
+        public static final int ENEMY_PASSIVE = 5;
+        public static final int ENEMY_ISLAND = 6;
+        public static final int ENEMY_AGGRESIVE = 7;
 
         public static final int NUM_CONTROL_STATUS = 8;
     }

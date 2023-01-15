@@ -1121,6 +1121,11 @@ public class Robot {
     /**
      * Returns nearest explore sector or UNDEFINED_SECTOR_INDEX otherwise
      * 
+     * Note: Explore sectors are not necessarily removed from the explore list
+     * once they are visited. They have to be overwritten by a new explore sector.
+     * This has the effect of keeping the initial sectors (symmetry locs) in the
+     * explore list until better sectors are chosen.
+     * 
      * @return
      * @throws GameActionException
      */
@@ -1128,35 +1133,88 @@ public class Robot {
         int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
         int closestSectorIndex = Comms.UNDEFINED_SECTOR_INDEX;
         int closestDistance = Integer.MAX_VALUE;
-        for (int i = 0; i < Comms.EXPLORE_SECTOR_SLOTS; i++) {
-            int nearestSectorAll = Comms.readExploreSectorAll(i);
-            int nearestSector = nearestSectorAll & 127; // 7 lowest order bits
-            // Break if no more combat sectors exist
-            if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
-                break;
-            }
-            // Skip sectors which are fully claimed
-            int nearestSectorStatus = (nearestSectorAll & 128) >> 7; // 2^7
-            if (nearestSectorStatus == Comms.ClaimStatus.CLAIMED) {
-                continue;
-            }
-            int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestSector = nearestSector;
-                closestSectorIndex = i;
+        // Try to choose an explore sector that you have never visited first.
+        // If you have visited all explore sectors,
+        // choose one that you haven't visited recently
+        for (int j = 0; j < 2 && closestSectorIndex == Comms.UNDEFINED_SECTOR_INDEX; j++) {
+            closestSector = Comms.UNDEFINED_SECTOR_INDEX;
+            closestSectorIndex = Comms.UNDEFINED_SECTOR_INDEX;
+            closestDistance = Integer.MAX_VALUE;
+            for (int i = 0; i < Comms.EXPLORE_SECTOR_SLOTS; i++) {
+                int nearestSectorAll = Comms.readExploreSectorAll(i);
+                int nearestSector = nearestSectorAll & 127; // 7 lowest order bits
+                // Break if no more combat sectors exist
+                if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
+                    break;
+                }
+                // Skip sectors which are fully claimed
+                int nearestSectorStatus = (nearestSectorAll & 128) >> 7; // 2^7
+                if (nearestSectorStatus == Comms.ClaimStatus.CLAIMED)
+                    continue;
+
+                // Skip sectors that have been visited (recently)
+                if (j == 0) {
+                    if (sectorDatabase.at(nearestSector).hasVisited())
+                        continue;
+                } else {
+                    if (sectorDatabase.at(nearestSector).hasVisitedRecently())
+                        continue;
+                }
+
+                int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestSector = nearestSector;
+                    closestSectorIndex = i;
+                }
             }
         }
         // Claim sector
         if (closestSectorIndex != Comms.UNDEFINED_SECTOR_INDEX) {
-            // TODO: Have similar logic to SectorInfo?
-            if (rc.canWriteSharedArray(0, 0)) {
+            if (rc.getType() == RobotType.AMPLIFIER) {
+                // Amplifiers should unclaim if they are about to die.
                 Comms.writeExploreSectorClaimStatus(closestSectorIndex, Comms.ClaimStatus.CLAIMED);
             }
-            sectorDatabase.at(closestSector).setControlStatus(Comms.ControlStatus.UNKNOWN);
             exploreMode = true;
         }
         return closestSector;
+    }
+
+    // Note: index is included in being available
+    public int getNextEmptyExploreSectorIdx(int index) throws GameActionException {
+        // Preserve explore sectors which still have not been claimed or visited
+        while (index < Comms.EXPLORE_SECTOR_SLOTS) {
+            int sector = Comms.readExploreSectorIndex(index);
+            // Break if no more explore sectors exist
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX)
+                break;
+            int claimStatus = Comms.readExploreSectorClaimStatus(sector);
+            if (claimStatus == Comms.ClaimStatus.CLAIMED)
+                break;
+            int controlStatus = Comms.readSectorControlStatus(sector);
+            if (controlStatus != Comms.ControlStatus.EXPLORING)
+                break;
+            index++;
+        }
+        return index;
+    }
+
+    // Note: index is included in being available
+    public int getNextEmptyCombatSectorIdx(int index) throws GameActionException {
+        // Preserve combat sectors which still have enemies or are claimed
+        while (index < Comms.COMBAT_SECTOR_SLOTS) {
+            int sector = Comms.readCombatSectorIndex(index);
+            // Break if no more explore sectors exist
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS &&
+                    Comms.readCombatSectorClaimStatus(sector) == Comms.ClaimStatus.UNCLAIMED) {
+                break;
+            }
+            index++;
+        }
+        return index;
     }
 
     /**
