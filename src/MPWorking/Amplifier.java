@@ -62,7 +62,7 @@ public class Amplifier extends Robot {
                 // only be going to new destination for 15 rounds then restart normal procedures
                 if ((exploreSectorLoc != null
                         && currLoc.distanceSquaredTo(exploreSectorLoc) <= Util.AMP_JUST_INSIDE_VISION_RADIUS)
-                        || roundsSinceStartedExploring > 15) {
+                        || roundsSinceStartedExploring > Util.AMP_ROUNDS_TO_EXPLORE) {
                     // unclaim the index
                     Comms.writeExploreSectorClaimStatus(claimedExploreSector, Comms.ClaimStatus.UNCLAIMED);
                     currState = AmplifierState.CHILLING;

@@ -44,6 +44,7 @@ public class Util {
     static final int AMP_JUST_INSIDE_VISION_RADIUS = RobotType.AMPLIFIER.visionRadiusSquared - 7;
 
     static final int MIN_LAUNCHERS_BEFORE_AMPLIFIER = 15;
+    static final int AMP_ROUNDS_TO_EXPLORE = 15;
 
     static void init(RobotController r) {
         rc = r;
