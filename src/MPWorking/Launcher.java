@@ -293,7 +293,10 @@ public class Launcher extends Robot {
         for (int x = 0; x < dirsToConsider.length; x++) {
             Direction newDir = dirsToConsider[x];
             if (rc.canMove(newDir)) {
-                Direction extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
+                Direction extraDir = Direction.CENTER;
+                if (rc.onTheMap(currLoc.add(newDir))) {
+                    extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
+                }
                 MapLocation targetLoc = currLoc.add(newDir).add(extraDir);
                 boolean isPassible = rc.sensePassability(targetLoc);
                 boolean hasCloud = rc.senseMapInfo(currLoc.add(newDir)).hasCloud();
@@ -334,7 +337,10 @@ public class Launcher extends Robot {
         for (int x = 0; x < dirsToConsider.length; x++) {
             Direction newDir = dirsToConsider[x];
             if (rc.canMove(newDir)) {
-                Direction extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
+                Direction extraDir = Direction.CENTER;
+                if (rc.onTheMap(currLoc.add(newDir))) {
+                    extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
+                }
                 MapLocation targetLoc = currLoc.add(newDir).add(extraDir);
                 boolean hasCloud = rc.senseMapInfo(currLoc.add(newDir)).hasCloud();
                 boolean currLocHasCloud = rc.senseMapInfo(currLoc).hasCloud();
