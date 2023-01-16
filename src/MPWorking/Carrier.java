@@ -4,6 +4,7 @@ import battlecode.common.*;
 import MPWorking.Util.*;
 import MPWorking.Comms.*;
 import MPWorking.Debug.*;
+import MPWorking.fast.*;
 
 public class Carrier extends Robot {
     static enum CarrierState {
@@ -17,24 +18,33 @@ public class Carrier extends Robot {
 
     ResourceType resourceTarget;
     MapLocation seenIsland;
-    WellInfo closestWell;
-    MapLocation closestWellLoc;
+
+    int turnStartedMining;
 
     static RobotInfo[] enemyAttackable;
     static RobotInfo[] friendlyAttackable;
     RobotInfo closestEnemy;
     RobotInfo closestFriendly;
 
+    FastLocSet wellsVisitedThisCycle;
+    FastLocSet wellSectorsVisitedThisCycle;
+    WellInfo closestWell;
+
+    public final int CARRIERS_PER_WELL_TO_LEAVE = 12;
+    public final int RESET_WELLS_VISITED_TIMEOUT = 100;
+
     public Carrier(RobotController r) throws GameActionException {
         super(r);
         currState = CarrierState.MINING;
-        closestWell = null;
+        turnStartedMining = 0;
         int assignment = Comms.readOurHqFlag(homeIdx);
         if (assignment == Comms.HQFlag.CARRIER_ADAMANTIUM) {
             resourceTarget = ResourceType.ADAMANTIUM;
         } else {
             resourceTarget = ResourceType.MANA;
         }
+        wellsVisitedThisCycle = new FastLocSet();
+        wellSectorsVisitedThisCycle = new FastLocSet();
     }
 
     public MapLocation findUnconqueredIsland() throws GameActionException {
@@ -58,37 +68,39 @@ public class Carrier extends Robot {
         closestEnemy = getClosestRobot(enemyAttackable);
         closestFriendly = getClosestRobot(friendlyAttackable);
 
-        Debug.printString("Target: " + resourceTarget);
+        Debug.printString(resourceTarget.toString());
 
         // mark the first island we see
         if (seenIsland == null) {
             seenIsland = findUnconqueredIsland();
         } else {
-            Debug.printString("Island: " + seenIsland);
+            Debug.printString("Isl: " + seenIsland);
         }
 
         trySwitchState();
-        Debug.printString("State: " + currState);
+        Debug.printString(currState.toString());
         doStateAction();
     }
 
     public void trySwitchState() throws GameActionException {
         switch (currState) {
             case MINING:
-                if (shouldRunAway()) {
+                if (shouldRunAwayTarget() != null) {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
+                } else if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
+                    currState = CarrierState.DEPOSITING;
                 } else if ((seenIsland != null && rc.canTakeAnchor(home, Anchor.STANDARD)) ||
                         rc.getAnchor() != null) {
                     currState = CarrierState.PLACING_ANCHOR;
                 }
                 break;
             case PLACING_ANCHOR:
-                if (shouldRunAway()) {
+                if (shouldRunAwayTarget() != null) {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
                 } else if (rc.getAnchor() == null) {
-                    currState = CarrierState.MINING;
+                    enterMineState();
                 }
                 break;
             case REPORTING:
@@ -98,15 +110,57 @@ public class Carrier extends Robot {
                     } else if (rc.getResourceAmount(resourceTarget) != 0) {
                         currState = CarrierState.DEPOSITING;
                     } else {
-                        currState = CarrierState.MINING;
+                        enterMineState();
                     }
                 }
                 break;
             case DEPOSITING:
                 if (rc.getResourceAmount(resourceTarget) == 0) {
-                    currState = CarrierState.MINING;
+                    enterMineState();
                 }
                 break;
+        }
+    }
+
+    public void enterMineState() {
+        currState = CarrierState.MINING;
+        wellsVisitedThisCycle.clear();
+        wellSectorsVisitedThisCycle.clear();
+        turnStartedMining = rc.getRoundNum();
+        closestWell = null;
+    }
+
+    public void updateHomeifCurrHomeAttacked() throws GameActionException {
+        boolean[] eligibleHomes = new boolean[] { true, true, true, true };
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int nearestSector = Comms.readCombatSectorIndex(i);
+            // Break if no more combat sectors exist
+            if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            for (int j = 0; j < headquarterLocations.length; j++) {
+                MapLocation loc = headquarterLocations[j];
+                if (loc.x == -1 || sectorCenters[nearestSector]
+                        .distanceSquaredTo(loc) <= RobotType.LAUNCHER.actionRadiusSquared) {
+                    eligibleHomes[j] = false;
+                }
+            }
+
+        }
+        if (!eligibleHomes[homeIdx]) {
+            Debug.printString("need new home");
+            int closestDist = Integer.MAX_VALUE;
+            MapLocation closestHome = home;
+            for (int j = 0; j < headquarterLocations.length; j++) {
+                MapLocation possibleHome = headquarterLocations[j];
+                int currDist = Util.distance(currLoc, possibleHome);
+                if (possibleHome.x != -1 && eligibleHomes[j] && currDist <= closestDist) {
+                    closestHome = possibleHome;
+                    closestDist = currDist;
+                }
+            }
+            home = closestHome;
+            Debug.printString("home now " + home);
         }
     }
 
@@ -115,14 +169,11 @@ public class Carrier extends Robot {
 
         switch (currState) {
             case MINING:
-                // If we are at capacity, go home.
-                if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
-                    Debug.printString("At capacity");
-                    if (!transfer()) {
-                        Nav.move(home);
-                        transfer();
-                    }
-                    break;
+                // Reset wellsVisitedThisCycle every so often if we haven't found one
+                if (turnStartedMining + RESET_WELLS_VISITED_TIMEOUT < rc.getRoundNum()) {
+                    wellsVisitedThisCycle.clear();
+                    wellSectorsVisitedThisCycle.clear();
+                    turnStartedMining = rc.getRoundNum();
                 }
 
                 // If we can see a well, move towards it
@@ -131,30 +182,58 @@ public class Carrier extends Robot {
                 for (WellInfo well : wells) {
                     MapLocation wellLocation = well.getMapLocation();
                     int dist = Util.distance(rc.getLocation(), wellLocation);
-                    if (dist < closestDist) {
+                    if (dist < closestDist && !wellsVisitedThisCycle.contains(wellLocation)) {
                         closestDist = dist;
                         closestWell = well;
                     }
                 }
 
-                if (closestWell != null) {
-                    Debug.printString("Found well at " + closestWell.getMapLocation());
-                    if (!collect()) {
+                collect: if (closestWell != null) {
+                    Debug.printString("Well: " + closestWell.getMapLocation());
+                    // Mark this sector's well as visited
+                    wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(closestWell.getMapLocation())]);
+
+                    // If we are adjacent to a well, collect from it.
+                    if (rc.getLocation().isAdjacentTo(closestWell.getMapLocation())) {
+                        collect(closestWell);
+                    } else {
+                        // If there are too many carriers on this well, move to another well.
+                        // If there aren't 6 carriers on this well, skip this check.
+                        RobotInfo[] robots = rc.senseNearbyRobots(
+                                closestWell.getMapLocation(), 2, null);
+                        if (robots.length >= 6) {
+                            int numCarriers = 0;
+                            RobotInfo robot;
+                            for (int i = FriendlySensable.length; --i >= 0;) {
+                                robot = FriendlySensable[i];
+                                if (robot.type == RobotType.CARRIER)
+                                    numCarriers++;
+                            }
+
+                            if (numCarriers >= CARRIERS_PER_WELL_TO_LEAVE) {
+                                Debug.printString("Leaving");
+                                wellsVisitedThisCycle.add(closestWell.getMapLocation());
+                                closestWell = null;
+                                break collect;
+                            }
+                        }
+
                         Debug.printString("Moving");
                         Nav.move(closestWell.getMapLocation());
-                        collect();
+                        collect(closestWell);
                     }
-                } else {
-                    if (closestWellLoc == null) {
-                        closestWellLoc = findClosestWell(resourceTarget);
-                    }
-                    MapLocation target = closestWellLoc;
-                    // If there is no visible well, just explore.
-                    if (target == null) {
+                }
+
+                if (closestWell == null) {
+                    // If we can't see a well, move towards the closest mine sector
+                    int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, wellSectorsVisitedThisCycle);
+                    MapLocation target = null;
+                    if (mineSectorIndex != Comms.UNDEFINED_SECTOR_INDEX) {
+                        Debug.printString("Well in sector: " + target);
+                        target = sectorCenters[mineSectorIndex];
+                    } else {
                         target = Explore.getExploreTarget();
                         Debug.printString("Exploring");
-                    } else {
-                        Debug.printString("Known well at " + target);
                     }
                     Nav.move(target);
                 }
@@ -193,6 +272,11 @@ public class Carrier extends Robot {
                 }
                 break;
             case REPORTING:
+                MapLocation target = shouldRunAwayTarget();
+                if (target != null) {
+                    Nav.move(currLoc.add(currLoc.directionTo(target)).add(currLoc.directionTo(target)));
+                }
+                updateHomeifCurrHomeAttacked();
                 Nav.move(home);
                 break;
             case DEPOSITING:
@@ -211,8 +295,6 @@ public class Carrier extends Robot {
         if (rc.canTransferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget))) {
             Debug.printString("Transfering");
             rc.transferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget));
-            closestWell = null;
-            closestWellLoc = null;
             return true;
         }
         return false;
@@ -222,11 +304,11 @@ public class Carrier extends Robot {
      * Collects from closestWell if possible. Returns true if collect was
      * successful.
      */
-    public boolean collect() throws GameActionException {
-        int amount = Math.min(GameConstants.CARRIER_CAPACITY - rc.getWeight(), closestWell.getRate());
-        if (rc.canCollectResource(closestWell.getMapLocation(), amount)) {
+    public boolean collect(WellInfo well) throws GameActionException {
+        int amount = Math.min(GameConstants.CARRIER_CAPACITY - rc.getWeight(), well.getRate());
+        if (rc.canCollectResource(well.getMapLocation(), amount)) {
             Debug.printString("Collecting");
-            rc.collectResource(closestWell.getMapLocation(), amount);
+            rc.collectResource(well.getMapLocation(), amount);
             return true;
         }
         return false;
@@ -296,14 +378,14 @@ public class Carrier extends Robot {
         }
     }
 
-    public boolean shouldRunAway() throws GameActionException {
+    public MapLocation shouldRunAwayTarget() throws GameActionException {
         String str = "";
         MapLocation target = null;
         // Run away if either
         // - You see fewer friendly attackers than enemy attackers
         // - the closest enemy is closer than the clsoest friendly
         if (closestEnemy != null) {
-            if (enemyAttackable.length + 5 >= friendlyAttackable.length) {
+            if (enemyAttackable.length + 2 >= friendlyAttackable.length) {
                 target = Pathfinding.getGreedyTargetAway(closestEnemy.getLocation());
                 str = "Enemies++ " + closestEnemy.type;
             }
@@ -317,6 +399,6 @@ public class Carrier extends Robot {
 
             Debug.printString(str);
         }
-        return target != null;
+        return target;
     }
 }

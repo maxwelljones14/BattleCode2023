@@ -50,9 +50,12 @@ public class Headquarters extends Robot {
     FastUnitTracker manaCarrierTracker;
 
     static int roundsSinceLastAmplifier;
+    static boolean nearHQ;
+    static MapLocation enemyHQLoc;
 
     public Headquarters(RobotController r) throws GameActionException {
         super(r);
+        checkIfHQNear();
         stateStack = new ArrayDeque<State>();
         currentState = State.INIT;
         currLoc = rc.getLocation();
@@ -83,13 +86,27 @@ public class Headquarters extends Robot {
         // }
         adamCarrierTracker.update();
         manaCarrierTracker.update();
-        computeHqNum();
         clearOldEnemyInfo();
-        if (rc.getRoundNum() == 2) {
-            setInitialExploreSectors();
+
+        switch (rc.getRoundNum()) {
+            case 1:
+                computeHqNum();
+                break;
+            case 2:
+                loadHQLocations();
+                updateSymmetryLocs();
+                invalidateSymmetries();
+                break;
+            case 3:
+                // We do this on turn 3 so that all HQs have a chance to invalidate symmetries.
+                closestEnemyHQGuess = getClosestEnemyHQGuess();
+                setInitialExploreSectors();
+                break;
+            default:
+                break;
         }
+
         setPrioritySectors();
-        updateclosestEnemyHQ();
         toggleState();
         Debug.printString("current state: " + currentState);
         Debug.printString("A: " + adamCarrierTracker.size());
@@ -103,12 +120,20 @@ public class Headquarters extends Robot {
         // printEnemyCombatSectors();
         roundsSinceLastAmplifier++;
         // displayExploreSectors();
+        // displayMineSectors();
     }
 
-    public void updateclosestEnemyHQ() throws GameActionException {
-        if (rc.getRoundNum() == 2) {
-            closestEnemyHQGuess = getClosestEnemyHQGuess();
+    public void checkIfHQNear() throws GameActionException {
+        EnemySensable = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        for (int x = 0; x < EnemySensable.length; x++) {
+            RobotInfo enemy = EnemySensable[x];
+            if (enemy.getType() == RobotType.HEADQUARTERS) {
+                nearHQ = true;
+                enemyHQLoc = enemy.getLocation();
+                return;
+            }
         }
+        nearHQ = false;
     }
 
     public void findClosestVisibleWells() throws GameActionException {
@@ -132,24 +157,28 @@ public class Headquarters extends Robot {
     public int getNextCarrierType() throws GameActionException {
         int carrierType;
         if (currentState == State.INIT) {
-            if (nearestMnWell != null && nearestAdWell == null) {
+            if (nearestMnWell == null) {
                 // if theres an mn but not an ad, the first 2 should be mn and the second should
                 // be ad
                 if (carrierCount < 2) {
                     // next should be an mn carrier
-                    carrierType = Comms.HQFlag.CARRIER_MANA;
-                } else {
                     carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                } else {
+                    carrierType = Comms.HQFlag.CARRIER_MANA;
                 }
             } else {
                 // if theres both ad and mn, or neither, then first 2 should be ad and second 2
                 // should be mn
-                if (carrierCount < 2) {
-                    // next should be an ad carrier
-                    carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                } else {
-                    // next should be an mn carrier
+                if (Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT) {
                     carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else {
+                    if (carrierCount < 3) {
+                        // next should be an ad carrier
+                        carrierType = Comms.HQFlag.CARRIER_MANA;
+                    } else {
+                        // next should be an mn carrier
+                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                    }
                 }
             }
         } else {
@@ -178,7 +207,9 @@ public class Headquarters extends Robot {
                 dirToBuild = currLoc.directionTo(nearestAdWell);
             } else {
                 // look in sectors for nearest ad well
-                MapLocation nearestAdWellSector = findClosestWell(ResourceType.ADAMANTIUM);
+                int mineSectorIndex = getNearestMineSectorIdx(ResourceType.ADAMANTIUM, null);
+                MapLocation nearestAdWellSector = mineSectorIndex == Comms.UNDEFINED_SECTOR_INDEX ? null
+                        : sectorCenters[mineSectorIndex];
                 if (nearestAdWellSector != null) {
                     dirToBuild = currLoc.directionTo(nearestAdWellSector);
                 } else {
@@ -190,7 +221,9 @@ public class Headquarters extends Robot {
                 dirToBuild = currLoc.directionTo(nearestMnWell);
             } else {
                 // look in sectors for nearest mn well
-                MapLocation nearestMnWellSector = findClosestWell(ResourceType.MANA);
+                int mineSectorIndex = getNearestMineSectorIdx(ResourceType.MANA, null);
+                MapLocation nearestMnWellSector = mineSectorIndex == Comms.UNDEFINED_SECTOR_INDEX ? null
+                        : sectorCenters[mineSectorIndex];
                 if (nearestMnWellSector != null) {
                     dirToBuild = currLoc.directionTo(nearestMnWellSector);
                 } else {
@@ -226,6 +259,31 @@ public class Headquarters extends Robot {
 
     public void changeState(State newState) throws GameActionException {
         currentState = newState;
+    }
+
+    public void buildCarrier(int carrierType) throws GameActionException {
+        Debug.printString("Trying to build a carrier of type " + carrierType);
+
+        // get predetermined next carrier type and location
+        MapLocation newLoc = getNextCarrierLocation(carrierType);
+
+        if (newLoc != null && rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
+            rc.buildRobot(RobotType.CARRIER, newLoc);
+            carrierCount++;
+            RobotInfo newCarrier = rc.senseRobotAtLocation(newLoc);
+            if (newCarrier == null) {
+                Debug.printString("ERROR: built carrier but can't sense it");
+                return;
+            }
+
+            nextFlag = carrierType;
+
+            if (carrierType == Comms.HQFlag.CARRIER_MANA) {
+                manaCarrierTracker.add(newCarrier.ID);
+            } else {
+                adamCarrierTracker.add(newCarrier.ID);
+            }
+        }
     }
 
     public void buildCarrier() throws GameActionException {
@@ -271,6 +329,22 @@ public class Headquarters extends Robot {
         return Util.findInitLocation(currLoc, dir);
     }
 
+    public MapLocation getLauncherLocation(MapLocation target) throws GameActionException {
+        Direction dir = null;
+        if (target == null) {
+            target = closestEnemyHQGuess;
+            Debug.printString("dir of HQ " + target);
+        }
+        if (target == null) {
+            Debug.printString("ERROR: no HQ guesses");
+            dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
+        } else {
+            dir = currLoc.directionTo(target);
+        }
+
+        return Util.findInitLocation(currLoc, dir);
+    }
+
     public void buildLauncher(MapLocation newLoc) throws GameActionException {
         Debug.printString("Trying to build a launcher");
         if (newLoc != null && rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) {
@@ -292,18 +366,33 @@ public class Headquarters extends Robot {
     // gain enough resources to build the troops.
     // TODO: Restructure?
     public void firstRounds() throws GameActionException {
-        // build carriers
-        if (carrierCount < initCarriersWanted) {
-            buildCarrier();
-            return;
+        if (nearHQ || Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT) {
+            // set up locations for first launchers in the 4 cardinal directions
+            if (launcherCount < initLaunchersWanted) {
+                MapLocation locToBuild = getLauncherLocation(enemyHQLoc);
+                buildLauncher(locToBuild);
+                return;
+            }
+            // build carriers
+            if (carrierCount < initCarriersWanted) {
+                buildCarrier();
+                return;
+            }
+        } else {
+            // build carriers
+            if (carrierCount < initCarriersWanted) {
+                buildCarrier();
+                return;
+            }
+
+            // set up locations for first launchers in the 4 cardinal directions
+            if (launcherCount < initLaunchersWanted) {
+                MapLocation locToBuild = getLauncherLocation();
+                buildLauncher(locToBuild);
+                return;
+            }
         }
 
-        // set up locations for first launchers in the 4 cardinal directions
-        if (launcherCount < initLaunchersWanted) {
-            MapLocation locToBuild = getLauncherLocation();
-            buildLauncher(locToBuild);
-            return;
-        }
     }
 
     public void doStateAction() throws GameActionException {
@@ -352,18 +441,24 @@ public class Headquarters extends Robot {
      * @throws GameActionException
      */
     public void computeHqNum() throws GameActionException {
-        // On round 1, write a bad location to all HQ locations
-        if (rc.getRoundNum() == 1) {
+        // If all HQ locs are 0, then we are HQ 0.
+        if (Comms.readOurHqAll(0) == 0 &&
+                Comms.readOurHqAll(1) == 0 &&
+                Comms.readOurHqAll(2) == 0 &&
+                Comms.readOurHqAll(3) == 0) {
+            Comms.writeOurHqLocation(0, rc.getLocation());
+            myHqNum = 0;
+
+            // Write a bad location in the rest of the HQ locations
             MapLocation badLocation = new MapLocation(
                     GameConstants.MAP_MAX_WIDTH + 1,
                     GameConstants.MAP_MAX_HEIGHT + 1);
-            for (int i = 0; i < GameConstants.MAX_STARTING_HEADQUARTERS; i++) {
-                Comms.writeOurHqLocation(i, badLocation);
-            }
-            return;
-        }
+            Comms.writeOurHqLocation(1, badLocation);
+            Comms.writeOurHqLocation(2, badLocation);
+            Comms.writeOurHqLocation(3, badLocation);
 
-        if (myHqNum >= 0) {
+            Comms.initPrioritySectors();
+            Comms.initSymmetry();
             return;
         }
 
@@ -377,15 +472,11 @@ public class Headquarters extends Robot {
             }
         }
 
-        if (myHqNum == 0) {
-            Comms.initPrioritySectors();
-        }
-
         if (myHqNum == numHqs - 1) {
             lastHq = true;
         }
 
-        Debug.println("I am HQ number " + myHqNum);
+        // Debug.println("I am HQ number " + myHqNum);
     }
 
     /**
@@ -422,6 +513,7 @@ public class Headquarters extends Robot {
 
         int combatSectorIndex = getNextEmptyCombatSectorIdx(0);
         int exploreSectorIndex = getNextEmptyExploreSectorIdx(0);
+        int mineSectorIndex = getNextEmptyMineSectorIdx(0);
 
         // Alternate sweeping each half of the sectors every turn
         int mode = (myHqNum + rc.getRoundNum()) % 3;
@@ -474,6 +566,23 @@ public class Headquarters extends Robot {
                 Comms.writeExploreSectorClaimStatus(exploreSectorIndex, Comms.ClaimStatus.UNCLAIMED);
                 exploreSectorIndex = getNextEmptyExploreSectorIdx(exploreSectorIndex + 1);
             }
+            // Mine sector
+            mineSector: if (mineSectorIndex < Comms.MINE_SECTOR_SLOTS &&
+                    Comms.readSectorAdamantiumFlag(i) == 1 ||
+                    Comms.readSectorManaFlag(i) == 1 /*
+                                                      * ||
+                                                      * Comms.readSectorElixirFlag(i) == 1
+                                                      */) {
+                // If the sector is already a mine sector, don't add it again
+                for (int j = Comms.MINE_SECTOR_SLOTS - 1; j >= 0; j--) {
+                    if (Comms.readMineSectorIndex(j) == i) {
+                        break mineSector;
+                    }
+                }
+
+                Comms.writeMineSectorIndex(mineSectorIndex, i);
+                mineSectorIndex = getNextEmptyMineSectorIdx(mineSectorIndex + 1);
+            }
         }
     }
 
@@ -493,6 +602,16 @@ public class Headquarters extends Robot {
                 robotType.buildCostElixir + anchor.elixirCost, anchor);
     }
 
+    public void displayCombatSectors() throws GameActionException {
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int sector = Comms.readCombatSectorIndex(i);
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX)
+                break;
+            MapLocation loc = sectorCenters[sector];
+            rc.setIndicatorDot(loc, 255, 0, 0);
+        }
+    }
+
     public void displayExploreSectors() throws GameActionException {
         for (int i = 0; i < Comms.EXPLORE_SECTOR_SLOTS; i++) {
             int sector = Comms.readExploreSectorIndex(i);
@@ -503,23 +622,33 @@ public class Headquarters extends Robot {
         }
     }
 
+    public void displayMineSectors() throws GameActionException {
+        for (int i = 0; i < Comms.MINE_SECTOR_SLOTS; i++) {
+            int sector = Comms.readMineSectorIndex(i);
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX)
+                break;
+            MapLocation loc = sectorCenters[sector];
+            rc.setIndicatorDot(loc, 100, 200, 50);
+        }
+    }
+
     /**
      * Sets initial explore sectors to center and symmetry locs
      */
     public void setInitialExploreSectors() throws GameActionException {
         int exploreSectorIndex = getNextEmptyExploreSectorIdx(0);
 
-        // Add the center and the 3 reflections of your HQ
-        MapLocation[] symmetryLocs = guessEnemyLoc(currLoc);
-        int centerSector = whichSector(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
-        int ySector = whichSector(symmetryLocs[0]);
-        int xSector = whichSector(symmetryLocs[1]);
-        int xySector = whichSector(symmetryLocs[2]);
-        int[] sectors = { centerSector, xySector, xSector, ySector };
+        // Add the center and the all the symmetry locations
+        MapLocation center = new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2);
+        int[] sectors = new int[enemyHQs.length + 1];
+        sectors[0] = whichSector(center);
+        for (int i = 0; i < enemyHQs.length; i++)
+            sectors[i + 1] = whichSector(enemyHQs[i]);
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < enemyHQs.length + 1; i++) {
             int sector = sectors[i];
             int controlStatus = Comms.readSectorControlStatus(sector);
+
             if (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
                     && controlStatus == Comms.ControlStatus.UNKNOWN) {
                 Comms.writeExploreSectorIndex(exploreSectorIndex, sector);

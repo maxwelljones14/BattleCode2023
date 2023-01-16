@@ -19,7 +19,7 @@ SCHEMA = {
             'islands': 1,
             'adamantium_flag': 1,
             'mana_flag': 1,
-            'elixir_flag': 1,
+            # 'elixir_flag': 1,
             'control_status': 3,
         }
     },
@@ -38,12 +38,19 @@ SCHEMA = {
         }
     },
     'mine_sector': {
-        'slots': 10,
+        'slots': 20,
         'bits': {
-            'claim_status': 3,
             'index': 7,
         }
     },
+    'symmetry': {
+        'slots': 1,
+        'bits': {
+            'vertical': 1,
+            'horizontal': 1,
+            'rotational': 1,
+        }
+    }
 }
 
 def gen_constants():
