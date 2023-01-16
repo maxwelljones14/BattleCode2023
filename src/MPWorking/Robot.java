@@ -1462,20 +1462,20 @@ public class Robot {
         for (MapLocation possibleHQ : enemyHQs) {
             if (rc.canSenseLocation(possibleHQ)) {
                 RobotInfo robot = rc.senseRobotAtLocation(possibleHQ);
-                if (robot != null && robot.getType() != RobotType.HEADQUARTERS)
+                if (robot != null && robot.getType() == RobotType.HEADQUARTERS)
                     continue;
                 int symmetry = getSymmetry(possibleHQ);
                 switch (symmetry) {
                     case Util.SymmetryType.VERTICAL:
-                        Debug.println("Invalidating vertical");
+                        Debug.println("Invalidating vertical: " + possibleHQ);
                         Comms.writeSymmetryVertical(0);
                         break;
                     case Util.SymmetryType.HORIZONTAL:
-                        Debug.println("Invalidating horizontal");
+                        Debug.println("Invalidating horizontal: " + possibleHQ);
                         Comms.writeSymmetryHorizontal(0);
                         break;
                     case Util.SymmetryType.ROTATIONAL:
-                        Debug.println("Invalidating rotational");
+                        Debug.println("Invalidating rotational: " + possibleHQ);
                         Comms.writeSymmetryRotational(0);
                         break;
                     default:
