@@ -1,11 +1,11 @@
-package MPWorking;
+package MPDangerousMicro;
 
 import battlecode.common.*;
-import MPWorking.Util.*;
-import MPWorking.Comms.*;
-import MPWorking.Debug.*;
+import MPDangerousMicro.Util.*;
+import MPDangerousMicro.Comms.*;
+import MPDangerousMicro.Debug.*;
 
-import MPWorking.fast.*;
+import MPDangerousMicro.fast.*;
 
 public class Launcher extends Robot {
     static enum LauncherState {
