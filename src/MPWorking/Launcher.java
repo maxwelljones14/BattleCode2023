@@ -34,6 +34,8 @@ public class Launcher extends Robot {
 
     static FastLocSet seenEnemyHQLocs;
 
+    public static final int MAX_LAUNCHERS_PER_ENEMY_HQ = 4;
+
     public Launcher(RobotController r) throws GameActionException {
         super(r);
         currState = LauncherState.EXPLORING;
@@ -219,7 +221,7 @@ public class Launcher extends Robot {
                     closestEnemyLocation = closestEnemy.getLocation();
                     int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
                     int numTroopsCloser = rc.senseNearbyRobots(closestEnemyLocation, ourDist - 1, rc.getTeam()).length;
-                    if (numTroopsCloser >= 4) {
+                    if (numTroopsCloser >= MAX_LAUNCHERS_PER_ENEMY_HQ) {
                         Debug.printString("many close");
                         return false;
                     } else {

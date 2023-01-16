@@ -1462,7 +1462,7 @@ public class Robot {
         for (MapLocation possibleHQ : enemyHQs) {
             if (rc.canSenseLocation(possibleHQ)) {
                 RobotInfo robot = rc.senseRobotAtLocation(possibleHQ);
-                if (robot != null && robot.getType() == RobotType.HEADQUARTERS)
+                if (robot != null && robot.getType() == RobotType.HEADQUARTERS && robot.getTeam() != rc.getTeam())
                     continue;
                 int symmetry = getSymmetry(possibleHQ);
                 switch (symmetry) {
