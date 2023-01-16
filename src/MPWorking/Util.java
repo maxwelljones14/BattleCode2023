@@ -19,6 +19,7 @@ public class Util {
     static final int CLEAR_ENEMY_INFO_PERIOD = 100;
 
     static final double MIN_COOLDOWN_MULT_DIFF = 0.1;
+    static final double SYM_TO_COMB_DIST_RATIO = 2;
 
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {

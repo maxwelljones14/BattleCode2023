@@ -376,7 +376,7 @@ public class Launcher extends Robot {
         }
 
         if (combatSector != null && symLoc != null) {
-            if (currLoc.distanceSquaredTo(combatSector) < currLoc.distanceSquaredTo(symLoc)) {
+            if (Util.manhattan(currLoc, combatSector) * Util.SYM_TO_COMB_DIST_RATIO < Util.manhattan(currLoc, symLoc)) {
                 target = combatSector;
                 Debug.printString("CombSec");
             } else {
