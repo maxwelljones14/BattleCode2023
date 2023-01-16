@@ -357,9 +357,16 @@ public class Headquarters extends Robot {
         if (nearHQ || Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT) {
             // set up locations for first launchers in the 4 cardinal directions
             if (launcherCount < initLaunchersWanted) {
-                MapLocation locToBuild = getLauncherLocation(enemyHQLoc);
-                buildLauncher(locToBuild);
-                return;
+                if (nearHQ) {
+                    MapLocation locToBuild = getLauncherLocation(enemyHQLoc);
+                    buildLauncher(locToBuild);
+                    return;
+                } else {
+                    MapLocation locToBuild = getLauncherLocation(
+                            new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
+                    buildLauncher(locToBuild);
+                    return;
+                }
             }
             // build carriers
             if (carrierCount < initCarriersWanted) {
