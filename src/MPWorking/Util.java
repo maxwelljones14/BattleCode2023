@@ -13,6 +13,9 @@ public class Util {
     static int MAP_AREA;
     static int MAP_MAX_DIST_SQUARED;
 
+    static final int MAX_AREA_FOR_FAST_INIT = 625;
+    static final int MAX_AREA_FOR_SEMI_FAST_INIT = 1000;
+
     static final int CLEAR_ENEMY_INFO_PERIOD = 100;
 
     static final double MIN_COOLDOWN_MULT_DIFF = 0.1;

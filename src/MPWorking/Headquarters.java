@@ -47,8 +47,12 @@ public class Headquarters extends Robot {
     FastUnitTracker adamCarrierTracker;
     FastUnitTracker manaCarrierTracker;
 
+    static boolean nearHQ;
+    static MapLocation enemyHQLoc;
+
     public Headquarters(RobotController r) throws GameActionException {
         super(r);
+        checkIfHQNear();
         stateStack = new ArrayDeque<State>();
         currentState = State.INIT;
         currLoc = rc.getLocation();
@@ -100,6 +104,19 @@ public class Headquarters extends Robot {
         // displayExploreSectors();
     }
 
+    public void checkIfHQNear() throws GameActionException {
+        EnemySensable = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        for (int x = 0; x < EnemySensable.length; x++) {
+            RobotInfo enemy = EnemySensable[x];
+            if (enemy.getType() == RobotType.HEADQUARTERS) {
+                nearHQ = true;
+                enemyHQLoc = enemy.getLocation();
+                return;
+            }
+        }
+        nearHQ = false;
+    }
+
     public void updateclosestEnemyHQ() throws GameActionException {
         if (rc.getRoundNum() == 2) {
             closestEnemyHQGuess = getClosestEnemyHQGuess();
@@ -127,24 +144,28 @@ public class Headquarters extends Robot {
     public int getNextCarrierType() throws GameActionException {
         int carrierType;
         if (currentState == State.INIT) {
-            if (nearestMnWell != null && nearestAdWell == null) {
+            if (nearestAdWell != null && nearestMnWell == null) {
                 // if theres an mn but not an ad, the first 2 should be mn and the second should
                 // be ad
                 if (carrierCount < 2) {
                     // next should be an mn carrier
-                    carrierType = Comms.HQFlag.CARRIER_MANA;
-                } else {
                     carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                } else {
+                    carrierType = Comms.HQFlag.CARRIER_MANA;
                 }
             } else {
                 // if theres both ad and mn, or neither, then first 2 should be ad and second 2
                 // should be mn
-                if (carrierCount < 2) {
-                    // next should be an ad carrier
-                    carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                } else {
-                    // next should be an mn carrier
+                if (Util.MAP_AREA <= Util.MAX_AREA_FOR_SEMI_FAST_INIT) {
                     carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else {
+                    if (carrierCount < 3) {
+                        // next should be an ad carrier
+                        carrierType = Comms.HQFlag.CARRIER_MANA;
+                    } else {
+                        // next should be an mn carrier
+                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                    }
                 }
             }
         } else {
@@ -223,6 +244,31 @@ public class Headquarters extends Robot {
         currentState = newState;
     }
 
+    public void buildCarrier(int carrierType) throws GameActionException {
+        Debug.printString("Trying to build a carrier of type " + carrierType);
+
+        // get predetermined next carrier type and location
+        MapLocation newLoc = getNextCarrierLocation(carrierType);
+
+        if (newLoc != null && rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
+            rc.buildRobot(RobotType.CARRIER, newLoc);
+            carrierCount++;
+            RobotInfo newCarrier = rc.senseRobotAtLocation(newLoc);
+            if (newCarrier == null) {
+                Debug.printString("ERROR: built carrier but can't sense it");
+                return;
+            }
+
+            nextFlag = carrierType;
+
+            if (carrierType == Comms.HQFlag.CARRIER_MANA) {
+                manaCarrierTracker.add(newCarrier.ID);
+            } else {
+                adamCarrierTracker.add(newCarrier.ID);
+            }
+        }
+    }
+
     public void buildCarrier() throws GameActionException {
         Debug.printString("Trying to build a carrier");
 
@@ -266,6 +312,22 @@ public class Headquarters extends Robot {
         return Util.findInitLocation(currLoc, dir);
     }
 
+    public MapLocation getLauncherLocation(MapLocation target) throws GameActionException {
+        Direction dir = null;
+        if (target == null) {
+            target = closestEnemyHQGuess;
+            Debug.printString("dir of HQ " + target);
+        }
+        if (target == null) {
+            Debug.printString("ERROR: no HQ guesses");
+            dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
+        } else {
+            dir = currLoc.directionTo(target);
+        }
+
+        return Util.findInitLocation(currLoc, dir);
+    }
+
     public void buildLauncher(MapLocation newLoc) throws GameActionException {
         Debug.printString("Trying to build a launcher");
         if (newLoc != null && rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) {
@@ -279,18 +341,33 @@ public class Headquarters extends Robot {
     // gain enough resources to build the troops.
     // TODO: Restructure?
     public void firstRounds() throws GameActionException {
-        // build carriers
-        if (carrierCount < initCarriersWanted) {
-            buildCarrier();
-            return;
+        if (nearHQ) {
+            // set up locations for first launchers in the 4 cardinal directions
+            if (launcherCount < initLaunchersWanted) {
+                MapLocation locToBuild = getLauncherLocation(enemyHQLoc);
+                buildLauncher(locToBuild);
+                return;
+            }
+            // build carriers
+            if (carrierCount < initCarriersWanted) {
+                buildCarrier();
+                return;
+            }
+        } else {
+            // build carriers
+            if (carrierCount < initCarriersWanted) {
+                buildCarrier();
+                return;
+            }
+
+            // set up locations for first launchers in the 4 cardinal directions
+            if (launcherCount < initLaunchersWanted) {
+                MapLocation locToBuild = getLauncherLocation();
+                buildLauncher(locToBuild);
+                return;
+            }
         }
 
-        // set up locations for first launchers in the 4 cardinal directions
-        if (launcherCount < initLaunchersWanted) {
-            MapLocation locToBuild = getLauncherLocation();
-            buildLauncher(locToBuild);
-            return;
-        }
     }
 
     public void doStateAction() throws GameActionException {

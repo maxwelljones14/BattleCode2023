@@ -121,6 +121,14 @@ public class Robot {
         Pathfinding.initTurn();
     }
 
+    public boolean isSmallMap() {
+        return Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT;
+    }
+
+    public boolean isSemiSmallMap() {
+        return Util.MAP_AREA <= Util.MAX_AREA_FOR_SEMI_FAST_INIT;
+    }
+
     public void takeTurn() throws GameActionException {
         turnCount += 1;
         roundNum = rc.getRoundNum();
