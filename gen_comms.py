@@ -43,6 +43,14 @@ SCHEMA = {
             'index': 7,
         }
     },
+    'symmetry': {
+        'slots': 1,
+        'bits': {
+            'vertical': 1,
+            'horizontal': 1,
+            'rotational': 1,
+        }
+    }
 }
 
 def gen_constants():

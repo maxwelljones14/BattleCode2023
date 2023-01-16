@@ -83,13 +83,27 @@ public class Headquarters extends Robot {
         // }
         adamCarrierTracker.update();
         manaCarrierTracker.update();
-        computeHqNum();
         clearOldEnemyInfo();
-        if (rc.getRoundNum() == 2) {
-            setInitialExploreSectors();
+
+        switch (rc.getRoundNum()) {
+            case 1:
+                computeHqNum();
+                break;
+            case 2:
+                loadHQLocations();
+                updateSymmetryLocs();
+                invalidateSymmetries();
+                break;
+            case 3:
+                // We do this on turn 3 so that all HQs have a chance to invalidate symmetries.
+                closestEnemyHQGuess = getClosestEnemyHQGuess();
+                setInitialExploreSectors();
+                break;
+            default:
+                break;
         }
+
         setPrioritySectors();
-        updateclosestEnemyHQ();
         toggleState();
         Debug.printString("current state: " + currentState);
         Debug.printString("A: " + adamCarrierTracker.size());
@@ -116,12 +130,6 @@ public class Headquarters extends Robot {
             }
         }
         nearHQ = false;
-    }
-
-    public void updateclosestEnemyHQ() throws GameActionException {
-        if (rc.getRoundNum() == 2) {
-            closestEnemyHQGuess = getClosestEnemyHQGuess();
-        }
     }
 
     public void findClosestVisibleWells() throws GameActionException {
@@ -412,18 +420,24 @@ public class Headquarters extends Robot {
      * @throws GameActionException
      */
     public void computeHqNum() throws GameActionException {
-        // On round 1, write a bad location to all HQ locations
-        if (rc.getRoundNum() == 1) {
+        // If all HQ locs are 0, then we are HQ 0.
+        if (Comms.readOurHqAll(0) == 0 &&
+                Comms.readOurHqAll(1) == 0 &&
+                Comms.readOurHqAll(2) == 0 &&
+                Comms.readOurHqAll(3) == 0) {
+            Comms.writeOurHqLocation(0, rc.getLocation());
+            myHqNum = 0;
+
+            // Write a bad location in the rest of the HQ locations
             MapLocation badLocation = new MapLocation(
                     GameConstants.MAP_MAX_WIDTH + 1,
                     GameConstants.MAP_MAX_HEIGHT + 1);
-            for (int i = 0; i < GameConstants.MAX_STARTING_HEADQUARTERS; i++) {
-                Comms.writeOurHqLocation(i, badLocation);
-            }
-            return;
-        }
+            Comms.writeOurHqLocation(1, badLocation);
+            Comms.writeOurHqLocation(2, badLocation);
+            Comms.writeOurHqLocation(3, badLocation);
 
-        if (myHqNum >= 0) {
+            Comms.initPrioritySectors();
+            Comms.initSymmetry();
             return;
         }
 
@@ -437,15 +451,11 @@ public class Headquarters extends Robot {
             }
         }
 
-        if (myHqNum == 0) {
-            Comms.initPrioritySectors();
-        }
-
         if (myHqNum == numHqs - 1) {
             lastHq = true;
         }
 
-        Debug.println("I am HQ number " + myHqNum);
+        // Debug.println("I am HQ number " + myHqNum);
     }
 
     /**
@@ -607,32 +617,16 @@ public class Headquarters extends Robot {
     public void setInitialExploreSectors() throws GameActionException {
         int exploreSectorIndex = getNextEmptyExploreSectorIdx(0);
 
-        MapLocation[] listOfHQs = new MapLocation[] { Comms.readOurHqLocation(0),
-                Comms.readOurHqLocation(1),
-                Comms.readOurHqLocation(2),
-                Comms.readOurHqLocation(3) };
+        // Add the center and the all the symmetry locations
+        MapLocation center = new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2);
+        int[] sectors = new int[enemyHQs.length + 1];
+        sectors[0] = whichSector(center);
+        for (int i = 0; i < enemyHQs.length; i++)
+            sectors[i + 1] = whichSector(enemyHQs[i]);
 
-        // Add the center and the 3 reflections of your HQ
-        MapLocation[] symmetryLocs = guessEnemyLoc(currLoc);
-        MapLocation[] locs = { new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2),
-                symmetryLocs[0], symmetryLocs[1], symmetryLocs[2] };
-        int[] sectors = { whichSector(locs[0]), whichSector(locs[1]), whichSector(locs[2]), whichSector(locs[3]) };
-
-        for (int i = 0; i < 4; i++) {
-            MapLocation loc = locs[i];
+        for (int i = 0; i < enemyHQs.length + 1; i++) {
             int sector = sectors[i];
             int controlStatus = Comms.readSectorControlStatus(sector);
-
-            boolean isOk = true;
-            for (int k = 0; k < listOfHQs.length; k++) {
-                MapLocation newHQLoc = listOfHQs[k];
-                if (loc.distanceSquaredTo(newHQLoc) < RobotType.HEADQUARTERS.visionRadiusSquared) {
-                    isOk = false;
-                }
-            }
-
-            if (!isOk)
-                continue;
 
             if (exploreSectorIndex < Comms.EXPLORE_SECTOR_SLOTS
                     && controlStatus == Comms.ControlStatus.UNKNOWN) {

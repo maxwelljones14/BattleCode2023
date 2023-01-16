@@ -28,6 +28,8 @@ public class Carrier extends Robot {
 
     FastLocSet wellsVisitedThisCycle;
     FastLocSet wellSectorsVisitedThisCycle;
+    WellInfo closestWell;
+
     public final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public final int RESET_WELLS_VISITED_TIMEOUT = 100;
 
@@ -125,6 +127,7 @@ public class Carrier extends Robot {
         wellsVisitedThisCycle.clear();
         wellSectorsVisitedThisCycle.clear();
         turnStartedMining = rc.getRoundNum();
+        closestWell = null;
     }
 
     public void doStateAction() throws GameActionException {
@@ -142,7 +145,6 @@ public class Carrier extends Robot {
                 // If we can see a well, move towards it
                 WellInfo[] wells = rc.senseNearbyWells(resourceTarget);
                 int closestDist = Integer.MAX_VALUE;
-                WellInfo closestWell = null;
                 for (WellInfo well : wells) {
                     MapLocation wellLocation = well.getMapLocation();
                     int dist = Util.distance(rc.getLocation(), wellLocation);

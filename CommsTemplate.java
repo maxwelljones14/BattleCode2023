@@ -56,6 +56,10 @@ public class Comms {
         writeOurHqYCoord(idx, loc.y);
     }
 
+    public static void initSymmetry() throws GameActionException {
+        writeSymmetryAll(7);
+    }
+
     public static void writeToBufferPool(int idx, int value) throws GameActionException {
         bufferPool[idx] = value;
         dirtyFlags[idx] = true;

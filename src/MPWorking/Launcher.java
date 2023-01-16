@@ -32,13 +32,12 @@ public class Launcher extends Robot {
 
     static RobotInfo[] enemyAttackable;
 
-    static MapLocation[] possibleEnemyHQLocs;
     static FastLocSet seenEnemyHQLocs;
 
     public Launcher(RobotController r) throws GameActionException {
         super(r);
-        guessSymmetryLocs();
         currState = LauncherState.EXPLORING;
+        seenEnemyHQLocs = new FastLocSet();
     }
 
     public void takeTurn() throws GameActionException {
@@ -450,42 +449,11 @@ public class Launcher extends Robot {
         }
     }
 
-    public void guessSymmetryLocs() throws GameActionException {
-        FastIterableLocSet possibleLocs = new FastIterableLocSet(12);
-        MapLocation[] listOfHQs = new MapLocation[] { Comms.readOurHqLocation(0),
-                Comms.readOurHqLocation(1),
-                Comms.readOurHqLocation(2),
-                Comms.readOurHqLocation(3) };
-
-        MapLocation HQLoc, possibleFlip, newHQLoc;
-        MapLocation[] possibleFlips;
-        for (int i = 0; i < 4; i++) {
-            HQLoc = listOfHQs[i];
-            if (!rc.onTheMap(HQLoc))
-                break;
-            possibleFlips = guessEnemyLoc(HQLoc);
-            flips: for (int j = possibleFlips.length; --j >= 0;) {
-                possibleFlip = possibleFlips[j];
-                for (int k = listOfHQs.length; --k >= 0;) {
-                    newHQLoc = listOfHQs[k];
-                    if (possibleFlip.distanceSquaredTo(newHQLoc) <= RobotType.HEADQUARTERS.visionRadiusSquared) {
-                        continue flips;
-                    }
-                }
-                possibleLocs.add(possibleFlip);
-            }
-        }
-        possibleLocs.updateIterable();
-        possibleEnemyHQLocs = new MapLocation[possibleLocs.size];
-        System.arraycopy(possibleLocs.locs, 0, possibleEnemyHQLocs, 0, possibleLocs.size);
-        seenEnemyHQLocs = new FastLocSet();
-    }
-
     public MapLocation chooseSymmetricLoc() throws GameActionException {
         MapLocation bestLoc = null;
         int bestDist = Integer.MAX_VALUE;
-        for (int i = 0; i < possibleEnemyHQLocs.length; i++) {
-            MapLocation possibleLoc = possibleEnemyHQLocs[i];
+        for (int i = 0; i < enemyHQs.length; i++) {
+            MapLocation possibleLoc = enemyHQs[i];
             int currDist = currLoc.distanceSquaredTo(possibleLoc);
             int controlStatus = Comms.readSectorControlStatus(whichSector(possibleLoc));
             boolean notTraversed = controlStatus == Comms.ControlStatus.UNKNOWN ||

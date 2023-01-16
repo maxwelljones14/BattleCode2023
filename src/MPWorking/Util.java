@@ -32,6 +32,14 @@ public class Util {
             Direction.NORTHWEST,
     };
 
+    static final class SymmetryType {
+        // Values in accordance with the bit pos in comms. DO NOT CHANGE
+        public static final int VERTICAL = 4;
+        public static final int HORIZONTAL = 2;
+        public static final int ROTATIONAL = 1;
+        public static final int ALL = 7;
+    }
+
     static final int JUST_OUTSIDE_OF_VISION_RADIUS = 34;
 
     static void init(RobotController r) {
@@ -66,6 +74,55 @@ public class Util {
         int rotated_dx = dy;
         int rotated_dy = -dx;
         return rc.getLocation().translate(rotated_dx, rotated_dy);
+    }
+
+    static MapLocation[] getValidSymmetryLocs(MapLocation hqLoc, int symmetry) throws GameActionException {
+        MapLocation verticalFlip = new MapLocation(hqLoc.x, MAP_HEIGHT - hqLoc.y - 1);
+        MapLocation horizontalFlip = new MapLocation(MAP_WIDTH - hqLoc.x - 1, hqLoc.y);
+        MapLocation rotation = new MapLocation(MAP_WIDTH - hqLoc.x - 1, MAP_HEIGHT - hqLoc.y - 1);
+        switch (symmetry) {
+            case SymmetryType.VERTICAL | SymmetryType.HORIZONTAL | SymmetryType.ROTATIONAL:
+                return new MapLocation[] {
+                        verticalFlip,
+                        horizontalFlip,
+                        rotation,
+                };
+            case SymmetryType.VERTICAL | SymmetryType.HORIZONTAL:
+                return new MapLocation[] {
+                        verticalFlip,
+                        horizontalFlip,
+                };
+            case SymmetryType.VERTICAL | SymmetryType.ROTATIONAL:
+                return new MapLocation[] {
+                        verticalFlip,
+                        rotation,
+                };
+            case SymmetryType.HORIZONTAL | SymmetryType.ROTATIONAL:
+                return new MapLocation[] {
+                        horizontalFlip,
+                        rotation,
+                };
+            case SymmetryType.VERTICAL:
+                return new MapLocation[] {
+                        verticalFlip,
+                };
+            case SymmetryType.HORIZONTAL:
+                return new MapLocation[] {
+                        horizontalFlip,
+                };
+            case SymmetryType.ROTATIONAL:
+                return new MapLocation[] {
+                        rotation,
+                };
+            default:
+                // This shouldn't happen
+                Debug.println("ERROR: No valid symmetry");
+                return new MapLocation[] {
+                        verticalFlip,
+                        horizontalFlip,
+                        rotation,
+                };
+        }
     }
 
     static MapLocation[] findInitLocationPossibilities(MapLocation loc, Direction dir) {

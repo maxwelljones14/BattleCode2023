@@ -16,6 +16,7 @@ public class Comms {
     public final static int COMBAT_SECTOR_SLOTS = 8;
     public final static int EXPLORE_SECTOR_SLOTS = 13;
     public final static int MINE_SECTOR_SLOTS = 20;
+    public final static int SYMMETRY_SLOTS = 1;
 
     // ControlStatus priorities are in increasing priority.
     public class ControlStatus {
@@ -59,6 +60,10 @@ public class Comms {
     public static void writeOurHqLocation(int idx, MapLocation loc) throws GameActionException {
         writeOurHqXCoord(idx, loc.x);
         writeOurHqYCoord(idx, loc.y);
+    }
+
+    public static void initSymmetry() throws GameActionException {
+        writeSymmetryAll(7);
     }
 
     public static void writeToBufferPool(int idx, int value) throws GameActionException {
@@ -5746,6 +5751,54 @@ public class Comms {
                 writeToBufferPool(59, (bufferPool[59] & 65408) | (value));
                 break;
         }
+    }
+
+    public static int readSymmetryVertical() throws GameActionException {
+        return (rc.readSharedArray(60) & 32768) >>> 15;
+    }
+
+    public static void writeSymmetryVertical(int value) throws GameActionException {
+        rc.writeSharedArray(60, (rc.readSharedArray(60) & 32767) | (value << 15));
+    }
+
+    public static void writeBPSymmetryVertical(int value) throws GameActionException {
+        writeToBufferPool(60, (bufferPool[60] & 32767) | (value << 15));
+    }
+
+    public static int readSymmetryHorizontal() throws GameActionException {
+        return (rc.readSharedArray(60) & 16384) >>> 14;
+    }
+
+    public static void writeSymmetryHorizontal(int value) throws GameActionException {
+        rc.writeSharedArray(60, (rc.readSharedArray(60) & 49151) | (value << 14));
+    }
+
+    public static void writeBPSymmetryHorizontal(int value) throws GameActionException {
+        writeToBufferPool(60, (bufferPool[60] & 49151) | (value << 14));
+    }
+
+    public static int readSymmetryRotational() throws GameActionException {
+        return (rc.readSharedArray(60) & 8192) >>> 13;
+    }
+
+    public static void writeSymmetryRotational(int value) throws GameActionException {
+        rc.writeSharedArray(60, (rc.readSharedArray(60) & 57343) | (value << 13));
+    }
+
+    public static void writeBPSymmetryRotational(int value) throws GameActionException {
+        writeToBufferPool(60, (bufferPool[60] & 57343) | (value << 13));
+    }
+
+    public static int readSymmetryAll() throws GameActionException {
+        return (rc.readSharedArray(60) & 57344) >>> 13;
+    }
+
+    public static void writeSymmetryAll(int value) throws GameActionException {
+        rc.writeSharedArray(60, (rc.readSharedArray(60) & 8191) | (value << 13));
+    }
+
+    public static void writeBPSymmetryAll(int value) throws GameActionException {
+        writeToBufferPool(60, (bufferPool[60] & 8191) | (value << 13));
     }
 
     // BUFFER POOL READ AND WRITE METHODS

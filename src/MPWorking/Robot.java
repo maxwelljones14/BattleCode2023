@@ -20,6 +20,9 @@ public class Robot {
     static RobotInfo[] FriendlySensable;
     static MapLocation currLoc;
 
+    static int symmetryAll;
+    static MapLocation[] enemyHQs;
+
     static int actionRadiusSquared;
     static int visionRadiusSquared;
 
@@ -76,7 +79,7 @@ public class Robot {
                     home = robotLoc;
                 }
             }
-            loadArchonLocations();
+            loadHQLocations();
         }
 
         if (home == null) {
@@ -113,8 +116,20 @@ public class Robot {
         exploreMode = false;
     }
 
-    public void loadArchonLocations() throws GameActionException {
-        // headquarterLocations = Comms.getFriendlyHeadquarterLocations();
+    public void loadHQLocations() throws GameActionException {
+        MapLocation[] listOfHQs = new MapLocation[] { Comms.readOurHqLocation(0),
+                Comms.readOurHqLocation(1),
+                Comms.readOurHqLocation(2),
+                Comms.readOurHqLocation(3) };
+
+        int numHQs = 0;
+        for (; numHQs < 4; numHQs++) {
+            if (!rc.onTheMap(listOfHQs[numHQs]))
+                break;
+        }
+
+        headquarterLocations = new MapLocation[numHQs];
+        System.arraycopy(listOfHQs, 0, headquarterLocations, 0, numHQs);
     }
 
     public void initTurn() throws GameActionException {
@@ -137,6 +152,11 @@ public class Robot {
         currLoc = rc.getLocation();
         Debug.setIndicatorDot(Debug.INDICATORS, home, 0, 255, 0);
         setSectorStates();
+
+        // Must recalculate
+        int currSymmetryAll = Comms.readSymmetryAll();
+        if (currSymmetryAll != symmetryAll)
+            updateSymmetryLocs();
     }
 
     public void endTurn() throws GameActionException {
@@ -488,7 +508,7 @@ public class Robot {
                                     | (entry.numManaWells() > 0 ? 1 : 0));
                     Comms.writeBPSectorManaFlag(sectorToReport, hasManaWell);
                     // int hasElixirWell = (Comms.readSectorElixirFlag(sectorToReport)
-                    //         | (entry.numElxrWells() > 0 ? 1 : 0));
+                    // | (entry.numElxrWells() > 0 ? 1 : 0));
                     // Comms.writeBPSectorElixirFlag(sectorToReport, hasElixirWell);
 
                     int hasIsland = Comms.readSectorIslands(sectorToReport)
@@ -1217,7 +1237,7 @@ public class Robot {
                     break;
                 case ELIXIR:
                     // if (Comms.readSectorElixirFlag(nearestSector) == 0)
-                    //     continue;
+                    // continue;
                     break;
                 default:
                     break;
@@ -1401,50 +1421,89 @@ public class Robot {
         }
     }
 
-    public static MapLocation[] guessEnemyLoc(MapLocation ourLoc) throws GameActionException {
-        MapLocation[] results;
-
-        int height = rc.getMapHeight();
-        int width = rc.getMapWidth();
-
-        MapLocation verticalFlip = new MapLocation(ourLoc.x, height - ourLoc.y - 1);
-        MapLocation horizontalFlip = new MapLocation(width - ourLoc.x - 1, ourLoc.y);
-        MapLocation rotation = new MapLocation(width - ourLoc.x - 1, height - ourLoc.y - 1);
-
-        results = new MapLocation[] { verticalFlip, horizontalFlip, rotation };
-        return results;
+    public void updateSymmetryLocs() throws GameActionException {
+        if (headquarterLocations == null)
+            return;
+        symmetryAll = Comms.readSymmetryAll();
+        MapLocation[] symLocs = new MapLocation[12];
+        int numSymLocs = 0;
+        for (int i = 0; i < headquarterLocations.length; i++) {
+            MapLocation hqLoc = headquarterLocations[i];
+            if (!rc.onTheMap(hqLoc))
+                continue;
+            MapLocation[] possibleFlips = Util.getValidSymmetryLocs(hqLoc, symmetryAll);
+            for (int j = possibleFlips.length; --j >= 0;) {
+                symLocs[numSymLocs++] = possibleFlips[j];
+            }
+        }
+        enemyHQs = new MapLocation[numSymLocs];
+        System.arraycopy(symLocs, 0, enemyHQs, 0, numSymLocs);
     }
 
     public MapLocation getClosestEnemyHQGuess() throws GameActionException {
         MapLocation bestLoc = null;
         int bestDist = Integer.MAX_VALUE;
-
-        MapLocation[] listOfHQs = new MapLocation[] { Comms.readOurHqLocation(0),
-                Comms.readOurHqLocation(1),
-                Comms.readOurHqLocation(2),
-                Comms.readOurHqLocation(3) };
-        for (int i = 0; i < 4; i++) {
-            MapLocation HQLoc = listOfHQs[i];
-            if (rc.onTheMap(HQLoc)) {
-                MapLocation[] possibleFlips = guessEnemyLoc(HQLoc);
-                for (int j = 0; j < possibleFlips.length; j++) {
-                    MapLocation possibleFlip = possibleFlips[j];
-                    boolean IsOk = true;
-                    for (int k = 0; k < listOfHQs.length; k++) {
-                        MapLocation newHQLoc = listOfHQs[k];
-                        if (possibleFlip
-                                .distanceSquaredTo(newHQLoc) < RobotType.HEADQUARTERS.visionRadiusSquared) {
-                            IsOk = false;
-                        }
-                    }
-                    if (IsOk && rc.onTheMap(possibleFlip) && currLoc.distanceSquaredTo(possibleFlip) < bestDist) {
-                        bestDist = currLoc.distanceSquaredTo(possibleFlip);
-                        bestLoc = possibleFlip;
-                    }
-                }
+        for (int i = enemyHQs.length; --i >= 0;) {
+            MapLocation loc = enemyHQs[i];
+            if (loc == null)
+                continue;
+            int dist = currLoc.distanceSquaredTo(loc);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestLoc = loc;
             }
         }
         return bestLoc;
+    }
+
+    public void invalidateSymmetries() throws GameActionException {
+        // Loop through the currently valid enemy HQ locs and invalidate them if
+        // possible
+        for (MapLocation possibleHQ : enemyHQs) {
+            if (rc.canSenseLocation(possibleHQ)) {
+                RobotInfo robot = rc.senseRobotAtLocation(possibleHQ);
+                if (robot != null && robot.getType() != RobotType.HEADQUARTERS)
+                    continue;
+                int symmetry = getSymmetry(possibleHQ);
+                switch (symmetry) {
+                    case Util.SymmetryType.VERTICAL:
+                        Debug.println("Invalidating vertical");
+                        Comms.writeSymmetryVertical(0);
+                        break;
+                    case Util.SymmetryType.HORIZONTAL:
+                        Debug.println("Invalidating horizontal");
+                        Comms.writeSymmetryHorizontal(0);
+                        break;
+                    case Util.SymmetryType.ROTATIONAL:
+                        Debug.println("Invalidating rotational");
+                        Comms.writeSymmetryRotational(0);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+
+    // Get the symmetry type that this location resulted from
+    public int getSymmetry(MapLocation loc) throws GameActionException {
+        for (int i = 0; i < headquarterLocations.length; i++) {
+            MapLocation hqLoc = headquarterLocations[i];
+            if (!rc.onTheMap(hqLoc))
+                continue;
+
+            MapLocation verticalFlip = new MapLocation(hqLoc.x, Util.MAP_HEIGHT - hqLoc.y - 1);
+            MapLocation horizontalFlip = new MapLocation(Util.MAP_WIDTH - hqLoc.x - 1, hqLoc.y);
+            MapLocation rotation = new MapLocation(Util.MAP_WIDTH - hqLoc.x - 1, Util.MAP_HEIGHT - hqLoc.y - 1);
+            if (loc.equals(verticalFlip)) {
+                return Util.SymmetryType.VERTICAL;
+            } else if (loc.equals(horizontalFlip)) {
+                return Util.SymmetryType.HORIZONTAL;
+            } else if (loc.equals(rotation)) {
+                return Util.SymmetryType.ROTATIONAL;
+            }
+        }
+        return -1;
     }
 
     public MapLocation getCombatSector() throws GameActionException {
