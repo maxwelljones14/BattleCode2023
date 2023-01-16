@@ -1137,7 +1137,7 @@ public class Robot {
      * @return
      * @throws GameActionException
      */
-    public int getNearestExploreSector() throws GameActionException {
+    public int getNearestExploreSectorIdx() throws GameActionException {
         int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
         int closestSectorIndex = Comms.UNDEFINED_SECTOR_INDEX;
         int closestDistance = Integer.MAX_VALUE;

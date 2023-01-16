@@ -364,65 +364,61 @@ public class Launcher extends Robot {
     public void launcherExplore() throws GameActionException {
         MapLocation target;
 
+        MapLocation symLoc = chooseSymmetricLoc();
+        MapLocation combatSector = null;
+
         int combatSectorIdx = getPrioritizedCombatSectorIdx();
         if (combatSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
-            target = sectorCenters[combatSectorIdx];
-            Debug.printString("CombSec");
-            // int numCloseFriendlies = 0;
-            // boolean iAmClosest = true;
-            // for (RobotInfo Fbot : FriendlySensable) {
-            // RobotType FbotType = Fbot.getType();
-            // if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
-            // MapLocation FbotLocation = Fbot.getLocation();
-            // numCloseFriendlies++;
-            // if (Util.distance(target, FbotLocation) <= Util.distance(target, currLoc)) {
-            // iAmClosest = false;
-            // }
-            // }
-            // }
-            // if (numCloseFriendlies != 0
-            // && iAmClosest
-            // && Util.distance(target, currLoc) <= Math.sqrt((double)
-            // (rc.getType().visionRadiusSquared) * 1.5)) {
-            // Debug.printString("waiting for friend");
-            // tryAttackBestEnemy(getBestEnemy());
-            // return;
-            // }
+            combatSector = sectorCenters[combatSectorIdx];
+        }
 
-        } else if ((target = chooseSymmetricLoc()) != null) {
+        if (combatSector != null && symLoc != null) {
+            if (currLoc.distanceSquaredTo(combatSector) < currLoc.distanceSquaredTo(symLoc)) {
+                target = combatSector;
+                Debug.printString("CombSec");
+            } else {
+                target = symLoc;
+                markSymmetricLocSeen(target);
+                Debug.printString("SymLoc");
+            }
+        } else if (combatSector != null) {
+            target = combatSector;
+            Debug.printString("CombSec");
+        } else if (symLoc != null) {
+            target = symLoc;
             markSymmetricLocSeen(target);
             Debug.printString("SymLoc");
         } else {
-            int exploreSector = getNearestExploreSector();
-            if (exploreSector != Comms.UNDEFINED_SECTOR_INDEX) {
-                target = sectorCenters[exploreSector];
-                // int numCloseFriendlies = 0;
-                // boolean iAmClosest = true;
-                // for (RobotInfo Fbot : FriendlySensable) {
-                // RobotType FbotType = Fbot.getType();
-                // if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
-                // MapLocation FbotLocation = Fbot.getLocation();
-                // numCloseFriendlies++;
-                // if (Util.distance(target, FbotLocation) <= Util.distance(target, currLoc)) {
-                // iAmClosest = false;
-                // }
-                // }
-                // }
-                // if (numCloseFriendlies != 0
-                // && iAmClosest
-                // && Util.distance(target, currLoc) <= Math
-                // .sqrt((double) (rc.getType().visionRadiusSquared) * 1.5)) {
-                // Debug.printString("waiting for friend");
-                // tryAttackBestEnemy(getBestEnemy());
-                // return;
-                // }
-
+            int exploreSectorIdx = getNearestExploreSectorIdx();
+            if (exploreSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
+                target = sectorCenters[exploreSectorIdx];
                 Debug.printString("ExpSec");
             } else {
                 target = Explore.getExploreTarget();
                 Debug.printString("Exploring");
             }
         }
+
+        // int numCloseFriendlies = 0;
+        // boolean iAmClosest = true;
+        // for (RobotInfo Fbot : FriendlySensable) {
+        // RobotType FbotType = Fbot.getType();
+        // if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
+        // MapLocation FbotLocation = Fbot.getLocation();
+        // numCloseFriendlies++;
+        // if (Util.distance(target, FbotLocation) <= Util.distance(target, currLoc)) {
+        // iAmClosest = false;
+        // }
+        // }
+        // }
+        // if (numCloseFriendlies != 0
+        // && iAmClosest
+        // && Util.distance(target, currLoc) <= Math.sqrt((double)
+        // (rc.getType().visionRadiusSquared) * 1.5)) {
+        // Debug.printString("waiting for friend");
+        // tryAttackBestEnemy(getBestEnemy());
+        // return;
+        // }
 
         Debug.setIndicatorLine(Debug.INDICATORS, currLoc, target, 255, 0, 200);
         if (currLoc.distanceSquaredTo(target) <= Util.JUST_OUTSIDE_OF_VISION_RADIUS) {

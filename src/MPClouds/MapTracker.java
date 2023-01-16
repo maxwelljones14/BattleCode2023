@@ -180,7 +180,7 @@ public class MapTracker {
             do {
                 rightDir = rightDir.rotateRight();
                 rightLoc = myLoc.add(rightDir);
-            } while (rc.onTheMap(leftLoc) && !rc.sensePassability(rightLoc));
+            } while (rc.onTheMap(rightLoc) && !rc.sensePassability(rightLoc));
 
             // The loc should be next to the obstacle
             // The previous loc is the one that should be on the obstacle
