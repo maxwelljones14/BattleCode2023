@@ -1,11 +1,11 @@
-package MPWorking;
+package MPDirections;
 
 import battlecode.common.*;
-import MPWorking.Util.*;
-import MPWorking.Comms.*;
-import MPWorking.Debug.*;
+import MPDirections.Util.*;
+import MPDirections.Comms.*;
+import MPDirections.Debug.*;
 
-import MPWorking.fast.*;
+import MPDirections.fast.*;
 
 public class Launcher extends Robot {
     static enum LauncherState {
@@ -33,8 +33,6 @@ public class Launcher extends Robot {
     static RobotInfo[] enemyAttackable;
 
     static FastLocSet seenEnemyHQLocs;
-
-    public static final int MAX_LAUNCHERS_PER_ENEMY_HQ = 4;
 
     public Launcher(RobotController r) throws GameActionException {
         super(r);
@@ -221,7 +219,7 @@ public class Launcher extends Robot {
                     closestEnemyLocation = closestEnemy.getLocation();
                     int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
                     int numTroopsCloser = rc.senseNearbyRobots(closestEnemyLocation, ourDist - 1, rc.getTeam()).length;
-                    if (numTroopsCloser >= MAX_LAUNCHERS_PER_ENEMY_HQ) {
+                    if (numTroopsCloser >= 4) {
                         Debug.printString("many close");
                         return false;
                     } else {

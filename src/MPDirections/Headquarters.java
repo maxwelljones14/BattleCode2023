@@ -1,12 +1,12 @@
-package MPWorking;
+package MPDirections;
 
 import battlecode.common.*;
-import MPWorking.Util.*;
-import MPWorking.Comms.*;
-import MPWorking.Debug.*;
+import MPDirections.Util.*;
+import MPDirections.Comms.*;
+import MPDirections.Debug.*;
 import java.util.ArrayDeque;
 
-import MPWorking.fast.*;
+import MPDirections.fast.*;
 
 public class Headquarters extends Robot {
     static enum State {
@@ -26,12 +26,10 @@ public class Headquarters extends Robot {
     static int carrierCount;
     static int launcherCount;
     static int anchorCount;
-    static int amplifierCount;
 
     static final int initCarriersWanted = 4;
     static final int initLaunchersWanted = 3;
     static final int minCarriersBeforeAnchor = 20;
-    static final int amplifierCooldown = 50;
 
     static MapLocation currLoc;
 
@@ -49,7 +47,6 @@ public class Headquarters extends Robot {
     FastUnitTracker adamCarrierTracker;
     FastUnitTracker manaCarrierTracker;
 
-    static int roundsSinceLastAmplifier;
     static boolean nearHQ;
     static MapLocation enemyHQLoc;
 
@@ -118,9 +115,7 @@ public class Headquarters extends Robot {
         // printEnemySectors();
         // printCombatSectors();
         // printEnemyCombatSectors();
-        roundsSinceLastAmplifier++;
-        displayExploreSectors();
-        displayCombatSectors();
+        // displayExploreSectors();
         // displayMineSectors();
     }
 
@@ -354,14 +349,6 @@ public class Headquarters extends Robot {
         }
     }
 
-    public void buildAmplifier(MapLocation newLoc) throws GameActionException {
-        Debug.printString("Trying to build an amplifier");
-        if (newLoc != null && rc.canBuildRobot(RobotType.AMPLIFIER, newLoc)) {
-            rc.buildRobot(RobotType.AMPLIFIER, newLoc);
-            amplifierCount++;
-        }
-    }
-
     // WARNING: If the cost of initCarriersWanted or initLaunchersWanted exceed
     // that of starting resources. We will get stuck in INIT until we passively
     // gain enough resources to build the troops.
@@ -370,16 +357,9 @@ public class Headquarters extends Robot {
         if (nearHQ || Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT) {
             // set up locations for first launchers in the 4 cardinal directions
             if (launcherCount < initLaunchersWanted) {
-                if (nearHQ) {
-                    MapLocation locToBuild = getLauncherLocation(enemyHQLoc);
-                    buildLauncher(locToBuild);
-                    return;
-                } else {
-                    MapLocation locToBuild = getLauncherLocation(
-                            new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
-                    buildLauncher(locToBuild);
-                    return;
-                }
+                MapLocation locToBuild = getLauncherLocation(enemyHQLoc);
+                buildLauncher(locToBuild);
+                return;
             }
             // build carriers
             if (carrierCount < initCarriersWanted) {
@@ -404,20 +384,11 @@ public class Headquarters extends Robot {
     }
 
     public void doStateAction() throws GameActionException {
-        Direction dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
-        // spawn as far away from us as possible
-        MapLocation newLoc = Util.findInitLocation(currLoc, dir);
         switch (currentState) {
             case INIT:
                 firstRounds();
                 break;
             case CHILLING:
-                if (launcherCount > Util.MIN_LAUNCHERS_BEFORE_AMPLIFIER
-                        && (amplifierCount == 0 || roundsSinceLastAmplifier >= amplifierCooldown)
-                        && canBuildRobotType(RobotType.AMPLIFIER)) {
-                    roundsSinceLastAmplifier = 0;
-                    buildAmplifier(newLoc);
-                }
                 if (canBuildRobotType(RobotType.LAUNCHER)) {
                     buildLauncher(getLauncherLocation());
                 }

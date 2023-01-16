@@ -1,11 +1,11 @@
-package MPWorking;
+package MPDirections;
 
 import battlecode.common.*;
-import MPWorking.Util.*;
-import MPWorking.Comms.*;
-import MPWorking.Debug.*;
+import MPDirections.Util.*;
+import MPDirections.Comms.*;
+import MPDirections.Debug.*;
 
-import MPWorking.fast.*;
+import MPDirections.fast.*;
 
 public class Robot {
     static RobotController rc;
@@ -1177,10 +1177,8 @@ public class Robot {
                 }
                 // Skip sectors which are fully claimed
                 int nearestSectorStatus = (nearestSectorAll & 128) >> 7; // 2^7
-                if (nearestSectorStatus == Comms.ClaimStatus.CLAIMED) {
-                    Debug.printString("claimed");
+                if (nearestSectorStatus == Comms.ClaimStatus.CLAIMED)
                     continue;
-                }
 
                 // Skip sectors that have been visited (recently)
                 if (j == 0) {
@@ -1464,7 +1462,7 @@ public class Robot {
         for (MapLocation possibleHQ : enemyHQs) {
             if (rc.canSenseLocation(possibleHQ)) {
                 RobotInfo robot = rc.senseRobotAtLocation(possibleHQ);
-                if (robot != null && robot.getType() == RobotType.HEADQUARTERS && robot.getTeam() != rc.getTeam())
+                if (robot != null && robot.getType() == RobotType.HEADQUARTERS)
                     continue;
                 int symmetry = getSymmetry(possibleHQ);
                 switch (symmetry) {
