@@ -46,7 +46,7 @@ public class Pathfinding {
     }
 
     static public void move(MapLocation loc) {
-        Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), loc, 0, 0, 255);
+        // Debug.setIndicatorLine(Debug.INDICATORS, rc.getLocation(), loc, 0, 0, 255);
         if (!rc.isMovementReady())
             return;
         target = loc;

@@ -119,7 +119,8 @@ public class Headquarters extends Robot {
         // printCombatSectors();
         // printEnemyCombatSectors();
         roundsSinceLastAmplifier++;
-        // displayExploreSectors();
+        displayExploreSectors();
+        displayCombatSectors();
         // displayMineSectors();
     }
 

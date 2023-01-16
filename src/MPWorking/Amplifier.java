@@ -32,9 +32,13 @@ public class Amplifier extends Robot {
 
     static int roundsSinceStartedExploring;
 
+    static int claimedExploreSector;
+    static MapLocation exploreSectorLoc;
+
     public Amplifier(RobotController r) throws GameActionException {
         super(r);
         currState = AmplifierState.CHILLING;
+        claimedExploreSector = Comms.UNDEFINED_SECTOR_INDEX;
     }
 
     public void takeTurn() throws GameActionException {
@@ -55,13 +59,33 @@ public class Amplifier extends Robot {
             case CHILLING:
                 break;
             case EXPLORING:
-                // only be going to new destination for 10 rounds then restart normal procedures
-                if (roundsSinceStartedExploring > 10) {
+                // only be going to new destination for 15 rounds then restart normal procedures
+                if ((exploreSectorLoc != null
+                        && currLoc.distanceSquaredTo(exploreSectorLoc) <= Util.AMP_JUST_INSIDE_VISION_RADIUS)
+                        || roundsSinceStartedExploring > 15) {
+                    // unclaim the index
+                    Comms.writeExploreSectorClaimStatus(claimedExploreSector, Comms.ClaimStatus.UNCLAIMED);
                     currState = AmplifierState.CHILLING;
                     roundsSinceStartedExploring = 0;
+                    claimedExploreSector = Comms.UNDEFINED_SECTOR_INDEX;
+                    exploreSectorLoc = null;
                 }
                 roundsSinceStartedExploring++;
                 break;
+        }
+    }
+
+    public void switchState(AmplifierState state) throws GameActionException {
+        currState = state;
+        if (currState == AmplifierState.EXPLORING) {
+            // switching into exploring, grab ur sector
+            if (claimedExploreSector == Comms.UNDEFINED_SECTOR_INDEX) {
+                claimedExploreSector = getNearestExploreSectorIdx();
+                if (claimedExploreSector != Comms.UNDEFINED_SECTOR_INDEX) {
+                    exploreSectorLoc = sectorCenters[claimedExploreSector];
+                }
+            }
+            roundsSinceStartedExploring = 0;
         }
     }
 
@@ -200,11 +224,18 @@ public class Amplifier extends Robot {
 
     public void goToNewExploreSector() throws GameActionException {
         MapLocation target;
+        // grab a sector if u dont have one yet
+        if (claimedExploreSector == Comms.UNDEFINED_SECTOR_INDEX) {
+            claimedExploreSector = getNearestExploreSectorIdx();
+            if (claimedExploreSector != Comms.UNDEFINED_SECTOR_INDEX) {
+                exploreSectorLoc = sectorCenters[claimedExploreSector];
+            }
+        }
 
-        int exploreSectorIdx = getNearestExploreSector();
-        if (exploreSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
-            target = sectorCenters[exploreSectorIdx];
+        if (claimedExploreSector != Comms.UNDEFINED_SECTOR_INDEX) {
+            target = exploreSectorLoc;
         } else {
+            Debug.printString("2");
             target = Explore.getExploreTarget();
         }
         Debug.printString("exploring");
@@ -245,15 +276,15 @@ public class Amplifier extends Robot {
         }
 
         int combatSectorIdx = getPrioritizedCombatSectorIdx();
+        Debug.printString("" + combatSectorIdx);
         boolean goingToFriends = false;
         // go towards friends only if ur not close to home and theres no nearby islands
         // if ur close to home, want to go into battle more
-        // if you're near an island, want to go into battle more
+        // if you're near an island you own, want to go into battle more
 
         // TODO: go to exploreSector after getting to ur destination
         if (centerOfFriends != null &&
-                currLoc.distanceSquaredTo(home) > 2 * visionRadiusSquared &&
-                rc.senseNearbyIslands().length == 0) {
+                currLoc.distanceSquaredTo(home) > visionRadiusSquared) {
             goingToFriends = true;
             Direction friendsToHomeDir = centerOfFriends.directionTo(home);
             // go slightly behind your friends
@@ -267,16 +298,15 @@ public class Amplifier extends Robot {
             return;
         }
 
-        Debug.setIndicatorLine(Debug.INDICATORS, currLoc, target, 255, 0, 200);
         // oscillate near just outside of sector
         if ((!goingToFriends && currLoc.distanceSquaredTo(target) <= Util.AMP_JUST_INSIDE_VISION_RADIUS) ||
                 (goingToFriends && currLoc.distanceSquaredTo(target) <= 2)) {
             // go explore for a bit
             Debug.printString("switching to explore for a bit");
-            currState = AmplifierState.EXPLORING;
+            switchState(AmplifierState.EXPLORING);
             goToNewExploreSector();
-            roundsSinceStartedExploring = 0;
         } else {
+            Debug.setIndicatorLine(Debug.INDICATORS, currLoc, target, 255, 0, 200);
             Pathfinding.move(target);
             Debug.printString("move to target");
         }

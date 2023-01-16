@@ -1177,8 +1177,10 @@ public class Robot {
                 }
                 // Skip sectors which are fully claimed
                 int nearestSectorStatus = (nearestSectorAll & 128) >> 7; // 2^7
-                if (nearestSectorStatus == Comms.ClaimStatus.CLAIMED)
+                if (nearestSectorStatus == Comms.ClaimStatus.CLAIMED) {
+                    Debug.printString("claimed");
                     continue;
+                }
 
                 // Skip sectors that have been visited (recently)
                 if (j == 0) {
