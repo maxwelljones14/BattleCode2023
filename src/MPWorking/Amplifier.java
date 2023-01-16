@@ -6,6 +6,12 @@ import MPWorking.Comms.*;
 import MPWorking.Debug.*;
 
 public class Amplifier extends Robot {
+    static enum AmplifierState {
+        CHILLING,
+        EXPLORING,
+    }
+
+    static AmplifierState currState;
 
     static RobotInfo[] enemyAttackable;
     static RobotInfo[] friendlyAttackable;
@@ -24,8 +30,11 @@ public class Amplifier extends Robot {
     static double overallEnemyLauncherDx;
     static double overallEnemyLauncherDy;
 
+    static int roundsSinceStartedExploring;
+
     public Amplifier(RobotController r) throws GameActionException {
         super(r);
+        currState = AmplifierState.CHILLING;
     }
 
     public void takeTurn() throws GameActionException {
@@ -36,9 +45,40 @@ public class Amplifier extends Robot {
         closestEnemy = getClosestRobot(enemyAttackable);
         closestFriendly = getClosestRobot(friendlyAttackable);
 
-        resetShouldRunAway();
-        if (!moveAwayFromEnemy()) {
-            amplifierExplore();
+        trySwitchState();
+        Debug.printString("" + currState);
+        doStateAction();
+    }
+
+    public void trySwitchState() throws GameActionException {
+        switch (currState) {
+            case CHILLING:
+                break;
+            case EXPLORING:
+                // only be going to new destination for 10 rounds then restart normal procedures
+                if (roundsSinceStartedExploring > 10) {
+                    currState = AmplifierState.CHILLING;
+                    roundsSinceStartedExploring = 0;
+                }
+                roundsSinceStartedExploring++;
+                break;
+        }
+    }
+
+    public void doStateAction() throws GameActionException {
+        switch (currState) {
+            case CHILLING:
+                resetShouldRunAway();
+                if (!moveAwayFromEnemy()) {
+                    amplifierExplore();
+                }
+                break;
+            case EXPLORING:
+                resetShouldRunAway();
+                if (!moveAwayFromEnemy()) {
+                    goToNewExploreSector();
+                }
+                break;
         }
     }
 
@@ -158,6 +198,20 @@ public class Amplifier extends Robot {
         return target != null;
     }
 
+    public void goToNewExploreSector() throws GameActionException {
+        MapLocation target;
+
+        int exploreSectorIdx = getNearestExploreSector();
+        if (exploreSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
+            target = sectorCenters[exploreSectorIdx];
+        } else {
+            target = Explore.getExploreTarget();
+        }
+        Debug.printString("exploring");
+        Debug.setIndicatorLine(Debug.INDICATORS, currLoc, target, 255, 0, 200);
+        Pathfinding.move(target);
+    }
+
     public void amplifierExplore() throws GameActionException {
         MapLocation target;
 
@@ -195,6 +249,8 @@ public class Amplifier extends Robot {
         // go towards friends only if ur not close to home and theres no nearby islands
         // if ur close to home, want to go into battle more
         // if you're near an island, want to go into battle more
+
+        // TODO: go to exploreSector after getting to ur destination
         if (centerOfFriends != null &&
                 currLoc.distanceSquaredTo(home) > 2 * visionRadiusSquared &&
                 rc.senseNearbyIslands().length == 0) {
@@ -207,17 +263,19 @@ public class Amplifier extends Robot {
             Debug.printString("going for it");
             target = sectorCenters[combatSectorIdx];
         } else {
-            target = Explore.getExploreTarget();
-            Debug.printString("exploring");
+            goToNewExploreSector();
+            return;
         }
 
         Debug.setIndicatorLine(Debug.INDICATORS, currLoc, target, 255, 0, 200);
         // oscillate near just outside of sector
-        if (currLoc.distanceSquaredTo(target) <= Util.AMP_JUST_INSIDE_VISION_RADIUS && !goingToFriends) {
-            // only move away if ur close to combat sector or ur NOT moving towards friends,
-            // if ur going to friends then u should go directly to that location
-            Pathfinding.move(home);
-            Debug.printString("move home");
+        if ((!goingToFriends && currLoc.distanceSquaredTo(target) <= Util.AMP_JUST_INSIDE_VISION_RADIUS) ||
+                (goingToFriends && currLoc.distanceSquaredTo(target) <= 2)) {
+            // go explore for a bit
+            Debug.printString("switching to explore for a bit");
+            currState = AmplifierState.EXPLORING;
+            goToNewExploreSector();
+            roundsSinceStartedExploring = 0;
         } else {
             Pathfinding.move(target);
             Debug.printString("move to target");
