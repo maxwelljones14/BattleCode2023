@@ -20,7 +20,6 @@ public class Carrier extends Robot {
     MapLocation seenIsland;
 
     int turnStartedMining;
-    WellInfo closestWell;
 
     static RobotInfo[] enemyAttackable;
     static RobotInfo[] friendlyAttackable;
@@ -36,7 +35,6 @@ public class Carrier extends Robot {
         super(r);
         currState = CarrierState.MINING;
         turnStartedMining = 0;
-        closestWell = null;
         int assignment = Comms.readOurHqFlag(homeIdx);
         if (assignment == Comms.HQFlag.CARRIER_ADAMANTIUM) {
             resourceTarget = ResourceType.ADAMANTIUM;
@@ -68,17 +66,17 @@ public class Carrier extends Robot {
         closestEnemy = getClosestRobot(enemyAttackable);
         closestFriendly = getClosestRobot(friendlyAttackable);
 
-        Debug.printString("Target: " + resourceTarget);
+        Debug.printString(resourceTarget.toString());
 
         // mark the first island we see
         if (seenIsland == null) {
             seenIsland = findUnconqueredIsland();
         } else {
-            Debug.printString("Island: " + seenIsland);
+            Debug.printString("Isl: " + seenIsland);
         }
 
         trySwitchState();
-        Debug.printString("State: " + currState);
+        Debug.printString(currState.toString());
         doStateAction();
     }
 
@@ -144,6 +142,7 @@ public class Carrier extends Robot {
                 // If we can see a well, move towards it
                 WellInfo[] wells = rc.senseNearbyWells(resourceTarget);
                 int closestDist = Integer.MAX_VALUE;
+                WellInfo closestWell = null;
                 for (WellInfo well : wells) {
                     MapLocation wellLocation = well.getMapLocation();
                     int dist = Util.distance(rc.getLocation(), wellLocation);
@@ -159,9 +158,8 @@ public class Carrier extends Robot {
                     wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(closestWell.getMapLocation())]);
 
                     // If we are adjacent to a well, collect from it.
-                    if (closestDist <= 2) {
-                        Debug.printString("Collecting");
-                        collect();
+                    if (rc.getLocation().isAdjacentTo(closestWell.getMapLocation())) {
+                        collect(closestWell);
                     } else {
                         // If there are too many carriers on this well, move to another well.
                         // If there aren't 6 carriers on this well, skip this check.
@@ -183,11 +181,11 @@ public class Carrier extends Robot {
                                 break collect;
                             }
                         }
-                    }
 
-                    Debug.printString("Moving");
-                    Nav.move(closestWell.getMapLocation());
-                    collect();
+                        Debug.printString("Moving");
+                        Nav.move(closestWell.getMapLocation());
+                        collect(closestWell);
+                    }
                 }
 
                 if (closestWell == null) {
@@ -256,7 +254,6 @@ public class Carrier extends Robot {
         if (rc.canTransferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget))) {
             Debug.printString("Transfering");
             rc.transferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget));
-            closestWell = null;
             return true;
         }
         return false;
@@ -266,11 +263,11 @@ public class Carrier extends Robot {
      * Collects from closestWell if possible. Returns true if collect was
      * successful.
      */
-    public boolean collect() throws GameActionException {
-        int amount = Math.min(GameConstants.CARRIER_CAPACITY - rc.getWeight(), closestWell.getRate());
-        if (rc.canCollectResource(closestWell.getMapLocation(), amount)) {
+    public boolean collect(WellInfo well) throws GameActionException {
+        int amount = Math.min(GameConstants.CARRIER_CAPACITY - rc.getWeight(), well.getRate());
+        if (rc.canCollectResource(well.getMapLocation(), amount)) {
             Debug.printString("Collecting");
-            rc.collectResource(closestWell.getMapLocation(), amount);
+            rc.collectResource(well.getMapLocation(), amount);
             return true;
         }
         return false;
