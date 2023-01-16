@@ -85,7 +85,7 @@ public class Carrier extends Robot {
     public void trySwitchState() throws GameActionException {
         switch (currState) {
             case MINING:
-                if (shouldRunAway()) {
+                if (shouldRunAwayTarget() != null) {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
                 } else if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
@@ -96,7 +96,7 @@ public class Carrier extends Robot {
                 }
                 break;
             case PLACING_ANCHOR:
-                if (shouldRunAway()) {
+                if (shouldRunAwayTarget() != null) {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
                 } else if (rc.getAnchor() == null) {
@@ -128,6 +128,40 @@ public class Carrier extends Robot {
         wellSectorsVisitedThisCycle.clear();
         turnStartedMining = rc.getRoundNum();
         closestWell = null;
+    }
+
+    public void updateHomeifCurrHomeAttacked() throws GameActionException {
+        boolean[] eligibleHomes = new boolean[] { true, true, true, true };
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int nearestSector = Comms.readCombatSectorIndex(i);
+            // Break if no more combat sectors exist
+            if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            for (int j = 0; j < headquarterLocations.length; j++) {
+                MapLocation loc = headquarterLocations[j];
+                if (loc.x == -1 || sectorCenters[nearestSector]
+                        .distanceSquaredTo(loc) <= RobotType.LAUNCHER.actionRadiusSquared) {
+                    eligibleHomes[j] = false;
+                }
+            }
+
+        }
+        if (!eligibleHomes[homeIdx]) {
+            Debug.printString("need new home");
+            int closestDist = Integer.MAX_VALUE;
+            MapLocation closestHome = home;
+            for (int j = 0; j < headquarterLocations.length; j++) {
+                MapLocation possibleHome = headquarterLocations[j];
+                int currDist = Util.distance(currLoc, possibleHome);
+                if (possibleHome.x != -1 && eligibleHomes[j] && currDist <= closestDist) {
+                    closestHome = possibleHome;
+                    closestDist = currDist;
+                }
+            }
+            home = closestHome;
+            Debug.printString("home now " + home);
+        }
     }
 
     public void doStateAction() throws GameActionException {
@@ -238,6 +272,11 @@ public class Carrier extends Robot {
                 }
                 break;
             case REPORTING:
+                MapLocation target = shouldRunAwayTarget();
+                if (target != null) {
+                    Nav.move(currLoc.add(currLoc.directionTo(target)).add(currLoc.directionTo(target)));
+                }
+                updateHomeifCurrHomeAttacked();
                 Nav.move(home);
                 break;
             case DEPOSITING:
@@ -339,14 +378,14 @@ public class Carrier extends Robot {
         }
     }
 
-    public boolean shouldRunAway() throws GameActionException {
+    public MapLocation shouldRunAwayTarget() throws GameActionException {
         String str = "";
         MapLocation target = null;
         // Run away if either
         // - You see fewer friendly attackers than enemy attackers
         // - the closest enemy is closer than the clsoest friendly
         if (closestEnemy != null) {
-            if (enemyAttackable.length + 5 >= friendlyAttackable.length) {
+            if (enemyAttackable.length + 2 >= friendlyAttackable.length) {
                 target = Pathfinding.getGreedyTargetAway(closestEnemy.getLocation());
                 str = "Enemies++ " + closestEnemy.type;
             }
@@ -360,6 +399,6 @@ public class Carrier extends Robot {
 
             Debug.printString(str);
         }
-        return target != null;
+        return target;
     }
 }

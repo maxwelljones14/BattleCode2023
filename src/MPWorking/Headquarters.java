@@ -165,7 +165,7 @@ public class Headquarters extends Robot {
             } else {
                 // if theres both ad and mn, or neither, then first 2 should be ad and second 2
                 // should be mn
-                if (Util.MAP_AREA <= Util.MAX_AREA_FOR_SEMI_FAST_INIT) {
+                if (Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT) {
                     carrierType = Comms.HQFlag.CARRIER_MANA;
                 } else {
                     if (carrierCount < 3) {
@@ -354,7 +354,7 @@ public class Headquarters extends Robot {
     // gain enough resources to build the troops.
     // TODO: Restructure?
     public void firstRounds() throws GameActionException {
-        if (nearHQ) {
+        if (nearHQ || Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT) {
             // set up locations for first launchers in the 4 cardinal directions
             if (launcherCount < initLaunchersWanted) {
                 MapLocation locToBuild = getLauncherLocation(enemyHQLoc);
