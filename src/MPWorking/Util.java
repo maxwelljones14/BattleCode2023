@@ -114,7 +114,7 @@ public class Util {
     }
 
     static MapLocation clipToWithinMap(MapLocation loc) {
-        return new MapLocation(clip(loc.x, 0, MAP_WIDTH), clip(loc.y, 0, MAP_HEIGHT));
+        return new MapLocation(clip(loc.x, 0, MAP_WIDTH - 1), clip(loc.y, 0, MAP_HEIGHT - 1));
     }
 
     public static boolean onTheMap(MapLocation location) {

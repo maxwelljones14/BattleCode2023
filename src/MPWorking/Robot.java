@@ -487,9 +487,9 @@ public class Robot {
                             & (Comms.readSectorManaFlag(sectorToReport)
                                     | (entry.numManaWells() > 0 ? 1 : 0));
                     Comms.writeBPSectorManaFlag(sectorToReport, hasManaWell);
-                    int hasElixirWell = (Comms.readSectorElixirFlag(sectorToReport)
-                            | (entry.numElxrWells() > 0 ? 1 : 0));
-                    Comms.writeBPSectorElixirFlag(sectorToReport, hasElixirWell);
+                    // int hasElixirWell = (Comms.readSectorElixirFlag(sectorToReport)
+                    //         | (entry.numElxrWells() > 0 ? 1 : 0));
+                    // Comms.writeBPSectorElixirFlag(sectorToReport, hasElixirWell);
 
                     int hasIsland = Comms.readSectorIslands(sectorToReport)
                             | (entry.numIslands() > 0 ? 1 : 0);
@@ -1188,6 +1188,53 @@ public class Robot {
         return closestSector;
     }
 
+    /**
+     * Returns nearest mine sector or UNDEFINED_SECTOR_INDEX otherwise
+     * Ignores sectors that have already been visited.
+     * null can be passed in for visited if you don't care about visited sectors.
+     * 
+     * @return
+     * @throws GameActionException
+     */
+    public int getNearestMineSectorIdx(ResourceType resource, FastLocSet visited) throws GameActionException {
+        int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
+        int closestDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < Comms.MINE_SECTOR_SLOTS; i++) {
+            int nearestSector = Comms.readMineSectorIndex(i);
+            // Break if no more mine sectors exist
+            if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
+                break;
+            }
+            // Only look at the resource type we are mining
+            switch (resource) {
+                case ADAMANTIUM:
+                    if (Comms.readSectorAdamantiumFlag(nearestSector) == 0)
+                        continue;
+                    break;
+                case MANA:
+                    if (Comms.readSectorManaFlag(nearestSector) == 0)
+                        continue;
+                    break;
+                case ELIXIR:
+                    // if (Comms.readSectorElixirFlag(nearestSector) == 0)
+                    //     continue;
+                    break;
+                default:
+                    break;
+            }
+            // Skip sectors that have been visited
+            if (visited != null && visited.contains(sectorCenters[nearestSector]))
+                continue;
+
+            int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestSector = nearestSector;
+            }
+        }
+        return closestSector;
+    }
+
     // Note: index is included in being available
     public int getNextEmptyExploreSectorIdx(int index) throws GameActionException {
         // Preserve explore sectors which still have not been claimed or visited
@@ -1218,6 +1265,20 @@ public class Robot {
             }
             if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS &&
                     Comms.readCombatSectorClaimStatus(sector) == Comms.ClaimStatus.UNCLAIMED) {
+                break;
+            }
+            index++;
+        }
+        return index;
+    }
+
+    // Note: index is included in being available
+    public int getNextEmptyMineSectorIdx(int index) throws GameActionException {
+        // Preserve mine sectors which still have resources
+        while (index < Comms.MINE_SECTOR_SLOTS) {
+            int sector = Comms.readMineSectorIndex(index);
+            // Break if no more mining sectors exist
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
                 break;
             }
             index++;
@@ -1434,36 +1495,5 @@ public class Robot {
             }
         }
         return closestSector;
-    }
-
-    public MapLocation findClosestWell(ResourceType resourceTarget) throws GameActionException {
-        MapLocation closestLoc = null;
-        int closestDistance = Integer.MAX_VALUE;
-        if (resourceTarget == ResourceType.ADAMANTIUM) {
-            for (int x = 0; x < numSectors; x++) {
-                MapLocation sectorLoc = sectorCenters[x];
-                int currDistance = currLoc.distanceSquaredTo(sectorLoc);
-                if (currDistance < closestDistance) {
-                    int flag = Comms.readSectorAdamantiumFlag(x);
-                    if (flag == 1) {
-                        closestDistance = currDistance;
-                        closestLoc = sectorLoc;
-                    }
-                }
-            }
-        } else {
-            for (int x = 0; x < numSectors; x++) {
-                MapLocation sectorLoc = sectorCenters[x];
-                int currDistance = currLoc.distanceSquaredTo(sectorLoc);
-                if (currDistance < closestDistance) {
-                    int flag = Comms.readSectorManaFlag(x);
-                    if (flag == 1) {
-                        closestDistance = currDistance;
-                        closestLoc = sectorLoc;
-                    }
-                }
-            }
-        }
-        return closestLoc;
     }
 }

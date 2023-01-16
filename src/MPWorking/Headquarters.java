@@ -102,6 +102,7 @@ public class Headquarters extends Robot {
         // printCombatSectors();
         // printEnemyCombatSectors();
         // displayExploreSectors();
+        // displayMineSectors();
     }
 
     public void checkIfHQNear() throws GameActionException {
@@ -194,7 +195,9 @@ public class Headquarters extends Robot {
                 dirToBuild = currLoc.directionTo(nearestAdWell);
             } else {
                 // look in sectors for nearest ad well
-                MapLocation nearestAdWellSector = findClosestWell(ResourceType.ADAMANTIUM);
+                int mineSectorIndex = getNearestMineSectorIdx(ResourceType.ADAMANTIUM, null);
+                MapLocation nearestAdWellSector = mineSectorIndex == Comms.UNDEFINED_SECTOR_INDEX ? null
+                        : sectorCenters[mineSectorIndex];
                 if (nearestAdWellSector != null) {
                     dirToBuild = currLoc.directionTo(nearestAdWellSector);
                 } else {
@@ -206,7 +209,9 @@ public class Headquarters extends Robot {
                 dirToBuild = currLoc.directionTo(nearestMnWell);
             } else {
                 // look in sectors for nearest mn well
-                MapLocation nearestMnWellSector = findClosestWell(ResourceType.MANA);
+                int mineSectorIndex = getNearestMineSectorIdx(ResourceType.MANA, null);
+                MapLocation nearestMnWellSector = mineSectorIndex == Comms.UNDEFINED_SECTOR_INDEX ? null
+                        : sectorCenters[mineSectorIndex];
                 if (nearestMnWellSector != null) {
                     dirToBuild = currLoc.directionTo(nearestMnWellSector);
                 } else {
@@ -477,6 +482,7 @@ public class Headquarters extends Robot {
 
         int combatSectorIndex = getNextEmptyCombatSectorIdx(0);
         int exploreSectorIndex = getNextEmptyExploreSectorIdx(0);
+        int mineSectorIndex = getNextEmptyMineSectorIdx(0);
 
         // Alternate sweeping each half of the sectors every turn
         int mode = (myHqNum + rc.getRoundNum()) % 3;
@@ -529,6 +535,23 @@ public class Headquarters extends Robot {
                 Comms.writeExploreSectorClaimStatus(exploreSectorIndex, Comms.ClaimStatus.UNCLAIMED);
                 exploreSectorIndex = getNextEmptyExploreSectorIdx(exploreSectorIndex + 1);
             }
+            // Mine sector
+            mineSector: if (mineSectorIndex < Comms.MINE_SECTOR_SLOTS &&
+                    Comms.readSectorAdamantiumFlag(i) == 1 ||
+                    Comms.readSectorManaFlag(i) == 1 /*
+                                                      * ||
+                                                      * Comms.readSectorElixirFlag(i) == 1
+                                                      */) {
+                // If the sector is already a mine sector, don't add it again
+                for (int j = Comms.MINE_SECTOR_SLOTS - 1; j >= 0; j--) {
+                    if (Comms.readMineSectorIndex(j) == i) {
+                        break mineSector;
+                    }
+                }
+
+                Comms.writeMineSectorIndex(mineSectorIndex, i);
+                mineSectorIndex = getNextEmptyMineSectorIdx(mineSectorIndex + 1);
+            }
         }
     }
 
@@ -548,6 +571,16 @@ public class Headquarters extends Robot {
                 robotType.buildCostElixir + anchor.elixirCost, anchor);
     }
 
+    public void displayCombatSectors() throws GameActionException {
+        for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
+            int sector = Comms.readCombatSectorIndex(i);
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX)
+                break;
+            MapLocation loc = sectorCenters[sector];
+            rc.setIndicatorDot(loc, 255, 0, 0);
+        }
+    }
+
     public void displayExploreSectors() throws GameActionException {
         for (int i = 0; i < Comms.EXPLORE_SECTOR_SLOTS; i++) {
             int sector = Comms.readExploreSectorIndex(i);
@@ -555,6 +588,16 @@ public class Headquarters extends Robot {
                 break;
             MapLocation loc = sectorCenters[sector];
             rc.setIndicatorDot(loc, 0, 0, 255);
+        }
+    }
+
+    public void displayMineSectors() throws GameActionException {
+        for (int i = 0; i < Comms.MINE_SECTOR_SLOTS; i++) {
+            int sector = Comms.readMineSectorIndex(i);
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX)
+                break;
+            MapLocation loc = sectorCenters[sector];
+            rc.setIndicatorDot(loc, 100, 200, 50);
         }
     }
 
