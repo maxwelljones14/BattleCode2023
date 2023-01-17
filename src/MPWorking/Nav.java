@@ -237,6 +237,8 @@ public class Nav {
     }
 
     static void move(MapLocation target, boolean greedy) throws GameActionException {
+        if (rc.getType() == RobotType.LAUNCHER && rc.getRoundNum() % 2 != 0)
+            return;
         if (target == null)
             return;
         if (!rc.isMovementReady())

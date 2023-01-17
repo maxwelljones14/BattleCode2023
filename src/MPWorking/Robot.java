@@ -477,7 +477,7 @@ public class Robot {
     static boolean tryMoveDest(Direction[] target_dir) throws GameActionException {
         // Debug.println(Debug.info, "Dest direction: " + dir);
         for (Direction dir : target_dir) {
-            if (rc.canMove(dir)) {
+            if ((rc.getType() != RobotType.LAUNCHER || rc.getRoundNum() % 2 == 0) && rc.canMove(dir)) {
                 rc.move(dir);
                 return true;
             }

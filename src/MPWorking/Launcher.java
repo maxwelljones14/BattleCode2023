@@ -21,9 +21,14 @@ public class Launcher extends Robot {
     static double overallEnemyLauncherDy;
 
     static int numFriendlyLaunchers;
-    static RobotInfo closestEnemy;
     static int numFriendlies;
     static int numCloseFriendlies;
+    static FastIntLocMap friendlyLocs;
+    static FastIterableIntSet friendlyIds;
+    static MapLocation friendlyCentroid;
+    static Direction elCapitanDirection;
+
+    static RobotInfo closestEnemy;
     static int numEnemies;
     static MapLocation closestAttackingEnemy;
     static MapLocation closestEnemyLocation;
@@ -43,12 +48,18 @@ public class Launcher extends Robot {
         super(r);
         currState = LauncherState.EXPLORING;
         seenEnemyHQLocs = new FastLocSet();
+        friendlyIds = new FastIterableIntSet();
+        friendlyLocs = new FastIntLocMap();
         HQwaitCounter = 0;
     }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         closestEnemy = getBestEnemy(EnemySensable);
+        if (rc.getRoundNum() % 2 != 0) {
+            friendlyIds.clear();
+            friendlyLocs.clear();
+        }
         resetLocalEnemyInformation();
 
         enemyAttackable = getEnemyAttackable();
@@ -66,6 +77,8 @@ public class Launcher extends Robot {
         numEnemies = 0;
         overallEnemyLauncherDx = 0;
         overallEnemyLauncherDy = 0;
+        elCapitanDirection = null;
+        friendlyCentroid = null;
         if (HQwaitCounter > 0) {
             HQwaitCounter--;
         }
@@ -130,14 +143,37 @@ public class Launcher extends Robot {
 
         for (RobotInfo Fbot : FriendlySensable) {
             RobotType FbotType = Fbot.getType();
+            MapLocation FbotLocation = Fbot.getLocation();
+            if (FbotType == RobotType.LAUNCHER) {
+                MapLocation FbotLastLoc = friendlyLocs.getLoc(Fbot.ID);
+                if (FbotLastLoc == null && friendlyIds.size() < 6) {
+                    friendlyIds.add(Fbot.ID);
+                    friendlyLocs.add(Fbot.ID, FbotLocation);
+                } else if (FbotLastLoc != null && elCapitanDirection == null && FbotLocation != FbotLastLoc) {
+                    elCapitanDirection = FbotLastLoc.directionTo(FbotLocation);
+                }
+            }
             if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
-                MapLocation FbotLocation = Fbot.getLocation();
                 // Debug.printString(" " + FbotLocation + " ");
                 overallEnemyLauncherDx += (currLoc.x - FbotLocation.x);
                 overallEnemyLauncherDy += (currLoc.y - FbotLocation.y);
                 if ((FbotLocation).distanceSquaredTo(closestEnemyLocation) <= FbotType.visionRadiusSquared) {
                     numFriendlies++;
                 }
+            }
+        }
+        if (friendlyIds.size > 0) {
+            friendlyIds.updateIterable();
+            int elCapitanDx = 0;
+            int elCapitanDy = 0;
+            for (int id : friendlyIds.ints) {
+                MapLocation loc = friendlyLocs.getLoc(id);
+                elCapitanDx += loc.x;
+                elCapitanDy += loc.y;
+            }
+            friendlyCentroid = new MapLocation(elCapitanDx / friendlyIds.size, elCapitanDy / friendlyIds.size);
+            if (currLoc.distanceSquaredTo(friendlyCentroid) >= 6) {
+                elCapitanDirection = currLoc.directionTo(friendlyCentroid);
             }
         }
     }
@@ -375,6 +411,9 @@ public class Launcher extends Robot {
     }
 
     public void launcherExplore() throws GameActionException {
+        if (elCapitanDirection != null) {
+            tryMoveDest(Util.getInOrderDirections(elCapitanDirection));
+        }
         MapLocation target;
 
         MapLocation symLoc = chooseSymmetricLoc();
