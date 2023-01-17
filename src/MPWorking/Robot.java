@@ -56,6 +56,9 @@ public class Robot {
 
     boolean exploreMode;
 
+    FastIntIntMap combatSectorToRoundWrittenMap;
+    public static final int COMBAT_SECTOR_TIMEOUT = 100;
+
     final int MIN_BC_TO_FLUSH_SECTOR_DB = 1500;
     final int BC_TO_WRITE_SECTOR = 150;
     final int MIN_BC_TO_FLUSH = 1200;
@@ -114,6 +117,8 @@ public class Robot {
         }
 
         exploreMode = false;
+
+        combatSectorToRoundWrittenMap = new FastIntIntMap();
     }
 
     public void loadHQLocations() throws GameActionException {
@@ -161,6 +166,7 @@ public class Robot {
 
     public void endTurn() throws GameActionException {
         attackCloudExploit();
+        clearOldCombatSectors();
         MapTracker.initialize();
         flushSectorDatabase();
         MapTracker.markSeen();
@@ -1556,5 +1562,20 @@ public class Robot {
             }
         }
         return closestSector;
+    }
+
+    public void clearOldCombatSectors() throws GameActionException {
+        if (combatSectorToRoundWrittenMap.size == 0 || !rc.canWriteSharedArray(0, 0))
+            return;
+        for (int i = Comms.COMBAT_SECTOR_SLOTS; --i >= 0;) {
+            if (!combatSectorToRoundWrittenMap.contains(i))
+                continue;
+            int roundWritten = combatSectorToRoundWrittenMap.getVal(i);
+            if (roundWritten < rc.getRoundNum() - COMBAT_SECTOR_TIMEOUT) {
+                Comms.writeCombatSectorIndex(i, Comms.UNDEFINED_SECTOR_INDEX);
+                combatSectorToRoundWrittenMap.remove(i);
+                // Debug.println("Clearing combat sector " + i);
+            }
+        }
     }
 }

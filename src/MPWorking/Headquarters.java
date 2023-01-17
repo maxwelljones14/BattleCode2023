@@ -262,31 +262,6 @@ public class Headquarters extends Robot {
         currentState = newState;
     }
 
-    public void buildCarrier(int carrierType) throws GameActionException {
-        Debug.printString("Trying to build a carrier of type " + carrierType);
-
-        // get predetermined next carrier type and location
-        MapLocation newLoc = getNextCarrierLocation(carrierType);
-
-        if (newLoc != null && rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
-            rc.buildRobot(RobotType.CARRIER, newLoc);
-            carrierCount++;
-            RobotInfo newCarrier = rc.senseRobotAtLocation(newLoc);
-            if (newCarrier == null) {
-                Debug.printString("ERROR: built carrier but can't sense it");
-                return;
-            }
-
-            nextFlag = carrierType;
-
-            if (carrierType == Comms.HQFlag.CARRIER_MANA) {
-                manaCarrierTracker.add(newCarrier.ID);
-            } else {
-                adamCarrierTracker.add(newCarrier.ID);
-            }
-        }
-    }
-
     public void buildCarrier() throws GameActionException {
         Debug.printString("Trying to build a carrier");
 
@@ -556,6 +531,7 @@ public class Headquarters extends Robot {
                     }
                 }
 
+                combatSectorToRoundWrittenMap.add(combatSectorIndex, rc.getRoundNum());
                 Comms.writeCombatSectorIndex(combatSectorIndex, i);
                 Comms.writeCombatSectorClaimStatus(combatSectorIndex, Comms.ClaimStatus.UNCLAIMED);
                 combatSectorIndex = getNextEmptyCombatSectorIdx(combatSectorIndex + 1);
