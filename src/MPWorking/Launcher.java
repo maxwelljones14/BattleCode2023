@@ -10,6 +10,8 @@ import MPWorking.fast.*;
 public class Launcher extends Robot {
     static enum LauncherState {
         EXPLORING,
+        ATTACKING,
+        RUNNING,
     }
 
     static LauncherState currState;
@@ -33,6 +35,7 @@ public class Launcher extends Robot {
     static RobotInfo[] enemyAttackable;
 
     static FastLocSet seenEnemyHQLocs;
+    static int HQwaitCounter;
 
     public static final int MAX_LAUNCHERS_PER_ENEMY_HQ = 4;
 
@@ -40,12 +43,13 @@ public class Launcher extends Robot {
         super(r);
         currState = LauncherState.EXPLORING;
         seenEnemyHQLocs = new FastLocSet();
+        HQwaitCounter = 0;
     }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         closestEnemy = getBestEnemy(EnemySensable);
-        resetShouldRunAway();
+        resetLocalEnemyInformation();
 
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
@@ -54,7 +58,7 @@ public class Launcher extends Robot {
         doStateAction();
     }
 
-    public void resetShouldRunAway() throws GameActionException {
+    public void resetLocalEnemyInformation() throws GameActionException {
         numEnemyLaunchersAttackingUs = 0;
         numFriendlies = 0;
         numCloseFriendlies = 0;
@@ -62,34 +66,36 @@ public class Launcher extends Robot {
         numEnemies = 0;
         overallEnemyLauncherDx = 0;
         overallEnemyLauncherDy = 0;
+        if (HQwaitCounter > 0) {
+            HQwaitCounter--;
+        }
 
         int closestLauncherDist = Integer.MAX_VALUE;
         RobotInfo closestEnemyInfo = null;
+        int lowestHealth = Integer.MAX_VALUE;
+        boolean inActionRadius = false;
         int numAttackingEnemyCount = 0;
         for (int i = 0; i < EnemySensable.length; i++) {
             RobotInfo bot = EnemySensable[i];
             int botHealth = bot.getHealth();
             MapLocation candidateLoc = bot.getLocation();
             int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
-            int lowestHealth = Integer.MAX_VALUE;
-            boolean inActionRadius = false;
             RobotType botType = bot.getType();
             if (botType == RobotType.LAUNCHER || botType == RobotType.DESTABILIZER) {
                 if (candidateDist <= actionRadiusSquared /* && canAttack */) {
-                    inActionRadius = true;
                     numAttackingEnemyCount += 1;
                     overallEnemyLauncherDx += (candidateLoc.x - currLoc.x);
                     overallEnemyLauncherDy += (candidateLoc.y - currLoc.y);
                     numEnemyLaunchersAttackingUs++;
 
-                    if (botHealth < lowestHealth
+                    if (!inActionRadius || botHealth < lowestHealth
                             || (botHealth == lowestHealth && candidateDist < closestLauncherDist)) {
                         closestLauncherDist = candidateDist;
                         closestAttackingEnemy = candidateLoc;
                         closestEnemyInfo = bot;
                         lowestHealth = botHealth;
                     }
-
+                    inActionRadius = true;
                 } else {
                     if (!inActionRadius && botHealth < lowestHealth
                             || (botHealth == lowestHealth && candidateDist < closestLauncherDist)) {
@@ -137,18 +143,35 @@ public class Launcher extends Robot {
     }
 
     public void trySwitchState() throws GameActionException {
-        switch (currState) {
-            case EXPLORING:
-                break;
+        if (closestEnemy == null) {
+            currState = LauncherState.EXPLORING;
+        } else if (shouldRunAway()) {
+            currState = LauncherState.RUNNING;
+        } else {
+            if (closestEnemy.getType() == RobotType.HEADQUARTERS) {
+                closestEnemyLocation = closestEnemy.getLocation();
+                int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
+                int numTroopsCloser = rc.senseNearbyRobots(closestEnemyLocation, ourDist - 1, rc.getTeam()).length;
+                if (HQwaitCounter != 0 || numTroopsCloser >= MAX_LAUNCHERS_PER_ENEMY_HQ) {
+                    currState = LauncherState.EXPLORING;
+                    HQwaitCounter = 5;
+                    return;
+                }
+            }
+            currState = LauncherState.ATTACKING;
         }
     }
 
     public void doStateAction() throws GameActionException {
         switch (currState) {
             case EXPLORING:
-                if (!tryMoveTowardsEnemy()) {
-                    launcherExplore();
-                }
+                launcherExplore();
+                break;
+            case RUNNING:
+                runAwayFromEnemy();
+                break;
+            case ATTACKING:
+                moveTowardsEnemy();
                 break;
         }
     }
@@ -186,99 +209,80 @@ public class Launcher extends Robot {
         }
     }
 
-    public boolean tryMoveTowardsEnemy() throws GameActionException {
-        // move towards it if found
-        if (closestEnemy != null) {
-            MapLocation dest;
-            Direction dir = null;
-            boolean attackFirst = false;
-            if (shouldRunAway()) {
-                attackFirst = true;
-                dest = currLoc.translate(-(int) (overallEnemyLauncherDx), -(int) (overallEnemyLauncherDy));// (overallFriendlyLauncherDx,
-                // overallFriendlyLauncherDy);
-                Direction possibleDir = currLoc.directionTo(dest);
-                dir = chooseBackupDirection(possibleDir);
-                Debug.printString("t: " + rc.getMovementCooldownTurns() + " " + dir + " " + overallEnemyLauncherDx + " "
-                        + overallEnemyLauncherDy);
+    public void runAwayFromEnemy() throws GameActionException {
+        MapLocation dest;
+        Direction dir = null;
+        dest = currLoc.translate(-(int) (overallEnemyLauncherDx), -(int) (overallEnemyLauncherDy));// (overallFriendlyLauncherDx,
+        // overallFriendlyLauncherDy);
+        Direction possibleDir = currLoc.directionTo(dest);
+        dir = chooseBackupDirection(possibleDir);
+        Debug.printString("t: " + rc.getMovementCooldownTurns() + " " + dir + " " + overallEnemyLauncherDx + " "
+                + overallEnemyLauncherDy);
+        if (dir == null) {
+            Debug.printString("RA bad");
+            tryAttackBestEnemy(closestEnemy);
+            return;
+        }
+        Debug.printString("RA, Dest: " + dir);
+        Direction[] targetDirs = Util.getInOrderDirections(dir);
+        moveAndAttack(targetDirs, true);
+    }
+
+    public void moveTowardsEnemy() throws GameActionException {
+        MapLocation dest;
+        Direction dir = null;
+        dest = closestEnemy.getLocation();
+        RobotType closestEnemyType = closestEnemy.getType();
+        if (closestEnemyType == RobotType.HEADQUARTERS) {
+            // if we can go to a sector, leave the headquarters (this amounts to returning
+            // false and going to the soldierExplore function)
+            // if (closestEnemyLocation != null) {
+            // return false;
+            // }
+            if (currLoc.distanceSquaredTo(closestEnemyLocation) > 2) {
+                Debug.printString("closing in");
+                Nav.move(closestEnemyLocation);
+            }
+        } else if (closestEnemyType == RobotType.CARRIER
+                || closestEnemyType == RobotType.AMPLIFIER || closestEnemyType == RobotType.BOOSTER) {
+
+            dir = Util.getFirstValidInOrderDirection(currLoc.directionTo(dest)); // navTo
+            MapLocation targetLoc = currLoc.add(dir);
+
+            // rubble check
+            boolean isPassable = rc.sensePassability(targetLoc);
+            if (rc.onTheMap(targetLoc) && !isPassable) {
+                Debug.printString("rub high");
+                tryAttackBestEnemy(closestEnemy);
+                return;
+            }
+            // // We're already close to a non-attacking enemy, and moving would put us in
+            // // lower passability
+            int distanceNeeded = 2;
+            if (currLoc.distanceSquaredTo(dest) <= distanceNeeded) {
+                Debug.printString("close");
+                tryAttackBestEnemy(closestEnemy);
+                return;
+            }
+            Debug.printString("enemyfren");
+            Direction[] targetDirs = Util.getInOrderDirections(dir);
+            moveAndAttack(targetDirs, false);
+        } else {
+            if (!shouldStandGround()) {
+                dir = chooseForwardDirection(dest);
                 if (dir == null) {
-                    Debug.printString("RA bad");
-                    tryAttackBestEnemy(closestEnemy);
-                    return true;
+                    Debug.printString("Fw bad; ");
+                    tryAttackBestEnemy();
+                    return;
                 }
-                Debug.printString("RA, Dest: " + dir);
+                Debug.printString("Fw, Dest: " + dir);
                 Direction[] targetDirs = Util.getInOrderDirections(dir);
-                moveAndAttack(targetDirs, attackFirst);
-                return true;
+                moveAndAttack(targetDirs, false);
             } else {
-                dest = closestEnemy.getLocation();
-                RobotType closestEnemyType = closestEnemy.getType();
-                if (closestEnemyType == RobotType.HEADQUARTERS) {
-                    // if we can go to a sector, leave the headquarters (this amounts to returning
-                    // false and going to the soldierExplore function)
-                    // if (closestEnemyLocation != null) {
-                    // return false;
-                    // }
-                    closestEnemyLocation = closestEnemy.getLocation();
-                    int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
-                    int numTroopsCloser = rc.senseNearbyRobots(closestEnemyLocation, ourDist - 1, rc.getTeam()).length;
-                    if (numTroopsCloser >= MAX_LAUNCHERS_PER_ENEMY_HQ) {
-                        Debug.printString("many close");
-                        return false;
-                    } else {
-                        if (currLoc.distanceSquaredTo(closestEnemyLocation) > 2) {
-                            Debug.printString("closing in");
-                            Nav.move(closestEnemyLocation);
-                        }
-                        return true;
-                    }
-                } else if (closestEnemyType == RobotType.CARRIER
-                        || closestEnemyType == RobotType.AMPLIFIER || closestEnemyType == RobotType.BOOSTER) {
-
-                    dir = Util.getFirstValidInOrderDirection(currLoc.directionTo(dest)); // navTo
-                    MapLocation targetLoc = currLoc.add(dir);
-
-                    // rubble check
-                    boolean isPassable = rc.sensePassability(targetLoc);
-                    if (rc.onTheMap(targetLoc) && !isPassable) {
-                        Debug.printString("rub high");
-                        tryAttackBestEnemy(closestEnemy);
-                        return true;
-                    }
-                    // // We're already close to a non-attacking enemy, and moving would put us in
-                    // // lower passability
-                    int distanceNeeded = 2;
-                    if (currLoc.distanceSquaredTo(dest) <= distanceNeeded) {
-                        Debug.printString("close");
-                        tryAttackBestEnemy(closestEnemy);
-                        return true;
-                    }
-                    Debug.printString("enemyfren");
-                    Direction[] targetDirs = Util.getInOrderDirections(dir);
-                    moveAndAttack(targetDirs, attackFirst);
-                    return true;
-                } else {
-                    if (!shouldStandGround()) {
-                        dir = chooseForwardDirection(dest);
-                        attackFirst = false;
-                        if (dir == null) {
-                            Debug.printString("Fw bad; ");
-                            tryAttackBestEnemy();
-                            return true;
-                        }
-                        Debug.printString("Fw, Dest: " + dir);
-                        Direction[] targetDirs = Util.getInOrderDirections(dir);
-                        moveAndAttack(targetDirs, attackFirst);
-                        return true;
-                    } else {
-                        Debug.printString("standing ground");
-                        tryAttackBestEnemy();
-                        return true;
-                    }
-                }
-
+                Debug.printString("standing ground");
+                tryAttackBestEnemy();
             }
         }
-        return false;
     }
 
     // NOTE: neither forward nor backward direction have a good way to break ties;
