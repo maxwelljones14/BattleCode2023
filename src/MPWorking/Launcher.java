@@ -157,6 +157,10 @@ public class Launcher extends Robot {
                     HQwaitCounter = 5;
                     return;
                 }
+                if (ourDist <= RobotType.HEADQUARTERS.actionRadiusSquared) {
+                    currState = LauncherState.RUNNING;
+                    return;
+                }
             }
             currState = LauncherState.ATTACKING;
         }
@@ -239,7 +243,8 @@ public class Launcher extends Robot {
             // if (closestEnemyLocation != null) {
             // return false;
             // }
-            if (currLoc.distanceSquaredTo(closestEnemyLocation) > 2) {
+            if (currLoc.add(currLoc.directionTo(closestEnemyLocation))
+                    .distanceSquaredTo(closestEnemyLocation) > RobotType.HEADQUARTERS.actionRadiusSquared) {
                 Debug.printString("closing in");
                 Nav.move(closestEnemyLocation);
             }
