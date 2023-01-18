@@ -309,6 +309,7 @@ public class Carrier extends Robot {
         if (rc.canCollectResource(well.getMapLocation(), amount)) {
             Debug.printString("Collecting");
             rc.collectResource(well.getMapLocation(), amount);
+            collect(well);
             return true;
         }
         return false;
