@@ -146,7 +146,7 @@ public class Util {
             MapLocation[] possibleLocations = Util.findInitLocationPossibilities(currLoc, dir);
             for (int x = 0; x < possibleLocations.length; x++) {
                 MapLocation newLoc = possibleLocations[x];
-                if (rc.onTheMap(newLoc) && rc.sensePassability(newLoc) && rc.senseRobotAtLocation(newLoc) == null) {
+                if (rc.canSenseLocation(newLoc) && rc.sensePassability(newLoc) && rc.senseRobotAtLocation(newLoc) == null) {
                     buildLocation = newLoc;
                     break;
                 }

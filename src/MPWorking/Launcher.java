@@ -263,7 +263,7 @@ public class Launcher extends Robot {
         if (elCapitanDirection != null) {
             // Captain might be direction CENTER if we are waiting for another troop
             Debug.printString("Grouping dir: " + elCapitanDirection);
-            tryMoveDest(Util.getInOrderDirections(elCapitanDirection));
+            tryMoveDest(Nav.greedyDirection(elCapitanDirection, false, false, false));
             // However, if we need to run away, we should be able to run away.
         }
         MapLocation dest;
@@ -288,7 +288,7 @@ public class Launcher extends Robot {
         if (elCapitanDirection != null) {
             // Captain might be direction CENTER if we are waiting for another troop
             Debug.printString("Grouping dir: " + elCapitanDirection);
-            tryMoveDest(Util.getInOrderDirections(elCapitanDirection));
+            tryMoveDest(Nav.greedyDirection(elCapitanDirection, false, false, false));
             return;
         }
         MapLocation dest;
@@ -440,7 +440,7 @@ public class Launcher extends Robot {
         if (elCapitanDirection != null) {
             // Captain might be direction CENTER if we are waiting for another troop
             Debug.printString("Grouping dir: " + elCapitanDirection);
-            tryMoveDest(Util.getInOrderDirections(elCapitanDirection));
+            tryMoveDest(Nav.greedyDirection(elCapitanDirection, false, false, false));
             return;
         }
         MapLocation target;
