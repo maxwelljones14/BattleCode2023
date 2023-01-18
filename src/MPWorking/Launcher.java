@@ -43,8 +43,8 @@ public class Launcher extends Robot {
     static int HQwaitCounter;
 
     public static final int MAX_LAUNCHERS_PER_ENEMY_HQ = 4;
-    public static final int LAUNCHERS_PER_CLUSTER = 8;
-    public static final int MAX_DIST_FROM_CLUSTER = 10;
+    public static final int OTHER_LAUNCHERS_PER_CLUSTER = 4;
+    public static final int MAX_DIST_FROM_CLUSTER = 6;
 
     public Launcher(RobotController r) throws GameActionException {
         super(r);
@@ -143,22 +143,25 @@ public class Launcher extends Robot {
             overallEnemyLauncherDy += (closestEnemyLocation.y - currLoc.y);
         }
 
-        int bestElCapitanDistance = Integer.MAX_VALUE;
-        for (RobotInfo Fbot : FriendlySensable) {
-            RobotType FbotType = Fbot.getType();
-            MapLocation FbotLocation = Fbot.getLocation();
+        RobotInfo[] attackable = getAttackableRobots(FriendlySensable);
+        FastSort.distSort(attackable);
+        RobotInfo Fbot;
+        RobotType FbotType;
+        MapLocation FbotLocation;
+        for (int i = 0; i < FastSort.size; i++) {
+            Fbot = attackable[FastSort.indices[i]];
+            FbotType = Fbot.getType();
+            FbotLocation = Fbot.getLocation();
             if (FbotType == RobotType.LAUNCHER) {
                 MapLocation FbotLastLoc = friendlyLocs.getLoc(Fbot.ID);
-                if (FbotLastLoc == null && friendlyIds.size() < LAUNCHERS_PER_CLUSTER) {
+                if (FbotLastLoc == null && friendlyIds.size() < OTHER_LAUNCHERS_PER_CLUSTER) {
+                    Debug.setIndicatorDot(Debug.INDICATORS, FbotLocation, 60, 240, 250);
                     friendlyIds.add(Fbot.ID);
                     friendlyLocs.add(Fbot.ID, FbotLocation);
-                } else if (FbotLastLoc != null && elCapitanDirection == null && FbotLocation != FbotLastLoc
-                        && rc.senseMapInfo(FbotLocation).getCurrentDirection() == Direction.CENTER) {
-                    int elCapitanDistance = currLoc.distanceSquaredTo(FbotLocation);
-                    if (elCapitanDistance < bestElCapitanDistance) {
-                        bestElCapitanDistance = elCapitanDistance;
-                        elCapitanDirection = FbotLastLoc.directionTo(FbotLocation);
-                    }
+                } else if (FbotLastLoc != null && elCapitanDirection == null && !FbotLocation.equals(FbotLastLoc)) {
+                    elCapitanDirection = currLoc.directionTo(FbotLocation);
+                    Debug.printString("Following captain: " + elCapitanDirection);
+                    Debug.setIndicatorDot(Debug.INDICATORS, FbotLastLoc, 130, 50, 200);
                 }
             }
             if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
@@ -172,16 +175,18 @@ public class Launcher extends Robot {
         }
         if (friendlyIds.size > 0) {
             friendlyIds.updateIterable();
-            int elCapitanDx = 0;
-            int elCapitanDy = 0;
+            int elCapitanDx = currLoc.x;
+            int elCapitanDy = currLoc.y;
             for (int id = 0; id < friendlyIds.size; id++) {
                 MapLocation loc = friendlyLocs.getLoc(friendlyIds.ints[id]);
                 elCapitanDx += loc.x;
                 elCapitanDy += loc.y;
             }
-            friendlyCentroid = new MapLocation(elCapitanDx / friendlyIds.size, elCapitanDy / friendlyIds.size);
+            int size = friendlyIds.size + 1;
+            friendlyCentroid = new MapLocation(elCapitanDx / size, elCapitanDy / size);
             Debug.setIndicatorDot(Debug.INDICATORS, friendlyCentroid, 235, 135, 60);
             if (currLoc.distanceSquaredTo(friendlyCentroid) >= MAX_DIST_FROM_CLUSTER) {
+                Debug.printString("Cluster far");
                 elCapitanDirection = currLoc.directionTo(friendlyCentroid);
             }
         }
@@ -255,6 +260,12 @@ public class Launcher extends Robot {
     }
 
     public void runAwayFromEnemy() throws GameActionException {
+        if (elCapitanDirection != null) {
+            // Captain might be direction CENTER if we are waiting for another troop
+            Debug.printString("Grouping dir: " + elCapitanDirection);
+            tryMoveDest(Util.getInOrderDirections(elCapitanDirection));
+            // However, if we need to run away, we should be able to run away.
+        }
         MapLocation dest;
         Direction dir = null;
         dest = currLoc.translate(-(int) (overallEnemyLauncherDx), -(int) (overallEnemyLauncherDy));// (overallFriendlyLauncherDx,
@@ -274,6 +285,12 @@ public class Launcher extends Robot {
     }
 
     public void moveTowardsEnemy() throws GameActionException {
+        if (elCapitanDirection != null) {
+            // Captain might be direction CENTER if we are waiting for another troop
+            Debug.printString("Grouping dir: " + elCapitanDirection);
+            tryMoveDest(Util.getInOrderDirections(elCapitanDirection));
+            return;
+        }
         MapLocation dest;
         Direction dir = null;
         dest = closestEnemy.getLocation();
@@ -421,7 +438,10 @@ public class Launcher extends Robot {
 
     public void launcherExplore() throws GameActionException {
         if (elCapitanDirection != null) {
+            // Captain might be direction CENTER if we are waiting for another troop
+            Debug.printString("Grouping dir: " + elCapitanDirection);
             tryMoveDest(Util.getInOrderDirections(elCapitanDirection));
+            return;
         }
         MapLocation target;
 
