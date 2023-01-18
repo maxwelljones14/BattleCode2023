@@ -1,6 +1,7 @@
 package MPWorking;
 
 import battlecode.common.*;
+import MPWorking.fast.*;
 
 public class Nav {
     static RobotController rc;
@@ -107,53 +108,40 @@ public class Nav {
         double rightCDMult = 2;
 
         int numToInsert = 0;
+        Direction[] allDirs = new Direction[3];
+        int allCooldowns[] = new int[3];
         if (rc.canMove(dir)) {
             dirCDMult = Util.getCooldownMultiplier(loc,
                     dir, avoidClouds, avoidCurrents, onlyExactCurrent);
-            numToInsert++;
+            allDirs[numToInsert++] = dir;
+            allCooldowns[numToInsert - 1] = (int) (dirCDMult * 100);
         }
-        if (rc.canMove(dir)) {
+        if (rc.canMove(left)) {
             leftCDMult = Util.getCooldownMultiplier(leftLoc,
                     onlyExactCurrent ? dir : left, avoidClouds, avoidCurrents, onlyExactCurrent);
-            numToInsert++;
+            allDirs[numToInsert++] = left;
+            allCooldowns[numToInsert - 1] = (int) (leftCDMult * 100);
         }
-        if (rc.canMove(dir)) {
+        if (rc.canMove(right)) {
             rightCDMult = Util.getCooldownMultiplier(rightLoc,
                     onlyExactCurrent ? dir : right, avoidClouds, avoidCurrents, onlyExactCurrent);
-            numToInsert++;
+            allDirs[numToInsert++] = right;
+            allCooldowns[numToInsert - 1] = (int) (rightCDMult * 100);
         }
 
         // Hard coded 3 length array sort lol
-        Direction[] orderedDirs = new Direction[3];
-        if (dirCDMult <= leftCDMult && leftCDMult <= rightCDMult) {
-            orderedDirs[0] = dir;
-            orderedDirs[1] = left;
-            orderedDirs[2] = right;
-        } else if (dirCDMult <= rightCDMult && rightCDMult <= leftCDMult) {
-            orderedDirs[0] = dir;
-            orderedDirs[1] = right;
-            orderedDirs[2] = left;
-        } else if (rightCDMult <= dirCDMult && dirCDMult <= leftCDMult) {
-            orderedDirs[0] = right;
-            orderedDirs[1] = dir;
-            orderedDirs[2] = left;
-        } else if (rightCDMult <= leftCDMult && leftCDMult <= dirCDMult) {
-            orderedDirs[0] = right;
-            orderedDirs[1] = left;
-            orderedDirs[2] = dir;
-        } else if (leftCDMult <= dirCDMult && dirCDMult <= rightCDMult) {
-            orderedDirs[0] = left;
-            orderedDirs[1] = dir;
-            orderedDirs[2] = right;
-        } else if (leftCDMult <= rightCDMult && rightCDMult <= dirCDMult) {
-            orderedDirs[0] = left;
-            orderedDirs[1] = right;
-            orderedDirs[2] = dir;
+        Direction[] dirs = new Direction[numToInsert];
+        System.arraycopy(allDirs, 0, dirs, 0, numToInsert);
+        int[] cooldowns = new int[numToInsert];
+        System.arraycopy(allCooldowns, 0, cooldowns, 0, numToInsert);
+
+        FastSort.sort(cooldowns);
+        Direction[] out = new Direction[numToInsert];
+        for (int i = 0; i < FastSort.size; i++) {
+            out[i] = dirs[FastSort.indices[i]];
         }
 
-        Direction[] dirs = new Direction[numToInsert];
-        System.arraycopy(orderedDirs, 0, dirs, 0, numToInsert);
-        return dirs;
+        return out;
     }
 
     static MapLocation getGreedyTargetAway(MapLocation loc) throws GameActionException {
