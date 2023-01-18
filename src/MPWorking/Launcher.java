@@ -48,7 +48,7 @@ public class Launcher extends Robot {
         super(r);
         currState = LauncherState.EXPLORING;
         seenEnemyHQLocs = new FastLocSet();
-        friendlyIds = new FastIterableIntSet();
+        friendlyIds = new FastIterableIntSet(8);
         friendlyLocs = new FastIntLocMap();
         HQwaitCounter = 0;
     }
@@ -141,16 +141,22 @@ public class Launcher extends Robot {
             overallEnemyLauncherDy += (closestEnemyLocation.y - currLoc.y);
         }
 
+        int bestElCapitanDistance = Integer.MAX_VALUE;
         for (RobotInfo Fbot : FriendlySensable) {
             RobotType FbotType = Fbot.getType();
             MapLocation FbotLocation = Fbot.getLocation();
             if (FbotType == RobotType.LAUNCHER) {
                 MapLocation FbotLastLoc = friendlyLocs.getLoc(Fbot.ID);
-                if (FbotLastLoc == null && friendlyIds.size() < 6) {
+                if (FbotLastLoc == null && friendlyIds.size() < 8) {
                     friendlyIds.add(Fbot.ID);
                     friendlyLocs.add(Fbot.ID, FbotLocation);
-                } else if (FbotLastLoc != null && elCapitanDirection == null && FbotLocation != FbotLastLoc) {
-                    elCapitanDirection = FbotLastLoc.directionTo(FbotLocation);
+                } else if (FbotLastLoc != null && elCapitanDirection == null && FbotLocation != FbotLastLoc
+                        && rc.senseMapInfo(FbotLocation).getCurrentDirection() == Direction.CENTER) {
+                    int elCapitanDistance = currLoc.distanceSquaredTo(FbotLocation);
+                    if (elCapitanDistance < bestElCapitanDistance) {
+                        bestElCapitanDistance = elCapitanDistance;
+                        elCapitanDirection = FbotLastLoc.directionTo(FbotLocation);
+                    }
                 }
             }
             if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
@@ -166,13 +172,13 @@ public class Launcher extends Robot {
             friendlyIds.updateIterable();
             int elCapitanDx = 0;
             int elCapitanDy = 0;
-            for (int id : friendlyIds.ints) {
-                MapLocation loc = friendlyLocs.getLoc(id);
+            for (int id = 0; id < friendlyIds.size; id++) {
+                MapLocation loc = friendlyLocs.getLoc(friendlyIds.ints[id]);
                 elCapitanDx += loc.x;
                 elCapitanDy += loc.y;
             }
             friendlyCentroid = new MapLocation(elCapitanDx / friendlyIds.size, elCapitanDy / friendlyIds.size);
-            if (currLoc.distanceSquaredTo(friendlyCentroid) >= 6) {
+            if (currLoc.distanceSquaredTo(friendlyCentroid) >= 10) {
                 elCapitanDirection = currLoc.directionTo(friendlyCentroid);
             }
         }
