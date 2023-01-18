@@ -43,6 +43,8 @@ public class Launcher extends Robot {
     static int HQwaitCounter;
 
     public static final int MAX_LAUNCHERS_PER_ENEMY_HQ = 4;
+    public static final int LAUNCHERS_PER_CLUSTER = 8;
+    public static final int MAX_DIST_FROM_CLUSTER = 10;
 
     public Launcher(RobotController r) throws GameActionException {
         super(r);
@@ -147,7 +149,7 @@ public class Launcher extends Robot {
             MapLocation FbotLocation = Fbot.getLocation();
             if (FbotType == RobotType.LAUNCHER) {
                 MapLocation FbotLastLoc = friendlyLocs.getLoc(Fbot.ID);
-                if (FbotLastLoc == null && friendlyIds.size() < 8) {
+                if (FbotLastLoc == null && friendlyIds.size() < LAUNCHERS_PER_CLUSTER) {
                     friendlyIds.add(Fbot.ID);
                     friendlyLocs.add(Fbot.ID, FbotLocation);
                 } else if (FbotLastLoc != null && elCapitanDirection == null && FbotLocation != FbotLastLoc
@@ -178,7 +180,8 @@ public class Launcher extends Robot {
                 elCapitanDy += loc.y;
             }
             friendlyCentroid = new MapLocation(elCapitanDx / friendlyIds.size, elCapitanDy / friendlyIds.size);
-            if (currLoc.distanceSquaredTo(friendlyCentroid) >= 10) {
+            Debug.setIndicatorDot(Debug.INDICATORS, friendlyCentroid, 235, 135, 60);
+            if (currLoc.distanceSquaredTo(friendlyCentroid) >= MAX_DIST_FROM_CLUSTER) {
                 elCapitanDirection = currLoc.directionTo(friendlyCentroid);
             }
         }
