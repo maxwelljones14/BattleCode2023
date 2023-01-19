@@ -21,6 +21,8 @@ public class Nav {
     static final int DIST_TO_AVOID_CURRENTS = 8;
     static final int DIST_FOR_EXACT_CURRENT = 20;
 
+    static final int id = 13175;
+
     static void init(RobotController r) {
         rc = r;
         turnsGreedy = 0;
@@ -172,6 +174,7 @@ public class Nav {
 
         currentTarget = target;
         VisitedTracker.add(rc.getLocation());
+        turnsGreedy--;
 
         int dist = rc.getLocation().distanceSquaredTo(target);
         if (dist < closestDistanceToDest) {
@@ -221,16 +224,47 @@ public class Nav {
     }
 
     static void move(MapLocation target) throws GameActionException {
-        move(target, false);
+        move(target, false, true);
     }
 
     static void move(MapLocation target, boolean greedy) throws GameActionException {
+        move(target, greedy, true);
+    }
+
+    static void move(MapLocation target, boolean greedy, boolean avoidHQ) throws GameActionException {
         if (target == null)
             return;
         if (!rc.isMovementReady())
             return;
         if (rc.getLocation().distanceSquaredTo(target) == 0)
             return;
+
+        MapLocation currLoc = rc.getLocation();
+        // Set squares within action radius of an enemy HQ to be impassable
+        MapLocation enemyHQ;
+        RobotInfo robot;
+        boolean[] imp = new boolean[Util.DIRS_CENTER.length];
+        for (int i = Robot.enemyHQs.length; --i >= 0;) {
+            enemyHQ = Robot.enemyHQs[i];
+            if (!rc.canSenseLocation(enemyHQ))
+                continue;
+            robot = rc.senseRobotAtLocation(enemyHQ);
+            if (robot == null || robot.type != RobotType.HEADQUARTERS)
+                continue;
+
+            for (int j = Util.DIRS_CENTER.length; --j >= 0;) {
+                MapLocation newLoc = currLoc.add(Util.DIRS_CENTER[j]);
+                if (newLoc.distanceSquaredTo(enemyHQ) <= RobotType.HEADQUARTERS.actionRadiusSquared) {
+                    imp[j] = true;
+                    greedy = true;
+                }
+            }
+        }
+
+        // If we are already within action radius, don't bother
+        if (greedy && !(imp[0] && imp[1] && imp[2] && imp[3] && imp[4] && imp[5] && imp[6] && imp[7] && imp[8])) {
+            Pathfinding.setImpassable(imp);
+        }
 
         update(target);
 

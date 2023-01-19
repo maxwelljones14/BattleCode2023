@@ -33,6 +33,19 @@ public class Util {
             Direction.NORTHWEST,
     };
 
+    /** Array containing all the possible movement directions. */
+    static final Direction[] DIRS_CENTER = {
+            Direction.NORTH,
+            Direction.NORTHEAST,
+            Direction.EAST,
+            Direction.SOUTHEAST,
+            Direction.SOUTH,
+            Direction.SOUTHWEST,
+            Direction.WEST,
+            Direction.NORTHWEST,
+            Direction.CENTER,
+    };
+
     static final class SymmetryType {
         // Values in accordance with the bit pos in comms. DO NOT CHANGE
         public static final int VERTICAL = 4;
@@ -147,7 +160,8 @@ public class Util {
             MapLocation[] possibleLocations = Util.findInitLocationPossibilities(currLoc, dir);
             for (int x = 0; x < possibleLocations.length; x++) {
                 MapLocation newLoc = possibleLocations[x];
-                if (rc.canSenseLocation(newLoc) && rc.sensePassability(newLoc) && rc.senseRobotAtLocation(newLoc) == null) {
+                if (rc.canSenseLocation(newLoc) && rc.sensePassability(newLoc)
+                        && rc.senseRobotAtLocation(newLoc) == null) {
                     buildLocation = newLoc;
                     break;
                 }

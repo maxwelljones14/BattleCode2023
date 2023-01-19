@@ -12,6 +12,10 @@ public class Pathfinding {
     static MapLocation target = null;
     static boolean[] impassable = null;
 
+    static RobotType type;
+    static int movementCooldown;
+    static Team team;
+
     static final Direction[] directions = {
             Direction.NORTH,
             Direction.NORTHEAST,
@@ -27,6 +31,9 @@ public class Pathfinding {
     public static void init(RobotController r) {
         rc = r;
         BugNav.rotateRight = Util.rng.nextDouble() > 0.5;
+        type = rc.getType();
+        movementCooldown = rc.getType().movementCooldown;
+        team = rc.getTeam();
     }
 
     static void setImpassable(boolean[] imp) {
@@ -108,6 +115,16 @@ public class Pathfinding {
         return target.distanceSquaredTo(newLoc) < target.distanceSquaredTo(oldLoc);
     }
 
+    static int getBaseMovementCooldown() {
+        switch (type) {
+            case CARRIER:
+                return (int) (Math.floor((GameConstants.CARRIER_MOVEMENT_SLOPE * rc.getWeight())))
+                        + GameConstants.CARRIER_MOVEMENT_INTERCEPT;
+            default:
+                return movementCooldown;
+        }
+    }
+
     static class BugNav {
 
         static final int INF = 1000000;
@@ -119,7 +136,7 @@ public class Pathfinding {
         static int minDistToEnemy = INF; // minimum distance I've been to the enemy while going around an obstacle
         static MapLocation prevTarget = null; // previous target
         static HashSet<Integer> visited = new HashSet<>();
-        static int id = 12316;
+        static int id = 13175;
 
         static boolean move() {
             try {
@@ -167,13 +184,27 @@ public class Pathfinding {
                 // Note that we have to try at most 16 times since we can switch orientation in
                 // the middle of the loop. (It can be done more efficiently)
                 for (int i = 8; i-- > 0;) {
-                    if (canMove(dir)) {
-                        rc.move(dir);
-                        // Debug.println("Moving in dir: " + dir, id);
-                        return true;
+                    MapLocation newLoc = myLoc.add(dir);
+                    if (rc.canSenseLocation(newLoc)) {
+                        MapInfo info = rc.senseMapInfo(newLoc);
+                        MapInfo currInfo = rc.senseMapInfo(myLoc);
+                        boolean canMoveInDir = true;
+                        // If you can move again after this turn,
+                        // you can ignore currents facing you.
+                        int nextCooldown = rc.getMovementCooldownTurns()
+                                + (int) (getBaseMovementCooldown() * currInfo.getCooldownMultiplier(team));
+                        if (nextCooldown >= GameConstants.COOLDOWN_LIMIT &&
+                                Util.isDirAdj(info.getCurrentDirection(), dir.opposite())) {
+                            canMoveInDir = false;
+                        }
+
+                        if (canMoveInDir && canMove(dir)) {
+                            rc.move(dir);
+                            Debug.println("Moving in dir: " + dir, id);
+                            return true;
+                        }
                     }
 
-                    MapLocation newLoc = myLoc.add(dir);
                     if (!rc.onTheMap(newLoc)) {
                         rotateRight = !rotateRight;
                     } else if (!rc.sensePassability(newLoc)) {

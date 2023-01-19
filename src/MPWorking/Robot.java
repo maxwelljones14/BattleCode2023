@@ -1401,4 +1401,24 @@ public class Robot {
         }
         return closestSector;
     }
+
+    // Rotates at distance rad due to BugNav
+    boolean moveSafely(MapLocation loc, int rad) throws GameActionException {
+        if (loc == null)
+            return false;
+        int d = rc.getLocation().distanceSquaredTo(loc);
+        d = Math.min(d, rad);
+        boolean[] imp = new boolean[Util.DIRS_CENTER.length];
+        boolean greedy = false;
+        for (int i = Util.DIRS_CENTER.length; i-- > 0;) {
+            MapLocation newLoc = rc.getLocation().add(Util.DIRS_CENTER[i]);
+            if (newLoc.distanceSquaredTo(loc) <= d) {
+                imp[i] = true;
+                greedy = true;
+            }
+        }
+        Pathfinding.setImpassable(imp);
+        Nav.move(loc, greedy);
+        return true;
+    }
 }
