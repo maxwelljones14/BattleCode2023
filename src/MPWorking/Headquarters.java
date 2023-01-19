@@ -354,46 +354,29 @@ public class Headquarters extends Robot {
     // gain enough resources to build the troops.
     // TODO: Restructure?
     public void firstRounds() throws GameActionException {
-        if (nearHQ || Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT) {
-            // set up locations for first launchers in the 4 cardinal directions
-            while (rc.isActionReady()) {
-                if (launcherCount < initLaunchersWanted) {
-                    if (nearHQ) {
-                        MapLocation locToBuild = getLauncherLocation(enemyHQLoc);
-                        buildLauncher(locToBuild);
-                        continue;
-                    } else {
-                        MapLocation locToBuild = getLauncherLocation(
-                                new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
-                        buildLauncher(locToBuild);
-                        continue;
-                    }
-                }
-                // build carriers
-                if (carrierCount < initCarriersWanted) {
-                    buildCarrier();
-                    continue;
-                }
-                break;
-            }
-        } else {
-            while (rc.isActionReady()) {
-                // build carriers
-                if (carrierCount < initCarriersWanted) {
-                    buildCarrier();
-                    continue;
+        while (rc.isActionReady()) {
+            if (launcherCount < initLaunchersWanted) {
+                MapLocation locToBuild = getLauncherLocation();
+                if (nearHQ) {
+                    locToBuild = getLauncherLocation(enemyHQLoc);
+                } else if (isSmallMap()) {
+                    locToBuild = getLauncherLocation(
+                            new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
                 }
 
-                // set up locations for first launchers in the 4 cardinal directions
-                if (launcherCount < initLaunchersWanted) {
-                    MapLocation locToBuild = getLauncherLocation();
-                    buildLauncher(locToBuild);
-                    continue;
-                }
+                buildLauncher(locToBuild);
+                continue;
+            }
+
+            // build carriers
+            if (carrierCount < initCarriersWanted) {
+                buildCarrier();
+                // We don't build more than one carrier at a time so that
+                // we can communicate the correct resource type it should be.
                 break;
             }
+            break;
         }
-
     }
 
     public void doStateAction() throws GameActionException {
