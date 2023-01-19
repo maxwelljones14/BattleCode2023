@@ -38,6 +38,9 @@ public class Launcher extends Robot {
     static int HQwaitCounter;
 
     public static final int MAX_LAUNCHERS_PER_ENEMY_HQ = 4;
+    public static final int LOW_HEALTH_THRESHOLD = 60;
+    public static final int LOW_HEALTH_DIFF = 20;
+    public static final int HIGH_HEALTH_DIFF = 50;
 
     public Launcher(RobotController r) throws GameActionException {
         super(r);
@@ -117,8 +120,8 @@ public class Launcher extends Robot {
         if (closestAttackingEnemy != null) {
             closestEnemyLocation = closestAttackingEnemy;
             int enemyHealth = closestEnemyInfo.getHealth();
-            healthLow = rc.getHealth() <= enemyHealth - 2;
-            healthHigh = rc.getHealth() >= 5 + enemyHealth;
+            healthLow = rc.getHealth() <= enemyHealth - LOW_HEALTH_DIFF;
+            healthHigh = rc.getHealth() >= HIGH_HEALTH_DIFF + enemyHealth;
             // NOTE: subject to chage as I'm not sure what the optimal health parameters are
             // for this game
         }
@@ -188,7 +191,7 @@ public class Launcher extends Robot {
         // numEnemies + "friends: " + numFriendlies);
         boolean tooManyEnemies = numFriendlies + 1 < numEnemies;
         boolean healthTooLowForEqualFight = numFriendlies + 1 == numEnemies && healthLow;
-        boolean healthReallyLow = rc.getHealth() <= 6;
+        boolean healthReallyLow = rc.getHealth() <= LOW_HEALTH_THRESHOLD;
         return healthReallyLow || (numEnemyLaunchersAttackingUs > 0 && numFriendlies <= numEnemies)
                 || tooManyEnemies || healthTooLowForEqualFight; // ||
         // numFriendlySages
@@ -197,7 +200,7 @@ public class Launcher extends Robot {
     }
 
     public boolean shouldStandGround() {
-        return (numFriendlies + 1 == numEnemies && !healthHigh && !(closestEnemy.getHealth() <= 6))
+        return (numFriendlies + 1 == numEnemies && !healthHigh && !(closestEnemy.getHealth() <= LOW_HEALTH_THRESHOLD))
                 || numEnemyLaunchersAttackingUs > 0;
         // stand ground if its an even match and you don't have an overwhelming health
         // advantage and you can't one shot enemy
