@@ -2,6 +2,7 @@ package MPWorking;
 
 import battlecode.common.*;
 import java.util.Random;
+import MPWorking.fast.*;
 
 public class Util {
     static Random rng;
@@ -137,6 +138,40 @@ public class Util {
                         rotation,
                 };
         }
+    }
+
+    static MapLocation getRandomAttackLoc(Direction dir) throws GameActionException {
+        MapLocation currLoc = rc.getLocation();
+        MapLocation[] locs = null;
+        MapLocation mainLoc;
+        switch (dir) {
+            case NORTH:
+            case SOUTH:
+            case EAST:
+            case WEST:
+                mainLoc = currLoc.translate(dir.dx * 4, dir.dy * 4);
+                locs = new MapLocation[] {
+                        mainLoc, mainLoc.add(dir.opposite().rotateLeft()), mainLoc.add(dir.opposite().rotateRight())
+                };
+                break;
+            case NORTHEAST:
+            case SOUTHEAST:
+            case SOUTHWEST:
+            case NORTHWEST:
+                mainLoc = currLoc.translate(dir.dx * 2, dir.dy * 2);
+                locs = new MapLocation[] {
+                        mainLoc, mainLoc.add(dir.rotateLeft()), mainLoc.add(dir.rotateRight())
+                };
+                break;
+            default:
+                locs = new MapLocation[] {
+                        currLoc.add(Direction.NORTH)
+                };
+                Debug.println("ERROR: Invalid direction");
+                break;
+        }
+
+        return locs[FastMath.nextInt(locs.length)];
     }
 
     static MapLocation[] findInitLocationPossibilities(MapLocation loc, Direction dir) {

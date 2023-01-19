@@ -26,6 +26,20 @@ public class FastMath {
         return lookupRand256.charAt(randIndex);
     }
 
+    public static int nextInt(int n) {
+        if (n <= 0)
+            throw new IllegalArgumentException("n must be positive");
+        if ((n & -n) == n) // i.e., n is a power of 2
+            return (int) ((n * (long) rand256()) >> 8);
+
+        int bits, val;
+        do {
+            bits = rand256();
+            val = bits % n;
+        } while (bits - val + (n - 1) < 0);
+        return val;
+    }
+
     public static MapLocation vecFromPoints(MapLocation start, MapLocation end) {
         return new MapLocation(end.x - start.x, end.y - start.y);
     }

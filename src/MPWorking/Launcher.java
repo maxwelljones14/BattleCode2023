@@ -26,6 +26,7 @@ public class Launcher extends Robot {
     static int numCloseFriendlies;
     static int numEnemies;
     static MapLocation closestAttackingEnemy;
+    static MapLocation lastClosestAttackingEnemy;
     static MapLocation closestEnemyLocation;
     static int numEnemyLaunchersAttackingUs;
 
@@ -59,6 +60,7 @@ public class Launcher extends Robot {
 
         trySwitchState();
         doStateAction();
+        attackClouds();
     }
 
     public void resetLocalEnemyInformation() throws GameActionException {
@@ -119,6 +121,7 @@ public class Launcher extends Robot {
         MapLocation closestEnemyLocation = currLoc;
         if (closestAttackingEnemy != null) {
             closestEnemyLocation = closestAttackingEnemy;
+            lastClosestAttackingEnemy = closestAttackingEnemy;
             int enemyHealth = closestEnemyInfo.getHealth();
             healthLow = rc.getHealth() <= enemyHealth - LOW_HEALTH_DIFF;
             healthHigh = rc.getHealth() >= HIGH_HEALTH_DIFF + enemyHealth;
@@ -443,7 +446,7 @@ public class Launcher extends Robot {
         // MapLocation friendDirection = currLoc.add(
         // currLoc.directionTo(new MapLocation(currLoc.x + overallFriendlyDx, currLoc.y
         // + overallFriendlyDy)));
-        // tryAttackBestEnemy(getBestEnemy());
+        // tryAttackBestEnemy();
         // MapLocation newTarget = currLoc.add(currLoc.directionTo(target)).add(
         // currLoc.directionTo(friendDirection));
         // Debug.printString("target: " + target + "friend target: " + friendDirection +
@@ -459,8 +462,7 @@ public class Launcher extends Robot {
             Nav.move(target);
             Debug.printString("reg mov");
         }
-        tryAttackBestEnemy(getBestEnemy());
-
+        tryAttackBestEnemy();
     }
 
     public void markSymmetricLocSeen(MapLocation target) throws GameActionException {
@@ -484,5 +486,58 @@ public class Launcher extends Robot {
             }
         }
         return bestLoc;
+    }
+
+    public void attackClouds() throws GameActionException {
+        if (!rc.isActionReady())
+            return;
+
+        currLoc = rc.getLocation();
+        MapInfo info = rc.senseMapInfo(currLoc);
+        int nextCooldown = rc.getActionCooldownTurns() +
+                (int) (RobotType.LAUNCHER.actionCooldown * info.getCooldownMultiplier(team));
+
+        MapLocation attackLoc = null;
+        if (info.hasCloud()) {
+            // If attacking out of a cloud would put us over the cooldown limit for
+            // NEXT turn, don't attack
+            if (nextCooldown >= GameConstants.COOLDOWNS_PER_TURN + GameConstants.COOLDOWN_LIMIT)
+                return;
+            if (lastClosestAttackingEnemy != null) {
+                if (currLoc.distanceSquaredTo(lastClosestAttackingEnemy) <= actionRadiusSquared
+                        && !rc.canSenseLocation(lastClosestAttackingEnemy)) {
+                    // If we're in a cloud, attack the last enemy you saw, if it's still in range
+                    attackLoc = lastClosestAttackingEnemy;
+                } else {
+                    // Or pick a spot in the direction of the last enemy you saw
+                    attackLoc = Util.getRandomAttackLoc(currLoc.directionTo(lastClosestAttackingEnemy));
+                }
+            } else {
+                // If you haven't seen an enemy ever, attack towards a random enemyHQ
+                MapLocation enemyHQ = enemyHQs[FastMath.nextInt(enemyHQs.length)];
+                attackLoc = Util.getRandomAttackLoc(currLoc.directionTo(enemyHQ));
+            }
+        } else {
+            // If attacking a cloud would put us over the cooldown limit, don't attack
+            if (nextCooldown > GameConstants.COOLDOWNS_PER_TURN)
+                return;
+
+            // If we're not in a cloud, attack the closest one that we can't sense
+            MapLocation[] clouds = rc.senseNearbyCloudLocations(currLoc, actionRadiusSquared);
+            int bestCloudDist = Integer.MAX_VALUE;
+            for (int i = clouds.length; --i >= 0;) {
+                if (rc.canSenseLocation(clouds[i]))
+                    continue;
+                int dist = currLoc.distanceSquaredTo(clouds[i]);
+                if (dist < bestCloudDist) {
+                    bestCloudDist = dist;
+                    attackLoc = clouds[i];
+                }
+            }
+        }
+
+        if (attackLoc != null && rc.canAttack(attackLoc)) {
+            rc.attack(attackLoc);
+        }
     }
 }

@@ -294,7 +294,7 @@ public class Robot {
     public boolean tryAttackBestEnemy(RobotInfo bestEnemy) throws GameActionException {
         // Try to attack someone
         if (bestEnemy != null) {
-            if (rc.canAttack(bestEnemy.getLocation())) {
+            if (rc.canAttack(bestEnemy.getLocation()) && bestEnemy.type != RobotType.HEADQUARTERS) {
                 rc.attack(bestEnemy.getLocation());
                 // Debug.printString("Attacking: " + bestEnemy.getLocation().toString());
                 return true;
@@ -306,18 +306,7 @@ public class Robot {
     }
 
     public boolean tryAttackBestEnemy() throws GameActionException {
-        // Try to attack someone
-        RobotInfo bestEnemy = getBestEnemy();
-        if (bestEnemy != null) {
-            if (rc.canAttack(bestEnemy.getLocation())) {
-                rc.attack(bestEnemy.getLocation());
-                // Debug.printString("Attacking: " + bestEnemy.getLocation().toString());
-                return true;
-            } else {
-                // Debug.printString("Enemy: " + bestEnemy.getLocation().toString());
-            }
-        }
-        return false;
+        return tryAttackBestEnemy(getBestEnemy());
     }
 
     static boolean tryMoveDest(Direction[] target_dir) throws GameActionException {
