@@ -355,7 +355,9 @@ public class Headquarters extends Robot {
     // TODO: Restructure?
     public void firstRounds() throws GameActionException {
         while (rc.isActionReady()) {
-            if (launcherCount < initLaunchersWanted) {
+            // We wait until turn 3 to build launchers because 
+            // symmetry isn't guessed until then.
+            if (rc.getRoundNum() >= 3 && launcherCount < initLaunchersWanted) {
                 MapLocation locToBuild = getLauncherLocation();
                 if (nearHQ) {
                     locToBuild = getLauncherLocation(enemyHQLoc);
