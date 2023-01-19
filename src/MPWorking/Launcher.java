@@ -9,6 +9,7 @@ import MPWorking.fast.*;
 
 public class Launcher extends Robot {
     static enum LauncherState {
+        WAITING,
         EXPLORING,
         ATTACKING,
         RUNNING,
@@ -42,10 +43,11 @@ public class Launcher extends Robot {
     public static final int LOW_HEALTH_THRESHOLD = 30;
     public static final int LOW_HEALTH_DIFF = 20;
     public static final int HIGH_HEALTH_DIFF = 50;
+    public static final int LAUNCHER_GROUP_SIZE = 2;
 
     public Launcher(RobotController r) throws GameActionException {
         super(r);
-        currState = LauncherState.EXPLORING;
+        currState = LauncherState.WAITING;
         seenEnemyHQLocs = new FastLocSet();
         HQwaitCounter = 0;
     }
@@ -150,7 +152,9 @@ public class Launcher extends Robot {
 
     public void trySwitchState() throws GameActionException {
         if (closestEnemy == null) {
-            currState = LauncherState.EXPLORING;
+            if (currState != LauncherState.WAITING || numFriendlies >= LAUNCHER_GROUP_SIZE) {
+                currState = LauncherState.EXPLORING;
+            }
         } else if (shouldRunAway()) {
             currState = LauncherState.RUNNING;
         } else {
@@ -526,11 +530,23 @@ public class Launcher extends Robot {
     }
 
     public MapLocation chooseSymmetricLoc() throws GameActionException {
+        MapLocation testLoc = currLoc;
+        if (numFriendlies >= LAUNCHER_GROUP_SIZE) {
+            int dx = currLoc.x;
+            int dy = currLoc.y;
+            RobotInfo[] friendlyLaunchers = getFriendlyAttackable();
+            FastSort.distSort(friendlyLaunchers);
+            for (int i = 0; i < LAUNCHER_GROUP_SIZE; i++) {
+                dx += friendlyLaunchers[i].location.x;
+                dy += friendlyLaunchers[i].location.y;
+            }
+            testLoc = new MapLocation(dx / LAUNCHER_GROUP_SIZE, dy / LAUNCHER_GROUP_SIZE);
+        }
         MapLocation bestLoc = null;
         int bestDist = Integer.MAX_VALUE;
         for (int i = 0; i < enemyHQs.length; i++) {
             MapLocation possibleLoc = enemyHQs[i];
-            int currDist = currLoc.distanceSquaredTo(possibleLoc);
+            int currDist = testLoc.distanceSquaredTo(possibleLoc);
             int controlStatus = Comms.readSectorControlStatus(whichSector(possibleLoc));
             boolean notTraversed = controlStatus == Comms.ControlStatus.UNKNOWN ||
                     controlStatus == Comms.ControlStatus.EXPLORING;
