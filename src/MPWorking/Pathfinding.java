@@ -4,8 +4,6 @@ import MPWorking.fast.*;
 
 import battlecode.common.*;
 
-import java.util.HashSet;
-
 public class Pathfinding {
 
     static RobotController rc;
@@ -135,8 +133,9 @@ public class Pathfinding {
         static MapLocation lastObstacleFound = null; // latest obstacle I've found in my way
         static int minDistToEnemy = INF; // minimum distance I've been to the enemy while going around an obstacle
         static MapLocation prevTarget = null; // previous target
-        static HashSet<Integer> visited = new HashSet<>();
-        static int id = 13175;
+        static boolean hasRotatedAvoidingCurrent = false; // if I've rotated due to the current obstacle
+        static FastIntSet visited = new FastIntSet();
+        static int id = 12620;
 
         static boolean move() {
             try {
@@ -174,8 +173,15 @@ public class Pathfinding {
                     // Debug.println("Last obstacle found: " + lastObstacleFound, id);
                     dir = myLoc.directionTo(lastObstacleFound);
                 }
+                MapLocation nextLoc = myLoc.add(dir);
+                boolean avoidingCurrent = false;
+                if (Util.isDirAdj(rc.senseMapInfo(nextLoc).getCurrentDirection(), dir.opposite())) {
+                    // Debug.println("Dir sends into opposite current", id);
+                    impassable[dir.ordinal()] = true;
+                    avoidingCurrent = true;
+                }
                 if (canMove(dir)) {
-                    // Debug.println("can move", id);
+                    // Debug.println("can move: " + dir, id);
                     resetPathfinding();
                 }
 
@@ -184,23 +190,25 @@ public class Pathfinding {
                 // Note that we have to try at most 16 times since we can switch orientation in
                 // the middle of the loop. (It can be done more efficiently)
                 for (int i = 8; i-- > 0;) {
+                    boolean isCurrentAgainst = false;
                     MapLocation newLoc = myLoc.add(dir);
                     if (rc.canSenseLocation(newLoc)) {
                         MapInfo info = rc.senseMapInfo(newLoc);
                         MapInfo currInfo = rc.senseMapInfo(myLoc);
-                        boolean canMoveInDir = true;
                         // If you can move again after this turn,
                         // you can ignore currents facing you.
                         int nextCooldown = rc.getMovementCooldownTurns()
                                 + (int) (getBaseMovementCooldown() * currInfo.getCooldownMultiplier(team));
                         if (nextCooldown >= GameConstants.COOLDOWN_LIMIT &&
-                                Util.isDirAdj(info.getCurrentDirection(), dir.opposite())) {
-                            canMoveInDir = false;
+                                info.getCurrentDirection() == dir.opposite()) {
+                            isCurrentAgainst = true;
+                            avoidingCurrent = true;
+                            lastObstacleFound = newLoc;
                         }
 
-                        if (canMoveInDir && canMove(dir)) {
+                        if (!isCurrentAgainst && canMove(dir)) {
                             rc.move(dir);
-                            Debug.println("Moving in dir: " + dir, id);
+                            // Debug.println("Moving in dir: " + dir, id);
                             return true;
                         }
                     }
@@ -212,9 +220,24 @@ public class Pathfinding {
                         // - I can't move there
                         // - It's on the map
                         // - It's not passable
-                        lastObstacleFound = myLoc.add(dir);
+                        lastObstacleFound = newLoc;
                         // Debug.println("Found obstacle: " + lastObstacleFound, id);
-                        if (shouldGuessRotation) {
+
+                        // We assume that if we're avoiding a current and we hit
+                        // an obstacle, we should rotate the other way since
+                        // the other way is probably open.
+
+                        // If this happens twice, we don't try to switch rotation.
+                        // This would be a problem if the devs make a map like
+                        // XXXXXX
+                        // ---<--
+                        // --O<--
+                        // ---<--
+                        // XXXXXX
+                        if (avoidingCurrent && !hasRotatedAvoidingCurrent) {
+                            rotateRight = !rotateRight;
+                            hasRotatedAvoidingCurrent = true;
+                        } else if (shouldGuessRotation) {
                             // Debug.println("Inferring rot dir around: " + lastObstacleFound, id);
                             if (MapTracker.canInferRotationAroundObstacle(lastObstacleFound)) {
                                 shouldGuessRotation = false;
@@ -286,6 +309,7 @@ public class Pathfinding {
             minDistToEnemy = INF;
             visited.clear();
             shouldGuessRotation = true;
+            hasRotatedAvoidingCurrent = false;
         }
 
         static int getCode() {
