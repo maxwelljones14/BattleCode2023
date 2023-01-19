@@ -356,35 +356,41 @@ public class Headquarters extends Robot {
     public void firstRounds() throws GameActionException {
         if (nearHQ || Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT) {
             // set up locations for first launchers in the 4 cardinal directions
-            if (launcherCount < initLaunchersWanted) {
-                if (nearHQ) {
-                    MapLocation locToBuild = getLauncherLocation(enemyHQLoc);
-                    buildLauncher(locToBuild);
-                    return;
-                } else {
-                    MapLocation locToBuild = getLauncherLocation(
-                            new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
-                    buildLauncher(locToBuild);
-                    return;
+            while (rc.isActionReady()) {
+                if (launcherCount < initLaunchersWanted) {
+                    if (nearHQ) {
+                        MapLocation locToBuild = getLauncherLocation(enemyHQLoc);
+                        buildLauncher(locToBuild);
+                        continue;
+                    } else {
+                        MapLocation locToBuild = getLauncherLocation(
+                                new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
+                        buildLauncher(locToBuild);
+                        continue;
+                    }
                 }
-            }
-            // build carriers
-            if (carrierCount < initCarriersWanted) {
-                buildCarrier();
-                return;
+                // build carriers
+                if (carrierCount < initCarriersWanted) {
+                    buildCarrier();
+                    continue;
+                }
+                break;
             }
         } else {
-            // build carriers
-            if (carrierCount < initCarriersWanted) {
-                buildCarrier();
-                return;
-            }
+            while (rc.isActionReady()) {
+                // build carriers
+                if (carrierCount < initCarriersWanted) {
+                    buildCarrier();
+                    continue;
+                }
 
-            // set up locations for first launchers in the 4 cardinal directions
-            if (launcherCount < initLaunchersWanted) {
-                MapLocation locToBuild = getLauncherLocation();
-                buildLauncher(locToBuild);
-                return;
+                // set up locations for first launchers in the 4 cardinal directions
+                if (launcherCount < initLaunchersWanted) {
+                    MapLocation locToBuild = getLauncherLocation();
+                    buildLauncher(locToBuild);
+                    continue;
+                }
+                break;
             }
         }
 
