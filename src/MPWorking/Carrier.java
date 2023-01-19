@@ -115,7 +115,10 @@ public class Carrier extends Robot {
                 }
                 break;
             case DEPOSITING:
-                if (rc.getResourceAmount(resourceTarget) == 0) {
+                if (shouldRunAwayTarget() != null) {
+                    currState = CarrierState.REPORTING;
+                    sectorToReport = 1;
+                } else if (rc.getResourceAmount(resourceTarget) == 0) {
                     enterMineState();
                 }
                 break;
@@ -278,6 +281,7 @@ public class Carrier extends Robot {
                 }
                 updateHomeifCurrHomeAttacked();
                 Nav.move(home);
+                transfer();
                 break;
             case DEPOSITING:
                 if (!transfer()) {
