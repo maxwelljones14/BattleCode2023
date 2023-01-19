@@ -175,7 +175,7 @@ public class Pathfinding {
                 }
                 MapLocation nextLoc = myLoc.add(dir);
                 boolean avoidingCurrent = false;
-                if (Util.isDirAdj(rc.senseMapInfo(nextLoc).getCurrentDirection(), dir.opposite())) {
+                if (rc.onTheMap(nextLoc) && Util.isDirAdj(rc.senseMapInfo(nextLoc).getCurrentDirection(), dir.opposite())) {
                     // Debug.println("Dir sends into opposite current", id);
                     impassable[dir.ordinal()] = true;
                     avoidingCurrent = true;
