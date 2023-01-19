@@ -53,8 +53,10 @@ for i in range(len(red_records)):
     records.append(blue_records[i])
 
 csvFile = "records.csv"
+wins = str(red_wins) + "-" + str(red_total - red_wins) + " R, " + str(blue_wins) + "-" + str(blue_total - blue_wins) + " B"
+records = [wins] + records
 with open(csvFile, 'w') as f:
     csvwriter = csv.writer(f) 
     csvwriter.writerow(records)
-print(str(red_wins) + "-" + str(red_total - red_wins) + " R, " + str(blue_wins) + "-" + str(blue_total - blue_wins) + " B")
+print(wins)
 print(f"{(red_wins + blue_wins) / (red_total + blue_total):.3f}")
