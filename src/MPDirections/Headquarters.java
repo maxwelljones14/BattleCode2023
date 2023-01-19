@@ -105,7 +105,7 @@ public class Headquarters extends Robot {
 
         setPrioritySectors();
         toggleState();
-        Debug.printString("current state: " + currentState);
+        Debug.printString("S: " + currentState);
         Debug.printString("A: " + adamCarrierTracker.size());
         Debug.printString("M: " + manaCarrierTracker.size());
         Comms.writeOurHqFlag(myHqNum, nextFlag);

@@ -2,7 +2,7 @@ package MPWorking;
 
 import battlecode.common.*;
 import MPWorking.Util.*;
-import MPWorking.fast.FastMath;
+import MPWorking.fast.*;
 import MPWorking.Comms.*;
 import MPWorking.Debug.*;
 
@@ -37,6 +37,7 @@ public strictfp class RobotPlayer {
         Explore.init(rc);
         Pathfinding.init(rc);
         Nav.init(rc);
+        FastSort.init(rc);
 
         // You can also use indicators to save debug notes in replays.
         switch (rc.getType()) {

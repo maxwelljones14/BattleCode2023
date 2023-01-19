@@ -4,13 +4,15 @@ import MPWorking.fast.*;
 
 import battlecode.common.*;
 
-import java.util.HashSet;
-
 public class Pathfinding {
 
     static RobotController rc;
     static MapLocation target = null;
     static boolean[] impassable = null;
+
+    static RobotType type;
+    static int movementCooldown;
+    static Team team;
 
     static final Direction[] directions = {
             Direction.NORTH,
@@ -27,6 +29,9 @@ public class Pathfinding {
     public static void init(RobotController r) {
         rc = r;
         BugNav.rotateRight = Util.rng.nextDouble() > 0.5;
+        type = rc.getType();
+        movementCooldown = rc.getType().movementCooldown;
+        team = rc.getTeam();
     }
 
     static void setImpassable(boolean[] imp) {
@@ -108,6 +113,16 @@ public class Pathfinding {
         return target.distanceSquaredTo(newLoc) < target.distanceSquaredTo(oldLoc);
     }
 
+    static int getBaseMovementCooldown() {
+        switch (type) {
+            case CARRIER:
+                return (int) (Math.floor((GameConstants.CARRIER_MOVEMENT_SLOPE * rc.getWeight())))
+                        + GameConstants.CARRIER_MOVEMENT_INTERCEPT;
+            default:
+                return movementCooldown;
+        }
+    }
+
     static class BugNav {
 
         static final int INF = 1000000;
@@ -118,8 +133,9 @@ public class Pathfinding {
         static MapLocation lastObstacleFound = null; // latest obstacle I've found in my way
         static int minDistToEnemy = INF; // minimum distance I've been to the enemy while going around an obstacle
         static MapLocation prevTarget = null; // previous target
-        static HashSet<Integer> visited = new HashSet<>();
-        static int id = 12316;
+        static boolean hasRotatedAvoidingCurrent = false; // if I've rotated due to the current obstacle
+        static FastIntSet visited = new FastIntSet();
+        static int id = 12620;
 
         static boolean move() {
             try {
@@ -157,8 +173,15 @@ public class Pathfinding {
                     // Debug.println("Last obstacle found: " + lastObstacleFound, id);
                     dir = myLoc.directionTo(lastObstacleFound);
                 }
+                MapLocation nextLoc = myLoc.add(dir);
+                boolean avoidingCurrent = false;
+                if (Util.isDirAdj(rc.senseMapInfo(nextLoc).getCurrentDirection(), dir.opposite())) {
+                    // Debug.println("Dir sends into opposite current", id);
+                    impassable[dir.ordinal()] = true;
+                    avoidingCurrent = true;
+                }
                 if (canMove(dir)) {
-                    // Debug.println("can move", id);
+                    // Debug.println("can move: " + dir, id);
                     resetPathfinding();
                 }
 
@@ -167,13 +190,29 @@ public class Pathfinding {
                 // Note that we have to try at most 16 times since we can switch orientation in
                 // the middle of the loop. (It can be done more efficiently)
                 for (int i = 8; i-- > 0;) {
-                    if (canMove(dir)) {
-                        rc.move(dir);
-                        // Debug.println("Moving in dir: " + dir, id);
-                        return true;
+                    boolean isCurrentAgainst = false;
+                    MapLocation newLoc = myLoc.add(dir);
+                    if (rc.canSenseLocation(newLoc)) {
+                        MapInfo info = rc.senseMapInfo(newLoc);
+                        MapInfo currInfo = rc.senseMapInfo(myLoc);
+                        // If you can move again after this turn,
+                        // you can ignore currents facing you.
+                        int nextCooldown = rc.getMovementCooldownTurns()
+                                + (int) (getBaseMovementCooldown() * currInfo.getCooldownMultiplier(team));
+                        if (nextCooldown >= GameConstants.COOLDOWN_LIMIT &&
+                                info.getCurrentDirection() == dir.opposite()) {
+                            isCurrentAgainst = true;
+                            avoidingCurrent = true;
+                            lastObstacleFound = newLoc;
+                        }
+
+                        if (!isCurrentAgainst && canMove(dir)) {
+                            rc.move(dir);
+                            // Debug.println("Moving in dir: " + dir, id);
+                            return true;
+                        }
                     }
 
-                    MapLocation newLoc = myLoc.add(dir);
                     if (!rc.onTheMap(newLoc)) {
                         rotateRight = !rotateRight;
                     } else if (!rc.sensePassability(newLoc)) {
@@ -181,9 +220,24 @@ public class Pathfinding {
                         // - I can't move there
                         // - It's on the map
                         // - It's not passable
-                        lastObstacleFound = myLoc.add(dir);
+                        lastObstacleFound = newLoc;
                         // Debug.println("Found obstacle: " + lastObstacleFound, id);
-                        if (shouldGuessRotation) {
+
+                        // We assume that if we're avoiding a current and we hit
+                        // an obstacle, we should rotate the other way since
+                        // the other way is probably open.
+
+                        // If this happens twice, we don't try to switch rotation.
+                        // This would be a problem if the devs make a map like
+                        // XXXXXX
+                        // ---<--
+                        // --O<--
+                        // ---<--
+                        // XXXXXX
+                        if (avoidingCurrent && !hasRotatedAvoidingCurrent) {
+                            rotateRight = !rotateRight;
+                            hasRotatedAvoidingCurrent = true;
+                        } else if (shouldGuessRotation) {
                             // Debug.println("Inferring rot dir around: " + lastObstacleFound, id);
                             if (MapTracker.canInferRotationAroundObstacle(lastObstacleFound)) {
                                 shouldGuessRotation = false;
@@ -255,6 +309,7 @@ public class Pathfinding {
             minDistToEnemy = INF;
             visited.clear();
             shouldGuessRotation = true;
+            hasRotatedAvoidingCurrent = false;
         }
 
         static int getCode() {

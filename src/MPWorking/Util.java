@@ -2,6 +2,7 @@ package MPWorking;
 
 import battlecode.common.*;
 import java.util.Random;
+import MPWorking.fast.*;
 
 public class Util {
     static Random rng;
@@ -31,6 +32,19 @@ public class Util {
             Direction.SOUTHWEST,
             Direction.WEST,
             Direction.NORTHWEST,
+    };
+
+    /** Array containing all the possible movement directions. */
+    static final Direction[] DIRS_CENTER = {
+            Direction.NORTH,
+            Direction.NORTHEAST,
+            Direction.EAST,
+            Direction.SOUTHEAST,
+            Direction.SOUTH,
+            Direction.SOUTHWEST,
+            Direction.WEST,
+            Direction.NORTHWEST,
+            Direction.CENTER,
     };
 
     static final class SymmetryType {
@@ -130,6 +144,40 @@ public class Util {
         }
     }
 
+    static MapLocation getRandomAttackLoc(Direction dir) throws GameActionException {
+        MapLocation currLoc = rc.getLocation();
+        MapLocation[] locs = null;
+        MapLocation mainLoc;
+        switch (dir) {
+            case NORTH:
+            case SOUTH:
+            case EAST:
+            case WEST:
+                mainLoc = currLoc.translate(dir.dx * 4, dir.dy * 4);
+                locs = new MapLocation[] {
+                        mainLoc, mainLoc.add(dir.opposite().rotateLeft()), mainLoc.add(dir.opposite().rotateRight())
+                };
+                break;
+            case NORTHEAST:
+            case SOUTHEAST:
+            case SOUTHWEST:
+            case NORTHWEST:
+                mainLoc = currLoc.translate(dir.dx * 2, dir.dy * 2);
+                locs = new MapLocation[] {
+                        mainLoc, mainLoc.add(dir.rotateLeft()), mainLoc.add(dir.rotateRight())
+                };
+                break;
+            default:
+                locs = new MapLocation[] {
+                        currLoc.add(Direction.NORTH)
+                };
+                Debug.println("ERROR: Invalid direction");
+                break;
+        }
+
+        return locs[FastMath.nextInt(locs.length)];
+    }
+
     static MapLocation[] findInitLocationPossibilities(MapLocation loc, Direction dir) {
         MapLocation mainLoc1 = loc.add(dir);
         MapLocation mainLoc2 = mainLoc1.add(dir);
@@ -151,7 +199,8 @@ public class Util {
             MapLocation[] possibleLocations = Util.findInitLocationPossibilities(currLoc, dir);
             for (int x = 0; x < possibleLocations.length; x++) {
                 MapLocation newLoc = possibleLocations[x];
-                if (rc.onTheMap(newLoc) && rc.sensePassability(newLoc) && rc.senseRobotAtLocation(newLoc) == null) {
+                if (rc.canSenseLocation(newLoc) && rc.sensePassability(newLoc)
+                        && rc.senseRobotAtLocation(newLoc) == null) {
                     buildLocation = newLoc;
                     break;
                 }
