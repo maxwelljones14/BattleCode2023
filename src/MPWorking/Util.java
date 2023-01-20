@@ -188,6 +188,39 @@ public class Util {
         }
     }
 
+    static int getNumOpenCollectSpots(MapLocation wellLoc) throws GameActionException {
+        MapLocation loc;
+        int count = 0;
+        for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+            loc = wellLoc.add(Direction.DIRECTION_ORDER[i]);
+            // Off the map don't count
+            if (!rc.onTheMap(loc))
+                continue;
+            // Assume that if we can't sense the location, it's open
+            if (!rc.canSenseLocation(loc) || (rc.sensePassability(loc) && rc.senseRobotAtLocation(loc) == null)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    static int getMaxCollectSpots(MapLocation wellLoc) throws GameActionException {
+        MapLocation loc;
+        int count = 0;
+        for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+            loc = wellLoc.add(Direction.DIRECTION_ORDER[i]);
+            // Off the map don't count
+            if (!rc.onTheMap(loc))
+                continue;
+            // Unpassable squares don't count.
+            // Assume that if we can't sense the location, it's open
+            if (!rc.canSenseLocation(loc) || rc.sensePassability(loc)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     static MapLocation findInitLocation(MapLocation currLoc, Direction dir) throws GameActionException {
         int count = 0;
         MapLocation buildLocation = null;

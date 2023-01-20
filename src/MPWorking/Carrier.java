@@ -201,10 +201,9 @@ public class Carrier extends Robot {
                         collect(closestWell);
                     } else {
                         // If there are too many carriers on this well, move to another well.
-                        // If there aren't 6 carriers on this well, skip this check.
-                        RobotInfo[] robots = rc.senseNearbyRobots(
-                                closestWell.getMapLocation(), 2, null);
-                        if (robots.length >= 6) {
+                        // If there are 2 available spots, skip this check
+                        int numOpenSpots = Util.getNumOpenCollectSpots(closestWell.getMapLocation());
+                        if (numOpenSpots <= 2) {
                             int numCarriers = 0;
                             RobotInfo robot;
                             for (int i = FriendlySensable.length; --i >= 0;) {
@@ -213,7 +212,8 @@ public class Carrier extends Robot {
                                     numCarriers++;
                             }
 
-                            if (numCarriers >= CARRIERS_PER_WELL_TO_LEAVE) {
+                            int maxOpenSpots = Util.getMaxCollectSpots(closestWell.getMapLocation());
+                            if (numCarriers >= Math.min(maxOpenSpots * 4, CARRIERS_PER_WELL_TO_LEAVE)) {
                                 Debug.printString("Leaving");
                                 wellsVisitedThisCycle.add(closestWell.getMapLocation());
                                 closestWell = null;
