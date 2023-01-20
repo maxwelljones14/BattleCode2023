@@ -244,6 +244,7 @@ public class Nav {
         MapLocation enemyHQ;
         RobotInfo robot;
         boolean[] imp = new boolean[Util.DIRS_CENTER.length];
+        boolean setImpassable = false;
         for (int i = Robot.enemyHQs.length; --i >= 0;) {
             enemyHQ = Robot.enemyHQs[i];
             if (!rc.canSenseLocation(enemyHQ))
@@ -257,12 +258,14 @@ public class Nav {
                 if (newLoc.distanceSquaredTo(enemyHQ) <= RobotType.HEADQUARTERS.actionRadiusSquared) {
                     imp[j] = true;
                     greedy = true;
+                    setImpassable = true;
                 }
             }
         }
 
         // If we are already within action radius, don't bother
-        if (greedy && !(imp[0] && imp[1] && imp[2] && imp[3] && imp[4] && imp[5] && imp[6] && imp[7] && imp[8])) {
+        if (greedy && setImpassable &&
+                !(imp[0] && imp[1] && imp[2] && imp[3] && imp[4] && imp[5] && imp[6] && imp[7] && imp[8])) {
             Pathfinding.setImpassable(imp);
         }
 
