@@ -21,6 +21,8 @@ public class Util {
 
     static final double MIN_COOLDOWN_MULT_DIFF = 0.1;
     static final double SYM_TO_COMB_DIST_RATIO = 2;
+    static final double SYM_TO_COMB_DIST_RATIO2 = 0.5;
+    static final double COMB_TO_HOME_DIST = 10;
 
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
@@ -231,6 +233,7 @@ public class Util {
                 if (rc.canSenseLocation(newLoc) && rc.sensePassability(newLoc)
                         && rc.senseRobotAtLocation(newLoc) == null) {
                     buildLocation = newLoc;
+                    // Debug.println("Found build location: " + buildLocation + " with dir: " + dir + "");
                     break;
                 }
             }

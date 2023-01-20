@@ -18,7 +18,7 @@ public class FastUnitTracker {
     int unitToCheck;
 
     static final int MAX_UNITS_TO_PROCESS = 10;
-    static final int DEFAULT_MAX_LEN = 500;
+    static final int DEFAULT_MAX_LEN = 100;
 
     static final int[] RADII = { 34, 20, 13, 5, 2 };
 

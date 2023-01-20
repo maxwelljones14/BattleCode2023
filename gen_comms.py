@@ -38,7 +38,7 @@ SCHEMA = {
         }
     },
     'mine_sector': {
-        'slots': 20,
+        'slots': 12,
         'bits': {
             'index': 7,
         }

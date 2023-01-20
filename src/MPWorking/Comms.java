@@ -15,7 +15,7 @@ public class Comms {
     public final static int SECTOR_SLOTS = 100;
     public final static int COMBAT_SECTOR_SLOTS = 8;
     public final static int EXPLORE_SECTOR_SLOTS = 13;
-    public final static int MINE_SECTOR_SLOTS = 20;
+    public final static int MINE_SECTOR_SLOTS = 12;
     public final static int SYMMETRY_SLOTS = 1;
 
     // ControlStatus priorities are in increasing priority.
@@ -308,10 +308,7 @@ public class Comms {
         rc.writeSharedArray(53, 65535);
         rc.writeSharedArray(54, 65535);
         rc.writeSharedArray(55, 65535);
-        rc.writeSharedArray(56, 65535);
-        rc.writeSharedArray(57, 65535);
-        rc.writeSharedArray(58, 65535);
-        rc.writeSharedArray(59, 65535);
+        rc.writeSharedArray(56, 65280);
     }
 
 
@@ -5397,22 +5394,6 @@ public class Comms {
                 return ((rc.readSharedArray(55) & 63) << 1) + ((rc.readSharedArray(56) & 32768) >>> 15);
             case 11:
                 return (rc.readSharedArray(56) & 32512) >>> 8;
-            case 12:
-                return (rc.readSharedArray(56) & 254) >>> 1;
-            case 13:
-                return ((rc.readSharedArray(56) & 1) << 6) + ((rc.readSharedArray(57) & 64512) >>> 10);
-            case 14:
-                return (rc.readSharedArray(57) & 1016) >>> 3;
-            case 15:
-                return ((rc.readSharedArray(57) & 7) << 4) + ((rc.readSharedArray(58) & 61440) >>> 12);
-            case 16:
-                return (rc.readSharedArray(58) & 4064) >>> 5;
-            case 17:
-                return ((rc.readSharedArray(58) & 31) << 2) + ((rc.readSharedArray(59) & 49152) >>> 14);
-            case 18:
-                return (rc.readSharedArray(59) & 16256) >>> 7;
-            case 19:
-                return (rc.readSharedArray(59) & 127);
             default:
                 return -1;
         }
@@ -5460,33 +5441,6 @@ public class Comms {
             case 11:
                 rc.writeSharedArray(56, (rc.readSharedArray(56) & 33023) | (value << 8));
                 break;
-            case 12:
-                rc.writeSharedArray(56, (rc.readSharedArray(56) & 65281) | (value << 1));
-                break;
-            case 13:
-                rc.writeSharedArray(56, (rc.readSharedArray(56) & 65534) | ((value & 64) >>> 6));
-                rc.writeSharedArray(57, (rc.readSharedArray(57) & 1023) | ((value & 63) << 10));
-                break;
-            case 14:
-                rc.writeSharedArray(57, (rc.readSharedArray(57) & 64519) | (value << 3));
-                break;
-            case 15:
-                rc.writeSharedArray(57, (rc.readSharedArray(57) & 65528) | ((value & 112) >>> 4));
-                rc.writeSharedArray(58, (rc.readSharedArray(58) & 4095) | ((value & 15) << 12));
-                break;
-            case 16:
-                rc.writeSharedArray(58, (rc.readSharedArray(58) & 61471) | (value << 5));
-                break;
-            case 17:
-                rc.writeSharedArray(58, (rc.readSharedArray(58) & 65504) | ((value & 124) >>> 2));
-                rc.writeSharedArray(59, (rc.readSharedArray(59) & 16383) | ((value & 3) << 14));
-                break;
-            case 18:
-                rc.writeSharedArray(59, (rc.readSharedArray(59) & 49279) | (value << 7));
-                break;
-            case 19:
-                rc.writeSharedArray(59, (rc.readSharedArray(59) & 65408) | (value));
-                break;
         }
     }
 
@@ -5532,33 +5486,6 @@ public class Comms {
             case 11:
                 writeToBufferPool(56, (bufferPool[56] & 33023) | (value << 8));
                 break;
-            case 12:
-                writeToBufferPool(56, (bufferPool[56] & 65281) | (value << 1));
-                break;
-            case 13:
-                writeToBufferPool(56, (bufferPool[56] & 65534) | ((value & 64) >>> 6));
-                writeToBufferPool(57, (bufferPool[57] & 1023) | ((value & 63) << 10));
-                break;
-            case 14:
-                writeToBufferPool(57, (bufferPool[57] & 64519) | (value << 3));
-                break;
-            case 15:
-                writeToBufferPool(57, (bufferPool[57] & 65528) | ((value & 112) >>> 4));
-                writeToBufferPool(58, (bufferPool[58] & 4095) | ((value & 15) << 12));
-                break;
-            case 16:
-                writeToBufferPool(58, (bufferPool[58] & 61471) | (value << 5));
-                break;
-            case 17:
-                writeToBufferPool(58, (bufferPool[58] & 65504) | ((value & 124) >>> 2));
-                writeToBufferPool(59, (bufferPool[59] & 16383) | ((value & 3) << 14));
-                break;
-            case 18:
-                writeToBufferPool(59, (bufferPool[59] & 49279) | (value << 7));
-                break;
-            case 19:
-                writeToBufferPool(59, (bufferPool[59] & 65408) | (value));
-                break;
         }
     }
 
@@ -5588,22 +5515,6 @@ public class Comms {
                 return ((rc.readSharedArray(55) & 63) << 1) + ((rc.readSharedArray(56) & 32768) >>> 15);
             case 11:
                 return (rc.readSharedArray(56) & 32512) >>> 8;
-            case 12:
-                return (rc.readSharedArray(56) & 254) >>> 1;
-            case 13:
-                return ((rc.readSharedArray(56) & 1) << 6) + ((rc.readSharedArray(57) & 64512) >>> 10);
-            case 14:
-                return (rc.readSharedArray(57) & 1016) >>> 3;
-            case 15:
-                return ((rc.readSharedArray(57) & 7) << 4) + ((rc.readSharedArray(58) & 61440) >>> 12);
-            case 16:
-                return (rc.readSharedArray(58) & 4064) >>> 5;
-            case 17:
-                return ((rc.readSharedArray(58) & 31) << 2) + ((rc.readSharedArray(59) & 49152) >>> 14);
-            case 18:
-                return (rc.readSharedArray(59) & 16256) >>> 7;
-            case 19:
-                return (rc.readSharedArray(59) & 127);
             default:
                 return -1;
         }
@@ -5651,33 +5562,6 @@ public class Comms {
             case 11:
                 rc.writeSharedArray(56, (rc.readSharedArray(56) & 33023) | (value << 8));
                 break;
-            case 12:
-                rc.writeSharedArray(56, (rc.readSharedArray(56) & 65281) | (value << 1));
-                break;
-            case 13:
-                rc.writeSharedArray(56, (rc.readSharedArray(56) & 65534) | ((value & 64) >>> 6));
-                rc.writeSharedArray(57, (rc.readSharedArray(57) & 1023) | ((value & 63) << 10));
-                break;
-            case 14:
-                rc.writeSharedArray(57, (rc.readSharedArray(57) & 64519) | (value << 3));
-                break;
-            case 15:
-                rc.writeSharedArray(57, (rc.readSharedArray(57) & 65528) | ((value & 112) >>> 4));
-                rc.writeSharedArray(58, (rc.readSharedArray(58) & 4095) | ((value & 15) << 12));
-                break;
-            case 16:
-                rc.writeSharedArray(58, (rc.readSharedArray(58) & 61471) | (value << 5));
-                break;
-            case 17:
-                rc.writeSharedArray(58, (rc.readSharedArray(58) & 65504) | ((value & 124) >>> 2));
-                rc.writeSharedArray(59, (rc.readSharedArray(59) & 16383) | ((value & 3) << 14));
-                break;
-            case 18:
-                rc.writeSharedArray(59, (rc.readSharedArray(59) & 49279) | (value << 7));
-                break;
-            case 19:
-                rc.writeSharedArray(59, (rc.readSharedArray(59) & 65408) | (value));
-                break;
         }
     }
 
@@ -5723,82 +5607,55 @@ public class Comms {
             case 11:
                 writeToBufferPool(56, (bufferPool[56] & 33023) | (value << 8));
                 break;
-            case 12:
-                writeToBufferPool(56, (bufferPool[56] & 65281) | (value << 1));
-                break;
-            case 13:
-                writeToBufferPool(56, (bufferPool[56] & 65534) | ((value & 64) >>> 6));
-                writeToBufferPool(57, (bufferPool[57] & 1023) | ((value & 63) << 10));
-                break;
-            case 14:
-                writeToBufferPool(57, (bufferPool[57] & 64519) | (value << 3));
-                break;
-            case 15:
-                writeToBufferPool(57, (bufferPool[57] & 65528) | ((value & 112) >>> 4));
-                writeToBufferPool(58, (bufferPool[58] & 4095) | ((value & 15) << 12));
-                break;
-            case 16:
-                writeToBufferPool(58, (bufferPool[58] & 61471) | (value << 5));
-                break;
-            case 17:
-                writeToBufferPool(58, (bufferPool[58] & 65504) | ((value & 124) >>> 2));
-                writeToBufferPool(59, (bufferPool[59] & 16383) | ((value & 3) << 14));
-                break;
-            case 18:
-                writeToBufferPool(59, (bufferPool[59] & 49279) | (value << 7));
-                break;
-            case 19:
-                writeToBufferPool(59, (bufferPool[59] & 65408) | (value));
-                break;
         }
     }
 
     public static int readSymmetryVertical() throws GameActionException {
-        return (rc.readSharedArray(60) & 32768) >>> 15;
+        return (rc.readSharedArray(56) & 128) >>> 7;
     }
 
     public static void writeSymmetryVertical(int value) throws GameActionException {
-        rc.writeSharedArray(60, (rc.readSharedArray(60) & 32767) | (value << 15));
+        rc.writeSharedArray(56, (rc.readSharedArray(56) & 65407) | (value << 7));
     }
 
     public static void writeBPSymmetryVertical(int value) throws GameActionException {
-        writeToBufferPool(60, (bufferPool[60] & 32767) | (value << 15));
+        writeToBufferPool(56, (bufferPool[56] & 65407) | (value << 7));
     }
 
     public static int readSymmetryHorizontal() throws GameActionException {
-        return (rc.readSharedArray(60) & 16384) >>> 14;
+        return (rc.readSharedArray(56) & 64) >>> 6;
     }
 
     public static void writeSymmetryHorizontal(int value) throws GameActionException {
-        rc.writeSharedArray(60, (rc.readSharedArray(60) & 49151) | (value << 14));
+        rc.writeSharedArray(56, (rc.readSharedArray(56) & 65471) | (value << 6));
     }
 
     public static void writeBPSymmetryHorizontal(int value) throws GameActionException {
-        writeToBufferPool(60, (bufferPool[60] & 49151) | (value << 14));
+        writeToBufferPool(56, (bufferPool[56] & 65471) | (value << 6));
     }
 
     public static int readSymmetryRotational() throws GameActionException {
-        return (rc.readSharedArray(60) & 8192) >>> 13;
+        return (rc.readSharedArray(56) & 32) >>> 5;
     }
 
     public static void writeSymmetryRotational(int value) throws GameActionException {
-        rc.writeSharedArray(60, (rc.readSharedArray(60) & 57343) | (value << 13));
+        rc.writeSharedArray(56, (rc.readSharedArray(56) & 65503) | (value << 5));
     }
 
     public static void writeBPSymmetryRotational(int value) throws GameActionException {
-        writeToBufferPool(60, (bufferPool[60] & 57343) | (value << 13));
+        writeToBufferPool(56, (bufferPool[56] & 65503) | (value << 5));
     }
 
     public static int readSymmetryAll() throws GameActionException {
-        return (rc.readSharedArray(60) & 57344) >>> 13;
+        return (rc.readSharedArray(56) & 224) >>> 5;
     }
 
     public static void writeSymmetryAll(int value) throws GameActionException {
-        rc.writeSharedArray(60, (rc.readSharedArray(60) & 8191) | (value << 13));
+        rc.writeSharedArray(56, (rc.readSharedArray(56) & 65311) | (value << 5));
     }
 
     public static void writeBPSymmetryAll(int value) throws GameActionException {
-        writeToBufferPool(60, (bufferPool[60] & 8191) | (value << 13));
+        writeToBufferPool(56, (bufferPool[56] & 65311) | (value << 5));
     }
 
     // BUFFER POOL READ AND WRITE METHODS

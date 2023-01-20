@@ -2,6 +2,7 @@ package MPWorking;
 
 import battlecode.common.*;
 import MPWorking.fast.*;
+import MPWorking.bfs.*;
 
 public class Nav {
     static RobotController rc;
@@ -23,12 +24,20 @@ public class Nav {
 
     static final int id = 13175;
 
+    public static final int BFS34_COST = 6000;
+    public static final int BFS20_COST = 4000;
+    public static final int BFS10_COST = 2500;
+
     static void init(RobotController r) {
         rc = r;
         turnsGreedy = 0;
         closestDistanceToDest = Integer.MAX_VALUE;
         turnsSinceClosestDistanceDecreased = 0;
         VisitedTracker.reset();
+
+        BFS34.init(r);
+        BFS20.init(r);
+        BFS10.init(r);
     }
 
     // @requires loc is adjacent to currLoc
@@ -64,24 +73,24 @@ public class Nav {
     }
 
     public static Direction getBestDir(MapLocation dest, int bytecodeCushion) throws GameActionException {
-        // int bcLeft = Clock.getBytecodesLeft();
-        // if (bcLeft >= BFSUnrolled29.MIN_BC_TO_USE + bytecodeCushion &&
-        // rc.getType().visionRadiusSquared >= 29) {
-        // return BFSUnrolled29.getBestDir(dest);
-        // } else if (bcLeft >= BFSUnrolled20.MIN_BC_TO_USE + bytecodeCushion) {
-        // return BFSUnrolled20.getBestDir(dest);
-        // } else if (bcLeft >= BFSUnrolled18.MIN_BC_TO_USE + bytecodeCushion) {
-        // return BFSUnrolled18.getBestDir(dest);
-        // } else if (bcLeft >= BFSUnrolled13.MIN_BC_TO_USE + bytecodeCushion) {
-        // return BFSUnrolled13.getBestDir(dest);
-        // } else {
-        // return getGreedyDirection(rc.getLocation().directionTo(dest));
-        // }
+        int bcLeft = Clock.getBytecodesLeft();
+        Direction dir = null;
+        if (bcLeft >= BFS34_COST + bytecodeCushion && rc.getType().visionRadiusSquared >= 29) {
+            dir = BFS34.bestDir(dest);
+        } else if (bcLeft >= BFS20_COST + bytecodeCushion) {
+            dir = BFS20.bestDir(dest);
+        } else if (bcLeft >= BFS10_COST + bytecodeCushion) {
+            dir = BFS10.bestDir(dest);
+        }
 
-        boolean avoidClouds = false;
-        boolean avoidCurrents = rc.getLocation().isWithinDistanceSquared(dest, DIST_TO_AVOID_CURRENTS);
-        boolean onlyExactCurrent = rc.getLocation().isWithinDistanceSquared(dest, DIST_FOR_EXACT_CURRENT);
-        return getGreedyDirection(rc.getLocation().directionTo(dest), avoidClouds, avoidCurrents, onlyExactCurrent);
+        if (dir == null) {
+            boolean avoidClouds = false;
+            boolean avoidCurrents = rc.getLocation().isWithinDistanceSquared(dest, DIST_TO_AVOID_CURRENTS);
+            boolean onlyExactCurrent = rc.getLocation().isWithinDistanceSquared(dest, DIST_FOR_EXACT_CURRENT);
+            dir = getGreedyDirection(rc.getLocation().directionTo(dest), avoidClouds, avoidCurrents, onlyExactCurrent);
+        }
+
+        return dir;
     }
 
     public static Direction getGreedyDirection(Direction dir, boolean avoidClouds, boolean avoidCurrents,
@@ -169,6 +178,7 @@ public class Nav {
             closestDistanceToDest = rc.getLocation().distanceSquaredTo(target);
             turnsSinceClosestDistanceDecreased = 0;
             currentTarget = target;
+            reset();
             return;
         }
 
@@ -253,9 +263,11 @@ public class Nav {
             if (robot == null || robot.type != RobotType.HEADQUARTERS)
                 continue;
 
+            int d = currLoc.distanceSquaredTo(enemyHQ);
+            d = Math.min(d, RobotType.HEADQUARTERS.actionRadiusSquared);
             for (int j = Util.DIRS_CENTER.length; --j >= 0;) {
                 MapLocation newLoc = currLoc.add(Util.DIRS_CENTER[j]);
-                if (newLoc.distanceSquaredTo(enemyHQ) <= RobotType.HEADQUARTERS.actionRadiusSquared) {
+                if (newLoc.distanceSquaredTo(enemyHQ) <= d) {
                     imp[j] = true;
                     greedy = true;
                     setImpassable = true;
@@ -264,8 +276,7 @@ public class Nav {
         }
 
         // If we are already within action radius, don't bother
-        if (greedy && setImpassable &&
-                !(imp[0] && imp[1] && imp[2] && imp[3] && imp[4] && imp[5] && imp[6] && imp[7] && imp[8])) {
+        if (greedy && setImpassable) {
             Pathfinding.setImpassable(imp);
         }
 
