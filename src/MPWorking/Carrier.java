@@ -262,11 +262,14 @@ public class Carrier extends Robot {
                     }
                 }
 
-                if (placeAnchor())
-                    break;
+                if (placeAnchor()) {
+                    Nav.move(home);
+                    return;
+                }
 
                 if (seenIsland != null) {
                     Nav.move(seenIsland);
+                    placeAnchor();
                 } else if (!returnAnchor()) {
                     // No anchor. Go home
                     Nav.move(home);
@@ -322,9 +325,14 @@ public class Carrier extends Robot {
      * Places an anchor if possible. Returns true if collect was successful.
      */
     public boolean placeAnchor() throws GameActionException {
-        if (rc.canPlaceAnchor()) {
+        MapLocation loc = rc.getLocation();
+        int id = rc.senseIsland(loc);
+        if (id == -1)
+            return false;
+        Team islandTeam = rc.senseTeamOccupyingIsland(id);
+        if (rc.canPlaceAnchor() && islandTeam == Team.NEUTRAL) {
             rc.placeAnchor();
-            recordIsland(rc.senseIsland(currLoc), whichSector(currLoc));
+            recordIsland(rc.senseIsland(loc), whichSector(loc));
             seenIsland = null;
             Debug.printString("Placed anchor");
             return true;
