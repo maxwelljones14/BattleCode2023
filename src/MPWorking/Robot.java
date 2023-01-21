@@ -245,6 +245,64 @@ public class Robot {
         return res;
     }
 
+    public RobotInfo getBetterEnemy(RobotInfo robot1, RobotInfo robot2) throws GameActionException {
+        if (robot1 == null)
+            return robot2;
+        if (robot2 == null)
+            return robot1;
+
+        switch (robot1.type) {
+            case LAUNCHER:
+                if (robot2.type == RobotType.LAUNCHER) {
+                    return robot1.health < robot2.health ? robot1 : robot2;
+                }
+                return robot1;
+            case DESTABILIZER:
+                if (robot2.type == RobotType.LAUNCHER) {
+                    return robot2;
+                }
+                if (robot2.type == RobotType.DESTABILIZER) {
+                    return robot1.health < robot2.health ? robot1 : robot2;
+                }
+                return robot1;
+            case BOOSTER:
+                if (robot2.type == RobotType.LAUNCHER || robot2.type == RobotType.DESTABILIZER) {
+                    return robot2;
+                }
+                if (robot2.type == RobotType.BOOSTER) {
+                    return robot1.health < robot2.health ? robot1 : robot2;
+                }
+                return robot1;
+            case CARRIER:
+                if (robot2.type == RobotType.LAUNCHER || robot2.type == RobotType.DESTABILIZER
+                        || robot2.type == RobotType.BOOSTER) {
+                    return robot2;
+                }
+                if (robot2.type == RobotType.CARRIER) {
+                    return robot1.health < robot2.health ? robot1 : robot2;
+                }
+                return robot1;
+            case AMPLIFIER:
+                if (robot2.type == RobotType.LAUNCHER || robot2.type == RobotType.DESTABILIZER
+                        || robot2.type == RobotType.BOOSTER || robot2.type == RobotType.CARRIER) {
+                    return robot2;
+                }
+                if (robot2.type == RobotType.AMPLIFIER) {
+                    return robot1.health < robot2.health ? robot1 : robot2;
+                }
+                return robot1;
+            case HEADQUARTERS:
+                if (robot2.type == RobotType.LAUNCHER || robot2.type == RobotType.DESTABILIZER
+                        || robot2.type == RobotType.BOOSTER || robot2.type == RobotType.CARRIER
+                        || robot2.type == RobotType.AMPLIFIER) {
+                    return robot2;
+                }
+                return robot1;
+            default:
+                return robot1;
+        }
+    }
+
     public RobotInfo getClosestRobot(RobotInfo[] robots) {
         RobotInfo robot;
         RobotInfo closestRobot = null;
@@ -889,9 +947,8 @@ public class Robot {
         int closestDistance = Integer.MAX_VALUE;
         for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
             int nearestSector = Comms.readCombatSectorIndex(i);
-            // Break if no more combat sectors exist
             if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
-                break;
+                continue;
             }
             int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
             if (distance < closestDistance) {
@@ -914,9 +971,8 @@ public class Robot {
         int closestDistance = Integer.MAX_VALUE;
         for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
             int nearestSector = Comms.readCombatSectorIndex(i);
-            // Break if no more combat sectors exist
             if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
-                break;
+                continue;
             }
             if (Comms.readCombatSectorClaimStatus(nearestSector) == Comms.ClaimStatus.CLAIMED) {
                 continue;
@@ -964,9 +1020,8 @@ public class Robot {
         int closestDistance = Integer.MAX_VALUE;
         for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
             int nearestSector = Comms.readCombatSectorIndex(i);
-            // Break if no more combat sectors exist
             if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
-                break;
+                continue;
             }
             // ignore the sector to avoid
             if (nearestSector == sectorToAvoid) {
@@ -1006,9 +1061,8 @@ public class Robot {
             for (int i = 0; i < Comms.EXPLORE_SECTOR_SLOTS; i++) {
                 int nearestSectorAll = Comms.readExploreSectorAll(i);
                 int nearestSector = nearestSectorAll & 127; // 7 lowest order bits
-                // Break if no more combat sectors exist
                 if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
-                    break;
+                    continue;
                 }
                 // Skip sectors which are fully claimed
                 int nearestSectorStatus = (nearestSectorAll & 128) >> 7; // 2^7
@@ -1056,9 +1110,8 @@ public class Robot {
         int closestDistance = Integer.MAX_VALUE;
         for (int i = 0; i < Comms.MINE_SECTOR_SLOTS; i++) {
             int nearestSector = Comms.readMineSectorIndex(i);
-            // Break if no more mine sectors exist
             if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
-                break;
+                continue;
             }
             // Only look at the resource type we are mining
             switch (resource) {
@@ -1095,7 +1148,6 @@ public class Robot {
         // Preserve explore sectors which still have not been claimed or visited
         while (index < Comms.EXPLORE_SECTOR_SLOTS) {
             int sector = Comms.readExploreSectorIndex(index);
-            // Break if no more explore sectors exist
             if (sector == Comms.UNDEFINED_SECTOR_INDEX)
                 break;
             int claimStatus = Comms.readExploreSectorClaimStatus(sector);
@@ -1114,7 +1166,6 @@ public class Robot {
         // Preserve combat sectors which still have enemies or are claimed
         while (index < Comms.COMBAT_SECTOR_SLOTS) {
             int sector = Comms.readCombatSectorIndex(index);
-            // Break if no more explore sectors exist
             if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
                 break;
             }
@@ -1132,7 +1183,6 @@ public class Robot {
         // Preserve mine sectors which still have resources
         while (index < Comms.MINE_SECTOR_SLOTS) {
             int sector = Comms.readMineSectorIndex(index);
-            // Break if no more mining sectors exist
             if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
                 break;
             }
@@ -1183,9 +1233,8 @@ public class Robot {
         int closestDistance = Integer.MAX_VALUE;
         for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
             int nearestSector = Comms.readCombatSectorIndex(i);
-            // Break if no more combat sectors exist
             if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
-                break;
+                continue;
             }
             if (Comms.readSectorControlStatus(nearestSector) != status) {
                 continue;
@@ -1237,7 +1286,7 @@ public class Robot {
             int sectorIdx = Comms.readCombatSectorIndex(i);
 
             if (sectorIdx == Comms.UNDEFINED_SECTOR_INDEX)
-                break;
+                continue;
 
             int claimStatus = Comms.readCombatSectorClaimStatus(i);
             int controlStatus = Comms.readSectorControlStatus(sectorIdx);
@@ -1372,9 +1421,8 @@ public class Robot {
         int closestStatus = -1;
         for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
             int sectorIdx = Comms.readCombatSectorIndex(i);
-            // Break if no more combat sectors exist
             if (sectorIdx == Comms.UNDEFINED_SECTOR_INDEX) {
-                break;
+                continue;
             }
             int status = Comms.readSectorControlStatus(sectorIdx);
             if (status < closestStatus)

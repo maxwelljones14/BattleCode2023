@@ -17,7 +17,8 @@ public class Util {
     static final int MAX_AREA_FOR_FAST_INIT = 625;
     static final int MAX_AREA_FOR_SEMI_FAST_INIT = 1000;
 
-    static final int CLEAR_ENEMY_INFO_PERIOD = 100;
+    static final int CLEAR_ENEMY_INFO_PERIOD = 20;
+    static final int CLEAR_COMBAT_SECTOR_TIMEOUT = 10;
 
     static final double MIN_COOLDOWN_MULT_DIFF = 0.1;
     static final double SYM_TO_COMB_DIST_RATIO = 2;
@@ -233,7 +234,8 @@ public class Util {
                 if (rc.canSenseLocation(newLoc) && rc.sensePassability(newLoc)
                         && rc.senseRobotAtLocation(newLoc) == null) {
                     buildLocation = newLoc;
-                    // Debug.println("Found build location: " + buildLocation + " with dir: " + dir + "");
+                    // Debug.println("Found build location: " + buildLocation + " with dir: " + dir
+                    // + "");
                     break;
                 }
             }

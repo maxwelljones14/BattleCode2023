@@ -137,9 +137,8 @@ public class Carrier extends Robot {
         boolean[] eligibleHomes = new boolean[] { true, true, true, true };
         for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
             int nearestSector = Comms.readCombatSectorIndex(i);
-            // Break if no more combat sectors exist
             if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
-                break;
+                continue;
             }
             for (int j = 0; j < headquarterLocations.length; j++) {
                 MapLocation loc = headquarterLocations[j];

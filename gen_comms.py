@@ -24,7 +24,7 @@ SCHEMA = {
         }
     },
     'combat_sector': {
-        'slots': 8,
+        'slots': 4,
         'bits': {
             'claim_status': 1,
             'index': 7,

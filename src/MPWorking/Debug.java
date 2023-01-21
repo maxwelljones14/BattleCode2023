@@ -70,4 +70,12 @@ public class Debug {
             rc.setIndicatorLine(startLoc, endLoc, r, g, b);
         }
     }
+
+    public static void setIndicatorDot(MapLocation loc, int r, int g, int b) {
+        setIndicatorDot(INDICATORS, loc, r, g, b);
+    }
+
+    public static void setIndicatorLine(MapLocation startLoc, MapLocation endLoc, int r, int g, int b) {
+        setIndicatorLine(INDICATORS, startLoc, endLoc, r, g, b);
+    }
 }

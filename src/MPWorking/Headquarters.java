@@ -56,6 +56,8 @@ public class Headquarters extends Robot {
     static boolean nearHQ;
     static MapLocation enemyHQLoc;
 
+    static FastIntIntMap combatSectorToTurnWritten;
+
     public Headquarters(RobotController r) throws GameActionException {
         super(r);
         checkIfHQNear();
@@ -81,6 +83,8 @@ public class Headquarters extends Robot {
 
         adamCarrierTracker = new FastUnitTracker(rc, ROUNDS_TO_STALE_UNIT);
         manaCarrierTracker = new FastUnitTracker(rc, ROUNDS_TO_STALE_UNIT);
+
+        combatSectorToTurnWritten = new FastIntIntMap();
     }
 
     public void takeTurn() throws GameActionException {
@@ -123,8 +127,8 @@ public class Headquarters extends Robot {
         Comms.writeOurHqFlag(myHqNum, nextFlag);
         nextFlag = 0;
         doStateAction();
-        // displayCombatSectors();
-        // displayExploreSectors();
+        displayCombatSectors();
+        displayExploreSectors();
         // displayMineSectors();
     }
 
@@ -518,6 +522,16 @@ public class Headquarters extends Robot {
                 Comms.writeSectorControlStatus(sectorIdx, newControlStatus);
             }
         }
+
+        // Clear old combat sectors
+        int[] combatSectorsWritten = combatSectorToTurnWritten.getKeys();
+        for (int combatSectorIdx : combatSectorsWritten) {
+            int turn = combatSectorToTurnWritten.getVal(combatSectorIdx);
+            if (turn + Util.CLEAR_COMBAT_SECTOR_TIMEOUT < rc.getRoundNum()) {
+                Comms.writeCombatSectorIndex(combatSectorIdx, Comms.UNDEFINED_SECTOR_INDEX);
+                combatSectorToTurnWritten.remove(combatSectorIdx);
+            }
+        }
     }
 
     /**
@@ -569,6 +583,8 @@ public class Headquarters extends Robot {
 
                 Comms.writeCombatSectorIndex(combatSectorIndex, i);
                 Comms.writeCombatSectorClaimStatus(combatSectorIndex, Comms.ClaimStatus.UNCLAIMED);
+                combatSectorToTurnWritten.add(combatSectorIndex, rc.getRoundNum());
+                // Comms.writeCombatSectorTurn(combatSectorIndex, rc.getRoundNum());
                 combatSectorIndex = getNextEmptyCombatSectorIdx(combatSectorIndex + 1);
             }
             // Explore sector
@@ -625,7 +641,7 @@ public class Headquarters extends Robot {
         for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
             int sector = Comms.readCombatSectorIndex(i);
             if (sector == Comms.UNDEFINED_SECTOR_INDEX)
-                break;
+                continue;
             MapLocation loc = sectorCenters[sector];
             rc.setIndicatorDot(loc, 255, 0, 0);
         }
@@ -635,7 +651,7 @@ public class Headquarters extends Robot {
         for (int i = 0; i < Comms.EXPLORE_SECTOR_SLOTS; i++) {
             int sector = Comms.readExploreSectorIndex(i);
             if (sector == Comms.UNDEFINED_SECTOR_INDEX)
-                break;
+                continue;
             MapLocation loc = sectorCenters[sector];
             rc.setIndicatorDot(loc, 0, 0, 255);
         }
@@ -645,7 +661,7 @@ public class Headquarters extends Robot {
         for (int i = 0; i < Comms.MINE_SECTOR_SLOTS; i++) {
             int sector = Comms.readMineSectorIndex(i);
             if (sector == Comms.UNDEFINED_SECTOR_INDEX)
-                break;
+                continue;
             MapLocation loc = sectorCenters[sector];
             rc.setIndicatorDot(loc, 100, 200, 50);
         }

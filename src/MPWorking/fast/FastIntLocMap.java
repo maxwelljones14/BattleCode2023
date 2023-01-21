@@ -39,6 +39,23 @@ public class FastIntLocMap {
         }
     }
 
+    public void addReplace(int key, MapLocation loc) {
+        String keyTemp = intToStr(key);
+        int index = keys.indexOf(keyTemp);
+        switch (index) {
+            case -1:
+                keys.append(keyTemp);
+                keys.append((char) (loc.x));
+                keys.append((char) (loc.y));
+                size++;
+                break;
+            default:
+                keys.setCharAt(index + 2, (char) (loc.x));
+                keys.setCharAt(index + 3, (char) (loc.y));
+                break;
+        }
+    }
+
     public boolean contains(int val) {
         return keys.indexOf(intToStr(val)) >= 0;
     }
