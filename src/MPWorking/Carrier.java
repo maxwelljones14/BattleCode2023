@@ -186,7 +186,7 @@ public class Carrier extends Robot {
                 for (WellInfo well : wells) {
                     MapLocation wellLocation = well.getMapLocation();
                     int dist = Util.distance(rc.getLocation(), wellLocation);
-                    if (dist < closestDist && !wellsVisitedThisCycle.contains(wellLocation)) {
+                    if (dist < closestDist && (!wellsVisitedThisCycle.contains(wellLocation) || dist <= 2)) {
                         closestDist = dist;
                         closestWell = well;
                     }
@@ -197,12 +197,12 @@ public class Carrier extends Robot {
                     Debug.printString("Well: " + wellLoc);
                     // Mark this sector's well as visited
                     wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(wellLoc)]);
-
-                    MapLocation bestCollectLoc = Util.getBestCollectLoc(wellLoc);
+                    wellsVisitedThisCycle.add(wellLoc);
 
                     // If we are adjacent to a well, collect from it.
                     if (currLoc.isAdjacentTo(wellLoc)) {
                         collect(closestWell);
+                        MapLocation bestCollectLoc = Util.getBestCollectLoc(wellLoc);
                         // If we aren't at the best collect location, move to it if
                         // 1. We are adjacent
                         // 2. The wellLoc is empty
@@ -230,14 +230,13 @@ public class Carrier extends Robot {
                             int maxOpenSpots = Util.getMaxCollectSpots(wellLoc);
                             if (numCarriers >= Math.min(maxOpenSpots * 4, CARRIERS_PER_WELL_TO_LEAVE)) {
                                 Debug.printString("Leaving");
-                                wellsVisitedThisCycle.add(wellLoc);
                                 closestWell = null;
                                 break collect;
                             }
                         }
 
                         Debug.printString("Moving");
-                        Nav.move(bestCollectLoc);
+                        Nav.move(wellLoc);
                         collect(closestWell);
                     }
                 }

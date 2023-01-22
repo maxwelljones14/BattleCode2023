@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from math import *
 
 def encode(x, y):
     return (x+7) + 15*(y+7)
@@ -84,7 +85,8 @@ def gen_constants(radius):
                 out += f"""
     static MapLocation l{encode(x,y)}; // location representing relative coordinate ({x}, {y})
     static double d{encode(x,y)}; // shortest distance to location from current location
-    static Direction dir{encode(x,y)}; // best direction to take now to optimally get to location
+    // static Direction dir{encode(x,y)}; // best direction to take now to optimally get to location
+    static double score{encode(x,y)}; // heuristic distance from location to target
 """
     return out
 
@@ -99,7 +101,7 @@ def gen_init(radius):
     out = f"""
         l{encode(0,0)} = rc.getLocation();
         d{encode(0,0)} = 0;
-        dir{encode(0,0)} = CENTER;
+        // dir{encode(0,0)} = CENTER;
 """
     for r2 in range(1, radius+1):
         for x in range(-7, 8):
@@ -108,7 +110,7 @@ def gen_init(radius):
                     out += f"""
         l{encode(x,y)} = l{encode(x - sign(x), y - sign(y))}.add({DIRECTIONS[(sign(x), sign(y))]}); // ({x}, {y}) from ({x - sign(x)}, {y - sign(y)})
         d{encode(x,y)} = 99999;
-        dir{encode(x,y)} = null;
+        // dir{encode(x,y)} = null;
 """
     return out
 
@@ -132,8 +134,7 @@ def gen_bfs(radius):
                         if encode(x+dx, y+dy) in visited:
                             out += f"""
             {indent}if (d{encode(x,y)} > d{encode(x+dx,y+dy)}) {{ // from ({x+dx}, {y+dy})
-                {indent}d{encode(x,y)} = d{encode(x+dx,y+dy)};
-                {indent}dir{encode(x,y)} = {DIRECTIONS[(-dx, -dy)] if (x+dx,y+dy) == (0, 0) else f'dir{encode(x+dx,y+dy)}'};
+                {indent}d{encode(x,y)} = {str([5/16, 1/16, 6/16, 2/16, 7/16, 3/16, 8/16, 4/16][(round(atan2(-dy,-dx)/pi*4)+8)%8]) if (x+dx,y+dy) == (0, 0) else f'd{encode(x+dx,y+dy)}'};
             {indent}}}"""
                     # TODO: Account for currents
                     out += f"""
@@ -160,7 +161,7 @@ def gen_selection(radius, smaller_radius):
                 if dist(tdx, tdy) <= radius:
                     out += f"""
                         case {tdy}:
-                            return dir{encode(tdx, tdy)}; // destination is at relative location ({tdx}, {tdy})"""
+                            return direction(d{encode(tdx, tdy)}); // destination is at relative location ({tdx}, {tdy})"""
                             # if (dir{encode(tdx, tdy)} != null)
                             #     return dir{encode(tdx, tdy)}; // destination is at relative location ({tdx}, {tdy})
                             # break;"""
@@ -170,18 +171,18 @@ def gen_selection(radius, smaller_radius):
     out += f"""
         }}
         
-        Direction ans = null;
-        double bestScore = 0;
-        double currDist = Math.sqrt(l{encode(0,0)}.distanceSquaredTo(target));
+        ans = Double.POSITIVE_INFINITY;
+        bestScore = 0;
+        currDist = Math.sqrt(l{encode(0,0)}.distanceSquaredTo(target));
         """
     for x in range(-7, 8):
         for y in range(-7, 8):
             if smaller_radius < dist(x, y) <= radius: # on the edge of the radius radius
                 out += f"""
-        double score{encode(x,y)} = (currDist - Math.sqrt(l{encode(x,y)}.distanceSquaredTo(target))) / d{encode(x,y)};
+        score{encode(x,y)} = (currDist - Math.sqrt(l{encode(x,y)}.distanceSquaredTo(target))) / d{encode(x,y)};
         if (score{encode(x,y)} > bestScore) {{
             bestScore = score{encode(x,y)};
-            ans = dir{encode(x,y)};
+            ans = d{encode(x,y)};
         }}
 """
     return out
@@ -232,6 +233,8 @@ public class BFS{rad} {{
         team = rc.getTeam();
     }}
 
+    private static final Direction[] DIRECTIONS = new Direction[] {{null, Direction.NORTHEAST, Direction.NORTHWEST, Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.EAST, Direction.NORTH, Direction.WEST, Direction.SOUTH}};
+
     public final static Direction NORTH = Direction.NORTH;
     public final static Direction NORTHEAST = Direction.NORTHEAST;
     public final static Direction EAST = Direction.EAST;
@@ -245,6 +248,16 @@ public class BFS{rad} {{
     public static MapInfo mapInfo;
     public static Direction currentDir;
     public static Team team;
+    public static double ans;
+    public static double bestScore;
+    public static double currDist;
+
+    public static Direction direction(double dist) {{
+        if (dist==Double.POSITIVE_INFINITY) {{
+            return null;
+        }}
+        return DIRECTIONS[(int)(dist * 16 % 16)];
+    }}
 
     public static Direction bestDir(MapLocation target) throws GameActionException {{
 {gen_init(radius)}
@@ -252,7 +265,7 @@ public class BFS{rad} {{
 {gen_print(radius)}
 {gen_selection(radius, smaller_radius)}
         
-        return ans;
+        return direction(ans);
     }}
 }}
 """)
