@@ -15,7 +15,6 @@ public class Nav {
 
     static final int BYTECODE_REMAINING = 1500;
     static final int BYTECODE_REMAINING_AMPLIFIER = 2000;
-    static final int BYTECODE_BFS = 5000;
 
     static final int GREEDY_TURNS = 4;
 
@@ -24,9 +23,13 @@ public class Nav {
 
     static final int id = 13175;
 
-    public static final int BFS34_COST = 6000;
-    public static final int BFS20_COST = 4000;
-    public static final int BFS10_COST = 2500;
+    // public static final int BFS34_COST = 6000;
+    // public static final int BFS20_COST = 4000;
+    // public static final int BFS10_COST = 2500;
+
+    public static final int BFSCOOLDOWN34_COST = 7000;
+    public static final int BFSCOOLDOWN20_COST = 5000;
+    public static final int BFSCOOLDOWN10_COST = 3000;
 
     static void init(RobotController r) {
         rc = r;
@@ -35,9 +38,9 @@ public class Nav {
         turnsSinceClosestDistanceDecreased = 0;
         VisitedTracker.reset();
 
-        BFS34.init(r);
-        BFS20.init(r);
-        BFS10.init(r);
+        BFSCooldown34.init(r);
+        BFSCooldown20.init(r);
+        BFSCooldown10.init(r);
     }
 
     // @requires loc is adjacent to currLoc
@@ -75,21 +78,24 @@ public class Nav {
     public static Direction getBestDir(MapLocation dest, int bytecodeCushion) throws GameActionException {
         int bcLeft = Clock.getBytecodesLeft();
         Direction dir = null;
-        if (bcLeft >= BFS34_COST + bytecodeCushion && rc.getType().visionRadiusSquared >= 29) {
-            dir = BFS34.bestDir(dest);
-        } else if (bcLeft >= BFS20_COST + bytecodeCushion) {
-            dir = BFS20.bestDir(dest);
-        } else if (bcLeft >= BFS10_COST + bytecodeCushion) {
-            dir = BFS10.bestDir(dest);
+        if (bcLeft >= BFSCOOLDOWN34_COST + bytecodeCushion && rc.getType().visionRadiusSquared >= 29) {
+            dir = BFSCooldown34.bestDir(dest);
+        } else if (bcLeft >= BFSCOOLDOWN20_COST + bytecodeCushion) {
+            dir = BFSCooldown20.bestDir(dest);
+        } else if (bcLeft >= BFSCOOLDOWN10_COST + bytecodeCushion) {
+            dir = BFSCooldown10.bestDir(dest);
         }
 
-        if (bcLeft >= bytecodeCushion && dir == null) {
-            boolean avoidClouds = false;
-            boolean avoidCurrents = rc.getLocation().isWithinDistanceSquared(dest, DIST_TO_AVOID_CURRENTS);
-            boolean onlyExactCurrent = rc.getLocation().isWithinDistanceSquared(dest, DIST_FOR_EXACT_CURRENT);
-            dir = getGreedyDirection(rc.getLocation().directionTo(dest), avoidClouds, avoidCurrents, onlyExactCurrent);
-        } else {
-            dir = Util.getFirstValidInOrderDirection(rc.getLocation().directionTo(dest));
+        if (dir == null) {
+            if (bcLeft >= bytecodeCushion) {
+                boolean avoidClouds = false;
+                boolean avoidCurrents = rc.getLocation().isWithinDistanceSquared(dest, DIST_TO_AVOID_CURRENTS);
+                boolean onlyExactCurrent = rc.getLocation().isWithinDistanceSquared(dest, DIST_FOR_EXACT_CURRENT);
+                dir = getGreedyDirection(rc.getLocation().directionTo(dest), avoidClouds, avoidCurrents,
+                        onlyExactCurrent);
+            } else {
+                dir = Util.getFirstValidInOrderDirection(rc.getLocation().directionTo(dest));
+            }
         }
 
         return dir;
