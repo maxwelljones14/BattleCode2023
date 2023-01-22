@@ -29,6 +29,7 @@ public class Carrier extends Robot {
     FastLocSet wellsVisitedThisCycle;
     FastLocSet wellSectorsVisitedThisCycle;
     WellInfo closestWell;
+    boolean visitedSectorCenter;
 
     public final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public final int RESET_WELLS_VISITED_TIMEOUT = 100;
@@ -131,6 +132,7 @@ public class Carrier extends Robot {
         wellSectorsVisitedThisCycle.clear();
         turnStartedMining = rc.getRoundNum();
         closestWell = null;
+        visitedSectorCenter = false;
     }
 
     public void updateHomeifCurrHomeAttacked() throws GameActionException {
@@ -191,17 +193,31 @@ public class Carrier extends Robot {
                 }
 
                 collect: if (closestWell != null) {
-                    Debug.printString("Well: " + closestWell.getMapLocation());
+                    MapLocation wellLoc = closestWell.getMapLocation();
+                    Debug.printString("Well: " + wellLoc);
                     // Mark this sector's well as visited
-                    wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(closestWell.getMapLocation())]);
+                    wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(wellLoc)]);
+
+                    MapLocation bestCollectLoc = Util.getBestCollectLoc(wellLoc);
 
                     // If we are adjacent to a well, collect from it.
-                    if (rc.getLocation().isAdjacentTo(closestWell.getMapLocation())) {
+                    if (currLoc.isAdjacentTo(wellLoc)) {
                         collect(closestWell);
+                        // If we aren't at the best collect location, move to it if
+                        // 1. We are adjacent
+                        // 2. The wellLoc is empty
+                        if (!currLoc.equals(bestCollectLoc)) {
+                            RobotInfo robot = rc.senseRobotAtLocation(wellLoc);
+                            if (currLoc.isAdjacentTo(bestCollectLoc) ||
+                                    robot == null ||
+                                    robot.ID == rc.getID()) {
+                                Nav.move(bestCollectLoc);
+                            }
+                        }
                     } else {
                         // If there are too many carriers on this well, move to another well.
                         // If there are 2 available spots, skip this check
-                        int numOpenSpots = Util.getNumOpenCollectSpots(closestWell.getMapLocation());
+                        int numOpenSpots = Util.getNumOpenCollectSpots(wellLoc);
                         if (numOpenSpots <= 2) {
                             int numCarriers = 0;
                             RobotInfo robot;
@@ -211,33 +227,57 @@ public class Carrier extends Robot {
                                     numCarriers++;
                             }
 
-                            int maxOpenSpots = Util.getMaxCollectSpots(closestWell.getMapLocation());
+                            int maxOpenSpots = Util.getMaxCollectSpots(wellLoc);
                             if (numCarriers >= Math.min(maxOpenSpots * 4, CARRIERS_PER_WELL_TO_LEAVE)) {
                                 Debug.printString("Leaving");
-                                wellsVisitedThisCycle.add(closestWell.getMapLocation());
+                                wellsVisitedThisCycle.add(wellLoc);
                                 closestWell = null;
                                 break collect;
                             }
                         }
 
                         Debug.printString("Moving");
-                        Nav.move(closestWell.getMapLocation());
+                        Nav.move(bestCollectLoc);
                         collect(closestWell);
                     }
                 }
 
                 if (closestWell == null) {
+                    boolean shouldMarkCorner = false;
                     // If we can't see a well, move towards the closest mine sector
                     int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, wellSectorsVisitedThisCycle);
                     MapLocation target = null;
                     if (mineSectorIndex != Comms.UNDEFINED_SECTOR_INDEX) {
+                        target = resourceTarget == ResourceType.ADAMANTIUM
+                                ? sectorDatabase.at(mineSectorIndex).getAdamWell()
+                                : sectorDatabase.at(mineSectorIndex).getManaWell();
                         Debug.printString("Well in sector: " + target);
-                        target = sectorCenters[mineSectorIndex];
+
+                        // If we have visited the center of the sector and we can't see the well,
+                        // travel the corners of the sector until we find the well
+                        if (visitedSectorCenter || currLoc.equals(target)) {
+                            visitedSectorCenter = true;
+                            MapLocation nextCorner = sectorDatabase.at(mineSectorIndex).getNextCorner();
+                            target = nextCorner;
+                            if (target == null) {
+                                // We've visited all the corners and still haven't found the well???
+                                target = resourceTarget == ResourceType.ADAMANTIUM
+                                        ? sectorDatabase.at(mineSectorIndex).getAdamWell()
+                                        : sectorDatabase.at(mineSectorIndex).getManaWell();
+                                Debug.println("ERROR: Couldn't find well in sector");
+                            } else {
+                                shouldMarkCorner = true;
+                            }
+                            // Debug.println("Trying corner: " + target);
+                        }
                     } else {
                         target = Explore.getExploreTarget();
                         Debug.printString("Exploring");
                     }
                     Nav.move(target);
+                    if (shouldMarkCorner && rc.getLocation().isAdjacentTo(target)) {
+                        sectorDatabase.at(mineSectorIndex).visitCorner(target);
+                    }
                 }
                 break;
             case PLACING_ANCHOR:

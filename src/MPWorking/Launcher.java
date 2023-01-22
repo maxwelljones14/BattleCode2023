@@ -153,29 +153,38 @@ public class Launcher extends Robot {
             overallEnemyLauncherDy += (closestEnemyLocation.y - currLoc.y);
         }
 
-        for (RobotInfo Fbot : FriendlySensable) {
-            RobotType FbotType = Fbot.getType();
-            if (FbotType == RobotType.LAUNCHER || FbotType == RobotType.DESTABILIZER) {
-                MapLocation FbotLocation = Fbot.getLocation();
-                // Debug.printString(" " + FbotLocation + " ");
-                overallEnemyLauncherDx += (currLoc.x - FbotLocation.x);
-                overallEnemyLauncherDy += (currLoc.y - FbotLocation.y);
-                if ((FbotLocation).distanceSquaredTo(closestEnemyLocation) <= FbotType.visionRadiusSquared) {
-                    numFriendlies++;
-                }
-                numAggressiveFriendlies++;
+        RobotInfo Fbot;
+        RobotType FbotType;
+        MapLocation FbotLocation;
+        for (int i = FriendlySensable.length; --i >= 0;) {
+            Fbot = FriendlySensable[i];
+            FbotType = Fbot.getType();
+            switch (FbotType) {
+                case LAUNCHER:
+                case DESTABILIZER:
+                    FbotLocation = Fbot.getLocation();
+                    overallEnemyLauncherDx += (currLoc.x - FbotLocation.x);
+                    overallEnemyLauncherDy += (currLoc.y - FbotLocation.y);
+                    if ((FbotLocation).distanceSquaredTo(closestEnemyLocation) <= FbotType.visionRadiusSquared) {
+                        numFriendlies++;
+                    }
+                    numAggressiveFriendlies++;
+                    break;
+                default:
+                    break;
             }
 
-            if (idToHealth.contains(Fbot.ID)) {
-                int prevHealth = idToHealth.getVal(Fbot.ID);
-                if (prevHealth > Fbot.health) {
-                    idToTurnInjured.addReplace(Fbot.ID, rc.getRoundNum());
-                    idToLocInjured.addReplace(Fbot.ID, Fbot.location);
-                }
-                idToHealth.addReplace(Fbot.ID, Fbot.health);
-            } else {
-                idToHealth.add(Fbot.ID, Fbot.health);
-            }
+            // NOTE: CAN CAUSE BYTECODE ISSUES ON INIT (on big maps)
+            // if (idToHealth.contains(Fbot.ID)) {
+            // int prevHealth = idToHealth.getVal(Fbot.ID);
+            // if (prevHealth > Fbot.health) {
+            // idToTurnInjured.addReplace(Fbot.ID, rc.getRoundNum());
+            // idToLocInjured.addReplace(Fbot.ID, Fbot.location);
+            // }
+            // idToHealth.addReplace(Fbot.ID, Fbot.health);
+            // } else {
+            // idToHealth.add(Fbot.ID, Fbot.health);
+            // }
         }
 
         int[] ids = idToTurnInjured.getKeys();
@@ -539,9 +548,16 @@ public class Launcher extends Robot {
                     extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
                 }
                 targetLoc = currLoc.add(newDir).add(extraDir);
-                hasCloud = rc.senseMapInfo(currLoc.add(newDir)).hasCloud();
                 // Debug.printString("best dir " + newDir);
-                isPassible = rc.sensePassability(targetLoc); // TODO: Bug: not in vision range
+                if (rc.canSenseLocation(targetLoc)) {
+                    isPassible = rc.sensePassability(targetLoc);
+                    hasCloud = rc.senseMapInfo(targetLoc).hasCloud();
+                } else {
+                    // If you can't sense the location, it's a cloud
+                    // that we got moved into by a current
+                    isPassible = true;
+                    hasCloud = true;
+                }
                 enemiesInAction = 0;
                 enemiesInVision = 0;
                 avgEnemyDist = 0;
@@ -638,9 +654,14 @@ public class Launcher extends Robot {
         if (combatSector != null && symLoc != null) {
             int combSecDist = Util.manhattan(currLoc, combatSector);
             int symLocDist = Util.manhattan(currLoc, symLoc);
-            if (combSecDist * Util.SYM_TO_COMB_DIST_RATIO < symLocDist ||
-                    (Util.manhattan(combatSector, home) <= Util.COMB_TO_HOME_DIST) &&
-                            combSecDist * Util.SYM_TO_COMB_DIST_RATIO2 < symLocDist) {
+            int controlStatus = Comms.readSectorControlStatus(combatSectorIdx);
+            boolean protect = combSecDist * Util.SYM_TO_COMB_DIST_RATIO < symLocDist;
+            boolean closeToHome = Util.manhattan(combatSector, home) <= Util.COMB_TO_HOME_DIST;
+            boolean protectAggressive = combSecDist * Util.SYM_TO_COMB_HOME_AGGRESSIVE_DIST_RATIO < symLocDist &&
+                    controlStatus >= Comms.ControlStatus.ENEMY_AGGRESIVE;
+            boolean protectPassive = (combSecDist * Util.SYM_TO_COMB_HOME_PASSIVE_DIST_RATIO < symLocDist &&
+                    controlStatus >= Comms.ControlStatus.ENEMY_PASSIVE);
+            if (protect || (closeToHome && (protectAggressive || protectPassive))) {
                 target = combatSector;
                 Debug.printString("PrefCombSec");
             } else {
@@ -727,15 +748,17 @@ public class Launcher extends Robot {
 
     public MapLocation chooseSymmetricLoc() throws GameActionException {
         MapLocation bestLoc = null;
+        MapLocation possibleLoc;
         int bestDist = Integer.MAX_VALUE;
-        for (int i = 0; i < enemyHQs.length; i++) {
-            MapLocation possibleLoc = enemyHQs[i];
-            int currDist = currLoc.distanceSquaredTo(possibleLoc);
-            int controlStatus = Comms.readSectorControlStatus(whichSector(possibleLoc));
+        int currDist;
+        for (int i = enemyHQs.length; --i >= 0;) {
+            possibleLoc = enemyHQs[i];
+            currDist = currLoc.distanceSquaredTo(possibleLoc);
+            // int controlStatus = Comms.readSectorControlStatus(whichSector(possibleLoc));
             // boolean notTraversed = controlStatus == Comms.ControlStatus.UNKNOWN ||
             // controlStatus == Comms.ControlStatus.EXPLORING;
 
-            if (!seenEnemyHQLocs.contains(possibleLoc) && currDist < bestDist) {
+            if (currDist < bestDist && !seenEnemyHQLocs.contains(possibleLoc)) {
                 bestLoc = possibleLoc;
                 bestDist = currDist;
             }
@@ -745,6 +768,8 @@ public class Launcher extends Robot {
 
     public void attackClouds() throws GameActionException {
         if (!rc.isActionReady())
+            return;
+        if (Clock.getBytecodesLeft() <= 500)
             return;
 
         currLoc = rc.getLocation();

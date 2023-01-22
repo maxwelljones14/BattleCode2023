@@ -127,8 +127,8 @@ public class Headquarters extends Robot {
         Comms.writeOurHqFlag(myHqNum, nextFlag);
         nextFlag = 0;
         doStateAction();
-        displayCombatSectors();
-        displayExploreSectors();
+        // displayCombatSectors();
+        // displayExploreSectors();
         // displayMineSectors();
     }
 

@@ -4,6 +4,11 @@ import MPWorking.fast.*;
 import battlecode.common.*;
 
 public class SectorInfo {
+    private int idx;
+    private MapLocation center;
+    private MapLocation[] corners;
+    private boolean[] visitedCorners;
+
     private boolean found;
     private FastLocSet adamWells;
     private boolean unsetAdamWells;
@@ -24,9 +29,27 @@ public class SectorInfo {
 
     private boolean controlStatusSet[];
 
+    private MapLocation manaWell;
+    private MapLocation adamWell;
+    private MapLocation elixirWell;
+
     private static final int MAX_SECTOR_AREA = 36;
 
-    public SectorInfo() {
+    public SectorInfo(int index) {
+        idx = index;
+        center = Robot.sectorCenters[idx];
+        corners = new MapLocation[4];
+        visitedCorners = new boolean[4];
+        int secWidth = Robot.sectorWidths[idx % (Robot.sectorWidthsLength)];
+        int secHeight = Robot.sectorHeights[idx / (Robot.sectorWidthsLength)];
+        int leftX = center.x - secWidth / 2;
+        int rightX = center.x - secWidth / 2 + secWidth - 1;
+        int topY = center.y - secHeight / 2;
+        int bottomY = center.y - secHeight / 2 + secHeight - 1;
+        corners[0] = new MapLocation(leftX, topY);
+        corners[1] = new MapLocation(rightX, topY);
+        corners[2] = new MapLocation(leftX, bottomY);
+        corners[3] = new MapLocation(rightX, bottomY);
         found = false;
         adamWells = new FastLocSet();
         manaWells = new FastLocSet();
@@ -43,6 +66,9 @@ public class SectorInfo {
         lastRoundEnemyAdded = 0;
         controlStatusSet = new boolean[Comms.ControlStatus.NUM_CONTROL_STATUS];
         lastRoundVisited = Integer.MIN_VALUE;
+        manaWell = null;
+        adamWell = null;
+        elixirWell = null;
     }
 
     public boolean hasReports() {
@@ -54,11 +80,20 @@ public class SectorInfo {
         if (type == ResourceType.ADAMANTIUM) {
             unsetAdamWells = false;
             adamWells.add(loc);
+            if (adamWell == null) {
+                adamWell = loc;
+            }
         } else if (type == ResourceType.MANA) {
             unsetManaWells = false;
             manaWells.add(loc);
+            if (manaWell == null) {
+                manaWell = loc;
+            }
         } else if (type == ResourceType.ELIXIR) {
             elxrWells.add(loc);
+            if (elixirWell == null) {
+                elixirWell = loc;
+            }
             if (manaWells.contains(loc)) {
                 manaWells.remove(loc);
                 if (manaWells.size == 0) {
@@ -247,5 +282,40 @@ public class SectorInfo {
         unsetFriendlyIslands = false;
         unsetEnemyIslands = false;
         controlStatusSet = new boolean[Comms.ControlStatus.NUM_CONTROL_STATUS];
+    }
+
+    public MapLocation getManaWell() {
+        if (manaWell == null)
+            return center;
+        return manaWell;
+    }
+
+    public MapLocation getElixirWell() {
+        if (elixirWell == null)
+            return center;
+        return elixirWell;
+    }
+
+    public MapLocation getAdamWell() {
+        if (adamWell == null)
+            return center;
+        return adamWell;
+    }
+
+    public MapLocation getNextCorner() {
+        for (int i = 0; i < 4; i++) {
+            if (!visitedCorners[i]) {
+                return corners[i];
+            }
+        }
+        return null;
+    }
+
+    public void visitCorner(MapLocation corner) {
+        for (int i = 0; i < 4; i++) {
+            if (corners[i].equals(corner)) {
+                visitedCorners[i] = true;
+            }
+        }
     }
 }

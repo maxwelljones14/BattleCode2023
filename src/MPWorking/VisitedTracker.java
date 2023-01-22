@@ -7,7 +7,7 @@ public class VisitedTracker {
     final static int INT_BITS = 32;
     final static int ARRAY_SIZE = 128;
 
-    static int[] visitedLocations = new int[ARRAY_SIZE];
+    static int[] visitedLocations;
 
     static void reset() {
         visitedLocations = new int[ARRAY_SIZE];

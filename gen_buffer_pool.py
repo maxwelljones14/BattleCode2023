@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 init = """    public static void initBufferPool() throws GameActionException {
         dirtyFlags = new boolean[64];
 

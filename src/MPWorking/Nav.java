@@ -83,11 +83,13 @@ public class Nav {
             dir = BFS10.bestDir(dest);
         }
 
-        if (dir == null) {
+        if (bcLeft >= bytecodeCushion && dir == null) {
             boolean avoidClouds = false;
             boolean avoidCurrents = rc.getLocation().isWithinDistanceSquared(dest, DIST_TO_AVOID_CURRENTS);
             boolean onlyExactCurrent = rc.getLocation().isWithinDistanceSquared(dest, DIST_FOR_EXACT_CURRENT);
             dir = getGreedyDirection(rc.getLocation().directionTo(dest), avoidClouds, avoidCurrents, onlyExactCurrent);
+        } else {
+            dir = Util.getFirstValidInOrderDirection(rc.getLocation().directionTo(dest));
         }
 
         return dir;
@@ -255,16 +257,16 @@ public class Nav {
         RobotInfo robot;
         boolean[] imp = new boolean[Util.DIRS_CENTER.length];
         boolean setImpassable = false;
+        int d;
         for (int i = Robot.enemyHQs.length; --i >= 0;) {
-            enemyHQ = Robot.enemyHQs[i];
-            if (!rc.canSenseLocation(enemyHQ))
+            if (!rc.canSenseLocation(Robot.enemyHQs[i]))
                 continue;
+            enemyHQ = Robot.enemyHQs[i];
             robot = rc.senseRobotAtLocation(enemyHQ);
             if (robot == null || robot.type != RobotType.HEADQUARTERS)
                 continue;
 
-            int d = currLoc.distanceSquaredTo(enemyHQ);
-            d = Math.min(d, RobotType.HEADQUARTERS.actionRadiusSquared);
+            d = Math.min(currLoc.distanceSquaredTo(enemyHQ), RobotType.HEADQUARTERS.actionRadiusSquared);
             for (int j = Util.DIRS_CENTER.length; --j >= 0;) {
                 MapLocation newLoc = currLoc.add(Util.DIRS_CENTER[j]);
                 if (newLoc.distanceSquaredTo(enemyHQ) <= d) {
@@ -297,7 +299,8 @@ public class Nav {
                 return;
 
             VisitedTracker.add(rc.getLocation());
-            dir = getBestDir(target, BYTECODE_REMAINING);
+            // Don't do BFS twice in a turn.
+            dir = getBestDir(target, 9999);
             if (dir != null && rc.canMove(dir)) {
                 if (!VisitedTracker.check(rc.adjacentLocation(dir))) {
                     rc.move(dir);

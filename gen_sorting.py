@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 # Based on the sorting networks given in
 # https://bertdobbelaere.github.io/sorting_networks_extended.html#N64L521D22
 # Costs about ~9 BC per comparison/swap + ~16 BC per element

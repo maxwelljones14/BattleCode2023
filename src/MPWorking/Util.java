@@ -22,7 +22,8 @@ public class Util {
 
     static final double MIN_COOLDOWN_MULT_DIFF = 0.1;
     static final double SYM_TO_COMB_DIST_RATIO = 2;
-    static final double SYM_TO_COMB_DIST_RATIO2 = 0.5;
+    static final double SYM_TO_COMB_HOME_AGGRESSIVE_DIST_RATIO = 0.5;
+    static final double SYM_TO_COMB_HOME_PASSIVE_DIST_RATIO = 1.5;
     static final double COMB_TO_HOME_DIST = 10;
 
     /** Array containing all the possible movement directions. */
@@ -170,7 +171,7 @@ public class Util {
                 locs = new MapLocation[] {
                         currLoc.add(Direction.NORTH)
                 };
-                Debug.println("ERROR: Invalid direction");
+                // Debug.println("ERROR: Invalid direction");
                 break;
         }
 
@@ -222,6 +223,51 @@ public class Util {
             }
         }
         return count;
+    }
+
+    // Find the best loc based on
+    // 1. If there are only 2 spots left, pick the well loc
+    // 2. Cooldown multiplier
+    // 3. Distance to currLoc
+    static MapLocation getBestCollectLoc(MapLocation well) throws GameActionException {
+        int numOpenSpots = getNumOpenCollectSpots(well);
+        if (numOpenSpots == 2) {
+            return well;
+        }
+
+        MapLocation currLoc = rc.getLocation();
+        MapLocation bestCollect = null;
+        double bestMultiplier = Double.MAX_VALUE;
+        double bestDist = Double.MAX_VALUE;
+        MapLocation loc;
+        MapInfo info;
+        double multiplier;
+        double dist;
+        RobotInfo robot;
+        for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+            loc = well.add(Direction.DIRECTION_ORDER[i]);
+            if (!rc.canSenseLocation(loc) || !rc.sensePassability(loc))
+                continue;
+            robot = rc.senseRobotAtLocation(loc);
+            if (robot != null && robot.ID != rc.getID())
+                continue;
+            info = rc.senseMapInfo(loc);
+            multiplier = info.getCooldownMultiplier(rc.getTeam());
+            dist = loc.distanceSquaredTo(currLoc);
+
+            // Disincentivize current squares.
+            if (info.getCurrentDirection() != Direction.CENTER) {
+                multiplier += 10;
+            }
+
+            if (multiplier < bestMultiplier || (multiplier == bestMultiplier && dist < bestDist)) {
+                bestCollect = loc;
+                bestMultiplier = multiplier;
+                bestDist = dist;
+            }
+        }
+
+        return bestCollect == null ? well : bestCollect;
     }
 
     static MapLocation findInitLocation(MapLocation currLoc, Direction dir) throws GameActionException {
@@ -306,21 +352,77 @@ public class Util {
     static boolean isDirAdj(Direction dir, Direction dir2) {
         switch (dir) {
             case NORTH:
-                return dir2 == Direction.NORTHEAST || dir2 == Direction.NORTHWEST || dir2 == Direction.NORTH;
+                switch (dir2) {
+                    case NORTH:
+                    case NORTHEAST:
+                    case NORTHWEST:
+                        return true;
+                    default:
+                        return false;
+                }
             case NORTHEAST:
-                return dir2 == Direction.NORTH || dir2 == Direction.EAST || dir2 == Direction.NORTHEAST;
+                switch (dir2) {
+                    case NORTH:
+                    case NORTHEAST:
+                    case EAST:
+                        return true;
+                    default:
+                        return false;
+                }
             case EAST:
-                return dir2 == Direction.NORTHEAST || dir2 == Direction.SOUTHEAST || dir2 == Direction.EAST;
+                switch (dir2) {
+                    case NORTHEAST:
+                    case EAST:
+                    case SOUTHEAST:
+                        return true;
+                    default:
+                        return false;
+                }
             case SOUTHEAST:
-                return dir2 == Direction.EAST || dir2 == Direction.SOUTH || dir2 == Direction.SOUTHEAST;
+                switch (dir2) {
+                    case EAST:
+                    case SOUTHEAST:
+                    case SOUTH:
+                        return true;
+                    default:
+                        return false;
+                }
             case SOUTH:
-                return dir2 == Direction.SOUTHEAST || dir2 == Direction.SOUTHWEST || dir2 == Direction.SOUTH;
+                switch (dir2) {
+                    case SOUTHEAST:
+                    case SOUTH:
+                    case SOUTHWEST:
+                        return true;
+                    default:
+                        return false;
+                }
             case SOUTHWEST:
-                return dir2 == Direction.SOUTH || dir2 == Direction.WEST || dir2 == Direction.SOUTHWEST;
+                switch (dir2) {
+                    case SOUTH:
+                    case SOUTHWEST:
+                    case WEST:
+                        return true;
+                    default:
+                        return false;
+                }
             case WEST:
-                return dir2 == Direction.NORTHWEST || dir2 == Direction.SOUTHWEST || dir2 == Direction.WEST;
+                switch (dir2) {
+                    case SOUTHWEST:
+                    case WEST:
+                    case NORTHWEST:
+                        return true;
+                    default:
+                        return false;
+                }
             case NORTHWEST:
-                return dir2 == Direction.WEST || dir2 == Direction.NORTH || dir2 == Direction.NORTHWEST;
+                switch (dir2) {
+                    case WEST:
+                    case NORTHWEST:
+                    case NORTH:
+                        return true;
+                    default:
+                        return false;
+                }
             default:
                 return false;
         }

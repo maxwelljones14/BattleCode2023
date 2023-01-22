@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 # paste the run from the queue tab into red_results.txt and blue_results.txt
 # start from the actual first match not the header "MPWorking vs Whoever"
 # run this script and look at results.csv

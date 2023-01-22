@@ -19,16 +19,17 @@ public class FastIntIntMap {
     }
 
     public void add(int key, int val) {
-        String keyTemp = keyToStr(key);
+        // String keyTemp = keyToStr(key);
+        String keyTemp = "^" + (char) (key + 0x100);
         if (keyVals.indexOf(keyTemp) == -1) {
-            keyVals.append(keyTemp);
-            keyVals.append((char) (val + 0x100));
+            keyVals.append(keyTemp + (char) (val + 0x100));
             size++;
         }
     }
 
     public void remove(int key) {
-        String keyTemp = keyToStr(key);
+        // String keyTemp = keyToStr(key);
+        String keyTemp = "^" + (char) (key + 0x100);
         int index;
         if ((index = keyVals.indexOf(keyTemp)) >= 0) {
             keyVals.delete(index, index + 3);
@@ -37,12 +38,12 @@ public class FastIntIntMap {
     }
 
     public void addReplace(int key, int val) {
-        String keyTemp = keyToStr(key);
+        // String keyTemp = keyToStr(key);
+        String keyTemp = "^" + (char) (key + 0x100);
         int index = keyVals.indexOf(keyTemp);
         switch (index) {
             case -1:
-                keyVals.append(keyTemp);
-                keyVals.append((char) (val + 0x100));
+                keyVals.append(keyTemp + (char) (val + 0x100));
                 size++;
                 break;
             default:
@@ -52,7 +53,8 @@ public class FastIntIntMap {
     }
 
     public boolean contains(int key) {
-        return keyVals.indexOf(keyToStr(key)) >= 0;
+        // return keyVals.indexOf(keyToStr(key)) >= 0;
+        return keyVals.indexOf("^" + (char) (key + 0x100)) >= 0;
     }
 
     public void clear() {
@@ -61,7 +63,8 @@ public class FastIntIntMap {
     }
 
     public int getVal(int key) {
-        String keyTemp = keyToStr(key);
+        String keyTemp = "^" + (char) (key + 0x100);
+        // String keyTemp = keyToStr(key);
         int idx = keyVals.indexOf(keyTemp);
         if (idx != -1) {
             return (int) keyVals.charAt(idx + 2) - 0x100;

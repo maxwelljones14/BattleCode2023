@@ -13,7 +13,7 @@ public class SectorDatabase {
 
     public SectorInfo at(int idx) {
         if (databaseEntries[idx] == null) {
-            databaseEntries[idx] = new SectorInfo();
+            databaseEntries[idx] = new SectorInfo(idx);
         }
         return databaseEntries[idx];
     }

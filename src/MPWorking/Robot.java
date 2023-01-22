@@ -13,7 +13,7 @@ public class Robot {
     static int roundNum;
     static RobotType robotType;
 
-    int homeIdx;
+    static int homeIdx;
     static MapLocation home;
     static MapLocation[] headquarterLocations;
     static RobotInfo[] EnemySensable;
@@ -39,26 +39,26 @@ public class Robot {
     static SectorDatabase sectorDatabase;
 
     // Sectors are 6x6, 5x6, 6x5, or 5x5
-    int numSectors;
-    int[] sectorHeights;
-    int[] sectorWidths;
-    int sectorWidthsLength;
-    float xStep;
-    float yStep;
-    int[] whichXLoc;
-    int[] whichYLoc;
-    MapLocation[] sectorCenters;
-    int[] sectorResources;
-    int[] sectorControls;
-    int[] markedSectorsBuffer;
-    int[] sectorPermutation;
-    int sectorToReport;
+    static int numSectors;
+    static int[] sectorHeights;
+    static int[] sectorWidths;
+    static int sectorWidthsLength;
+    static float xStep;
+    static float yStep;
+    static int[] whichXLoc;
+    static int[] whichYLoc;
+    static MapLocation[] sectorCenters;
+    static int[] sectorResources;
+    static int[] sectorControls;
+    static int[] markedSectorsBuffer;
+    static int[] sectorPermutation;
+    static int sectorToReport;
 
-    boolean exploreMode;
+    static boolean exploreMode;
 
-    final int MIN_BC_TO_FLUSH_SECTOR_DB = 1500;
-    final int BC_TO_WRITE_SECTOR = 150;
-    final int MIN_BC_TO_FLUSH = 1200;
+    static final int MIN_BC_TO_FLUSH_SECTOR_DB = 1500;
+    static final int BC_TO_WRITE_SECTOR = 150;
+    static final int MIN_BC_TO_FLUSH = 1200;
 
     public Robot(RobotController r) throws GameActionException {
         rc = r;
@@ -106,10 +106,10 @@ public class Robot {
         // Precompute math for whichSector
         whichXLoc = new int[Util.MAP_WIDTH];
         whichYLoc = new int[Util.MAP_HEIGHT];
-        for (int i = 0; i < Util.MAP_WIDTH; i++) {
+        for (int i = Util.MAP_WIDTH; --i >= 0;) {
             whichXLoc[i] = (int) (i / xStep);
         }
-        for (int i = 0; i < Util.MAP_HEIGHT; i++) {
+        for (int i = Util.MAP_HEIGHT; --i >= 0;) {
             whichYLoc[i] = (int) (i / yStep) * sectorWidths.length;
         }
 
@@ -451,16 +451,17 @@ public class Robot {
      */
     public void precomputeSectorCenters() {
         sectorCenters = new MapLocation[numSectors];
-        int yStart = 0;
-        for (int j = 0; j < sectorHeights.length; j++) {
-            int xStart = 0;
-            for (int i = 0; i < sectorWidths.length; i++) {
-                int xCenter = xStart + (sectorWidths[i] / 2);
-                int yCenter = yStart + (sectorHeights[j] / 2);
-                sectorCenters[i + j * sectorWidths.length] = new MapLocation(xCenter, yCenter);
-                xStart += sectorWidths[i];
+        int yCenter = 0;
+        int i;
+        int idx = 0;
+        int[] xCenters = computeSectorCenters(Util.MAP_WIDTH);
+        int[] yCenters = computeSectorCenters(Util.MAP_HEIGHT);
+        for (int j = sectorHeights.length; --j >= 0;) {
+            idx = j * sectorWidths.length + sectorWidths.length - 1;
+            yCenter = yCenters[j];
+            for (i = sectorWidths.length; --i >= 0; idx--) {
+                sectorCenters[idx] = new MapLocation(xCenters[i], yCenter);
             }
-            yStart += sectorHeights[j];
         }
     }
 
@@ -777,7 +778,7 @@ public class Robot {
             case 31:
                 return new int[] { 5, 5, 5, 5, 5, 6 };
             case 32:
-                return new int[] { 5, 5, 6, 5, 5, 5 };
+                return new int[] { 5, 5, 6, 5, 5, 6 };
             case 33:
                 return new int[] { 5, 6, 5, 6, 5, 6 };
             case 34:
@@ -791,11 +792,11 @@ public class Robot {
             case 38:
                 return new int[] { 5, 5, 6, 5, 6, 5, 6 };
             case 39:
-                return new int[] { 5, 6, 5, 6, 5, 6, 5 };
+                return new int[] { 5, 6, 5, 6, 5, 6, 6 };
             case 40:
                 return new int[] { 5, 6, 6, 5, 6, 6, 6 };
             case 41:
-                return new int[] { 5, 6, 6, 6, 6, 6, 5 };
+                return new int[] { 5, 6, 6, 6, 6, 6, 6 };
             case 42:
                 return new int[] { 6, 6, 6, 6, 6, 6, 6 };
             case 43:
@@ -811,11 +812,11 @@ public class Robot {
             case 48:
                 return new int[] { 6, 6, 6, 6, 6, 6, 6, 6 };
             case 49:
-                return new int[] { 5, 5, 6, 5, 6, 5, 6, 5, 5 };
+                return new int[] { 5, 5, 6, 5, 6, 5, 6, 5, 6 };
             case 50:
                 return new int[] { 5, 6, 5, 6, 5, 6, 5, 6, 6 };
             case 51:
-                return new int[] { 5, 6, 6, 5, 6, 6, 5, 6, 5 };
+                return new int[] { 5, 6, 6, 5, 6, 6, 5, 6, 6 };
             case 52:
                 return new int[] { 5, 6, 6, 6, 5, 6, 6, 6, 6 };
             case 53:
@@ -829,11 +830,100 @@ public class Robot {
             case 57:
                 return new int[] { 5, 6, 6, 5, 6, 6, 5, 6, 6, 6 };
             case 58:
-                return new int[] { 5, 6, 6, 6, 6, 5, 6, 6, 6, 5 };
+                return new int[] { 5, 6, 6, 6, 6, 5, 6, 6, 6, 6 };
             case 59:
-                return new int[] { 5, 6, 6, 6, 6, 6, 6, 6, 6, 5 };
+                return new int[] { 5, 6, 6, 6, 6, 6, 6, 6, 6, 6 };
             case 60:
                 return new int[] { 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 };
+            default:
+                return new int[] {};
+        }
+    }
+
+    public int[] computeSectorCenters(int dim) {
+        switch (dim) {
+            case 20:
+                return new int[] { 2, 7, 12, 17 };
+            case 21:
+                return new int[] { 2, 7, 12, 18 };
+            case 22:
+                return new int[] { 2, 8, 13, 19 };
+            case 23:
+                return new int[] { 2, 8, 14, 20 };
+            case 24:
+                return new int[] { 3, 9, 15, 21 };
+            case 25:
+                return new int[] { 2, 7, 12, 17, 22 };
+            case 26:
+                return new int[] { 2, 7, 12, 17, 23 };
+            case 27:
+                return new int[] { 2, 7, 13, 18, 24 };
+            case 28:
+                return new int[] { 2, 8, 13, 19, 25 };
+            case 29:
+                return new int[] { 2, 8, 14, 20, 26 };
+            case 30:
+                return new int[] { 3, 9, 15, 21, 27 };
+            case 31:
+                return new int[] { 2, 7, 12, 17, 22, 28 };
+            case 32:
+                return new int[] { 2, 7, 13, 18, 23, 29 };
+            case 33:
+                return new int[] { 2, 8, 13, 19, 24, 30 };
+            case 34:
+                return new int[] { 2, 8, 14, 19, 25, 31 };
+            case 35:
+                return new int[] { 2, 8, 14, 20, 26, 32 };
+            case 36:
+                return new int[] { 3, 9, 15, 21, 27, 33 };
+            case 37:
+                return new int[] { 2, 7, 12, 18, 23, 28, 34 };
+            case 38:
+                return new int[] { 2, 7, 13, 18, 24, 29, 35 };
+            case 39:
+                return new int[] { 2, 8, 13, 19, 24, 30, 36 };
+            case 40:
+                return new int[] { 2, 8, 14, 19, 25, 31, 37 };
+            case 41:
+                return new int[] { 2, 8, 14, 19, 26, 32, 38 };
+            case 42:
+                return new int[] { 3, 9, 15, 21, 27, 33, 39 };
+            case 43:
+                return new int[] { 2, 7, 13, 18, 23, 29, 34, 40 };
+            case 44:
+                return new int[] { 2, 8, 13, 19, 24, 30, 35, 41 };
+            case 45:
+                return new int[] { 2, 8, 13, 19, 25, 30, 36, 42 };
+            case 46:
+                return new int[] { 2, 8, 14, 20, 25, 31, 37, 43 };
+            case 47:
+                return new int[] { 2, 8, 14, 20, 26, 32, 38, 44 };
+            case 48:
+                return new int[] { 3, 9, 15, 21, 27, 33, 39, 45 };
+            case 49:
+                return new int[] { 2, 7, 13, 18, 24, 29, 35, 40, 46 };
+            case 50:
+                return new int[] { 2, 8, 13, 19, 24, 30, 35, 41, 47 };
+            case 51:
+                return new int[] { 2, 8, 14, 19, 25, 31, 35, 42, 48 };
+            case 52:
+                return new int[] { 2, 8, 14, 20, 25, 31, 37, 42, 49 };
+            case 53:
+                return new int[] { 2, 8, 14, 20, 26, 32, 38, 43, 50 };
+            case 54:
+                return new int[] { 3, 9, 15, 21, 27, 33, 39, 45, 51 };
+            case 55:
+                return new int[] { 2, 8, 13, 19, 24, 30, 35, 41, 46, 52 };
+            case 56:
+                return new int[] { 2, 8, 13, 19, 25, 30, 36, 41, 47, 53 };
+            case 57:
+                return new int[] { 2, 8, 14, 19, 25, 31, 36, 42, 48, 54 };
+            case 58:
+                return new int[] { 2, 8, 14, 20, 26, 31, 37, 43, 49, 55 };
+            case 59:
+                return new int[] { 2, 8, 14, 20, 26, 32, 38, 44, 50, 56 };
+            case 60:
+                return new int[] { 3, 9, 15, 21, 27, 33, 39, 45, 51, 57 };
             default:
                 return new int[] {};
         }
@@ -856,7 +946,7 @@ public class Robot {
         // int bytecodeUsed = Clock.getBytecodeNum();
 
         // Not initialized until turn 3
-        if (roundNum == 2) {
+        if (turnCount <= 2) {
             return;
         }
 
