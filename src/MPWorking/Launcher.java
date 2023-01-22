@@ -442,6 +442,11 @@ public class Launcher extends Robot {
                     .distanceSquaredTo(closestEnemyLocation) > RobotType.HEADQUARTERS.actionRadiusSquared) {
                 Debug.printString("closing in");
                 Nav.move(closestEnemyLocation);
+                tryAttackBestEnemy();
+            } else {
+                Debug.printString("Rotating");
+                moveSafely(dest, RobotType.HEADQUARTERS.actionRadiusSquared);
+                tryAttackBestEnemy();
             }
         } else if (closestEnemyType == RobotType.CARRIER
                 || closestEnemyType == RobotType.AMPLIFIER || closestEnemyType == RobotType.BOOSTER) {
@@ -656,12 +661,13 @@ public class Launcher extends Robot {
             int symLocDist = Util.manhattan(currLoc, symLoc);
             int controlStatus = Comms.readSectorControlStatus(combatSectorIdx);
             boolean protect = combSecDist * Util.SYM_TO_COMB_DIST_RATIO < symLocDist;
-            boolean closeToHome = Util.manhattan(combatSector, home) <= Util.COMB_TO_HOME_DIST;
+            boolean closeToHQ = Util.manhattan(combatSector,
+                    getClosestFriendlyHQ(combatSector)) <= Util.COMB_TO_HOME_DIST;
             boolean protectAggressive = combSecDist * Util.SYM_TO_COMB_HOME_AGGRESSIVE_DIST_RATIO < symLocDist &&
                     controlStatus >= Comms.ControlStatus.ENEMY_AGGRESIVE;
             boolean protectPassive = (combSecDist * Util.SYM_TO_COMB_HOME_PASSIVE_DIST_RATIO < symLocDist &&
                     controlStatus >= Comms.ControlStatus.ENEMY_PASSIVE);
-            if (protect || (closeToHome && (protectAggressive || protectPassive))) {
+            if (protect || (closeToHQ && (protectAggressive || protectPassive))) {
                 target = combatSector;
                 Debug.printString("PrefCombSec");
             } else {

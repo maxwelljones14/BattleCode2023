@@ -1548,4 +1548,22 @@ public class Robot {
         Nav.move(loc, greedy);
         return true;
     }
+
+    public MapLocation getClosestFriendlyHQ(MapLocation loc) throws GameActionException {
+        MapLocation bestLoc = null;
+        MapLocation hqLoc;
+        int bestDist = Integer.MAX_VALUE;
+        int dist;
+        for (int i = 0; i < headquarterLocations.length; i++) {
+            hqLoc = headquarterLocations[i];
+            if (!rc.onTheMap(hqLoc))
+                continue;
+            dist = loc.distanceSquaredTo(hqLoc);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestLoc = hqLoc;
+            }
+        }
+        return bestLoc;
+    }
 }
