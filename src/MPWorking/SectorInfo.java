@@ -318,4 +318,8 @@ public class SectorInfo {
             }
         }
     }
+
+    public void resetCorners() {
+        visitedCorners = new boolean[4];
+    }
 }

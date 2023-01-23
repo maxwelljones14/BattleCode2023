@@ -323,6 +323,11 @@ public class Launcher extends Robot {
     }
 
     public void moveAndAttack(Direction dir) throws GameActionException {
+        // Sync launcher movement
+        if (rc.getRoundNum() % 3 == 0) {
+            return;
+        }
+
         if (!rc.canMove(dir)) {
             tryAttackBestEnemy();
             return;
@@ -800,6 +805,17 @@ public class Launcher extends Robot {
                 bestDist = currDist;
             }
         }
+
+        // Consider the center of the map as a symmetric location
+        if (isSemiSmallMap()) {
+            possibleLoc = new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2);
+            currDist = currLoc.distanceSquaredTo(possibleLoc);
+            if (currDist < bestDist && !seenEnemyHQLocs.contains(possibleLoc)) {
+                bestLoc = possibleLoc;
+                bestDist = currDist;
+            }
+        }
+
         return bestLoc;
     }
 

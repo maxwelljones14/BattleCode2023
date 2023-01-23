@@ -256,6 +256,10 @@ public class Nav {
             return;
         if (rc.getLocation().distanceSquaredTo(target) == 0)
             return;
+        // Sync launcher movement
+        if (rc.getType() == RobotType.LAUNCHER && rc.getRoundNum() % 3 == 0) {
+            return;
+        }
 
         MapLocation currLoc = rc.getLocation();
         // Set squares within action radius of an enemy HQ to be impassable

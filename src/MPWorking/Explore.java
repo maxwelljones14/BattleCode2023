@@ -19,6 +19,9 @@ public class Explore {
     static final double EXPLORE_DIST = 10;
     static MapLocation explore3Target = null;
 
+    static int turnSetExploreTarget = -1;
+    static int EXPLORE_TARGET_TIMEOUT = 100;
+
     public static void init(RobotController r) {
         rc = r;
         visionRadius = rc.getType().visionRadiusSquared;
@@ -191,7 +194,8 @@ public class Explore {
     }
 
     static void getNewTarget(int tries) {
-        if (exploreTarget != null && Util.onTheMap(exploreTarget) && !MapTracker.hasVisited(exploreTarget))
+        if (exploreTarget != null && Util.onTheMap(exploreTarget) && !MapTracker.hasVisited(exploreTarget)
+                && turnSetExploreTarget + EXPLORE_TARGET_TIMEOUT > rc.getRoundNum())
             return;
         MapLocation currLoc = rc.getLocation();
         for (int i = tries; i-- > 0;) {
@@ -199,8 +203,13 @@ public class Explore {
             int dy = 4 * (int) (Util.rng.nextInt(16) - 8);
             exploreTarget = new MapLocation(currLoc.x + dx, currLoc.y + dy);
             exploreTarget = Util.clipToWithinMap(exploreTarget);
-            if (!MapTracker.hasVisited(exploreTarget))
+            if (!MapTracker.hasVisited(exploreTarget)) {
+                turnSetExploreTarget = rc.getRoundNum();
+                // Estimate the amount of time you expect to take to get to the target
+                EXPLORE_TARGET_TIMEOUT = (int) (2 * Util.distance(currLoc, exploreTarget)
+                        * rc.getType().movementCooldown / GameConstants.COOLDOWNS_PER_TURN);
                 return;
+            }
         }
     }
 }

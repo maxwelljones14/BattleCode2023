@@ -156,7 +156,8 @@ public class Carrier extends Robot {
     public boolean shouldReport() {
         return runAwayTarget != null &&
                 rc.getRoundNum() - lastTurnReported > REPORTING_COOLDOWN &&
-                runAwayTarget.isWithinDistanceSquared(closestHQ, RobotType.HEADQUARTERS.visionRadiusSquared);
+                !closestEnemy.getLocation().isWithinDistanceSquared(closestHQ,
+                        RobotType.HEADQUARTERS.visionRadiusSquared);
     }
 
     public void enterMineState() {
@@ -292,6 +293,7 @@ public class Carrier extends Robot {
                                         ? sectorDatabase.at(mineSectorIndex).getAdamWell()
                                         : sectorDatabase.at(mineSectorIndex).getManaWell();
                                 Debug.println("ERROR: Couldn't find well in sector");
+                                sectorDatabase.at(mineSectorIndex).resetCorners();
                             } else {
                                 shouldMarkCorner = true;
                             }
@@ -401,7 +403,7 @@ public class Carrier extends Robot {
     public boolean collect(WellInfo well) throws GameActionException {
         int amount = Math.min(GameConstants.CARRIER_CAPACITY - rc.getWeight(), well.getRate());
         if (rc.canCollectResource(well.getMapLocation(), amount)) {
-            Debug.printString("Collecting");
+            Debug.printString("C");
             rc.collectResource(well.getMapLocation(), amount);
             collect(well);
             return true;

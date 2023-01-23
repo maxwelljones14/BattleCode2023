@@ -56,6 +56,8 @@ public class Robot {
 
     static boolean exploreMode;
 
+    static FastLocSet emptySymLocs;
+
     static final int MIN_BC_TO_FLUSH_SECTOR_DB = 1500;
     static final int BC_TO_WRITE_SECTOR = 150;
     static final int MIN_BC_TO_FLUSH = 1200;
@@ -114,6 +116,8 @@ public class Robot {
         }
 
         exploreMode = false;
+
+        emptySymLocs = new FastLocSet();
     }
 
     public void loadHQLocations() throws GameActionException {
@@ -153,10 +157,14 @@ public class Robot {
         Debug.setIndicatorDot(Debug.INDICATORS, home, 0, 255, 0);
         setSectorStates();
 
-        // Must recalculate
-        int currSymmetryAll = Comms.readSymmetryAll();
-        if (currSymmetryAll != symmetryAll)
-            updateSymmetryLocs();
+        if (robotType != RobotType.HEADQUARTERS) {
+            // Must recalculate
+            int currSymmetryAll = Comms.readSymmetryAll();
+            if (currSymmetryAll != symmetryAll) {
+                updateSymmetryLocs();
+            }
+            invalidateSymmetries();
+        }
     }
 
     public void endTurn() throws GameActionException {
@@ -1414,6 +1422,7 @@ public class Robot {
         System.arraycopy(symLocs, 0, enemyHQs, 0, numSymLocs);
     }
 
+    // Gets the closest enemy hq guess based on all currently valid symmetries
     public MapLocation getClosestEnemyHQGuess() throws GameActionException {
         MapLocation bestLoc = null;
         int bestDist = Integer.MAX_VALUE;
@@ -1430,32 +1439,75 @@ public class Robot {
         return bestLoc;
     }
 
+    // Gets the closest hq guess based on a specific symmetry
+    public MapLocation getClosestEnemyHQ(int symmetry) throws GameActionException {
+        MapLocation bestLoc = null;
+        int bestDist = Integer.MAX_VALUE;
+        MapLocation loc;
+        int dist;
+        for (int i = headquarterLocations.length; --i >= 0;) {
+            loc = headquarterLocations[i];
+            if (loc == null)
+                continue;
+            loc = Util.getValidSymmetryLocs(loc, symmetry)[0];
+            dist = currLoc.distanceSquaredTo(loc);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestLoc = loc;
+            }
+        }
+        return bestLoc;
+    }
+
     public void invalidateSymmetries() throws GameActionException {
         // Loop through the currently valid enemy HQ locs and invalidate them if
         // possible
-        for (MapLocation possibleHQ : enemyHQs) {
+        MapLocation possibleHQ;
+        for (int i = enemyHQs.length; --i >= 0;) {
+            possibleHQ = enemyHQs[i];
             if (rc.canSenseLocation(possibleHQ)) {
                 RobotInfo robot = rc.senseRobotAtLocation(possibleHQ);
                 if (robot != null && robot.getType() == RobotType.HEADQUARTERS && robot.getTeam() != rc.getTeam())
                     continue;
-                int symmetry = getSymmetry(possibleHQ);
-                switch (symmetry) {
-                    case Util.SymmetryType.VERTICAL:
-                        Debug.println("Invalidating vertical: " + possibleHQ);
-                        Comms.writeSymmetryVertical(0);
-                        break;
-                    case Util.SymmetryType.HORIZONTAL:
-                        Debug.println("Invalidating horizontal: " + possibleHQ);
-                        Comms.writeSymmetryHorizontal(0);
-                        break;
-                    case Util.SymmetryType.ROTATIONAL:
-                        Debug.println("Invalidating rotational: " + possibleHQ);
-                        Comms.writeSymmetryRotational(0);
-                        break;
-                    default:
-                        break;
-                }
+                tryRemoveSymmetry(possibleHQ);
             }
+        }
+
+        MapLocation[] emptyLocs = emptySymLocs.getKeys();
+        for (int i = emptyLocs.length; --i >= 0;) {
+            if (tryRemoveSymmetry(emptyLocs[i])) {
+                emptySymLocs.remove(emptyLocs[i]);
+            }
+        }
+    }
+
+    public boolean tryRemoveSymmetry(MapLocation loc) throws GameActionException {
+        if (rc.canWriteSharedArray(0, 0)) {
+            removeSymmetry(loc);
+            return true;
+        } else {
+            emptySymLocs.add(loc);
+            return false;
+        }
+    }
+
+    public void removeSymmetry(MapLocation loc) throws GameActionException {
+        int symmetry = getSymmetry(loc);
+        switch (symmetry) {
+            case Util.SymmetryType.VERTICAL:
+                Debug.println("Invalidating vertical: " + loc);
+                Comms.writeSymmetryVertical(0);
+                break;
+            case Util.SymmetryType.HORIZONTAL:
+                Debug.println("Invalidating horizontal: " + loc);
+                Comms.writeSymmetryHorizontal(0);
+                break;
+            case Util.SymmetryType.ROTATIONAL:
+                Debug.println("Invalidating rotational: " + loc);
+                Comms.writeSymmetryRotational(0);
+                break;
+            default:
+                break;
         }
     }
 

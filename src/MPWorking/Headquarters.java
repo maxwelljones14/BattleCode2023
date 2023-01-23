@@ -58,6 +58,8 @@ public class Headquarters extends Robot {
 
     static FastIntIntMap combatSectorToTurnWritten;
 
+    static int symmetryGuess;
+
     public Headquarters(RobotController r) throws GameActionException {
         super(r);
         checkIfHQNear();
@@ -85,13 +87,20 @@ public class Headquarters extends Robot {
         manaCarrierTracker = new FastUnitTracker(rc, ROUNDS_TO_STALE_UNIT);
 
         combatSectorToTurnWritten = new FastIntIntMap();
+        symmetryGuess = Util.SymmetryType.ROTATIONAL;
+    }
+
+    public void localResign() {
+        // if (rc.getRoundNum() == 20) {
+        // rc.resign();
+        // }
+        if (rc.getRoundNum() >= 400 && rc.getRobotCount() < 4)
+            rc.resign();
     }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        // if (rc.getRoundNum() == 20) {
-        // rc.resign();
-        // }
+        localResign();
         adamCarrierTracker.update();
         manaCarrierTracker.update();
         clearOldEnemyInfo();
@@ -100,23 +109,28 @@ public class Headquarters extends Robot {
             case 1:
                 computeHqNum();
                 findClosestVisibleWells();
+                if (numHqs == 1) {
+                    loadHQLocations();
+                }
                 break;
             case 2:
-                loadHQLocations();
-                updateSymmetryLocs();
-                invalidateSymmetries();
-                closestEnemyHQGuess = getClosestEnemyHQGuess();
-                closestEnemyHQGuessDir = getBestDirTo(closestEnemyHQGuess);
+                if (numHqs == 1) {
+                    setInitialExploreSectors();
+                } else {
+                    loadHQLocations();
+                }
                 break;
             case 3:
-                // We do this again on turn 3 so that all HQs
-                // have a chance to invalidate symmetries.
-                closestEnemyHQGuess = getClosestEnemyHQGuess();
-                closestEnemyHQGuessDir = getBestDirTo(closestEnemyHQGuess);
-                setInitialExploreSectors();
+                if (numHqs != 1) {
+                    setInitialExploreSectors();
+                }
                 break;
             default:
                 break;
+        }
+
+        if (numHqs == 1 || rc.getRoundNum() >= 2) {
+            loadSymmetry();
         }
 
         setPrioritySectors();
@@ -130,6 +144,49 @@ public class Headquarters extends Robot {
         // displayExploreSectors();
         // displayMineSectors();
         // displayCombatSectors();
+    }
+
+    // The symmetry guess is the one that gives the furthest average distance to HQs
+    public void guessSymmetry() throws GameActionException {
+        int[] symmetries = { Util.SymmetryType.HORIZONTAL, Util.SymmetryType.VERTICAL, Util.SymmetryType.ROTATIONAL };
+        int symmetry;
+        int bestSymmetry = Util.SymmetryType.ROTATIONAL;
+        int maxDist = 0;
+        int dist = 0;
+        for (int i = symmetries.length; --i >= 0;) {
+            if ((symmetryAll & symmetries[i]) == 0)
+                continue;
+            symmetry = symmetries[i];
+            dist = 0;
+            for (int j = 0; j < headquarterLocations.length; j++) {
+                dist += home.distanceSquaredTo(Util.getValidSymmetryLocs(headquarterLocations[j], symmetry)[0]);
+            }
+            dist /= headquarterLocations.length;
+
+            if (dist > maxDist) {
+                maxDist = dist;
+                bestSymmetry = symmetry;
+            }
+        }
+
+        // Debug.println("Symmetry guess: " + bestSymmetry + " with dist " + maxDist);
+        symmetryGuess = bestSymmetry;
+    }
+
+    public void loadSymmetry() throws GameActionException {
+        updateSymmetryLocs();
+        invalidateSymmetries();
+        updateSymmetryLocs();
+        symmetryAll = Comms.readSymmetryAll();
+        guessSymmetry();
+        guessClosestEnemyHQ();
+    }
+
+    public void guessClosestEnemyHQ() throws GameActionException {
+        closestEnemyHQGuess = getClosestEnemyHQGuess();
+        // closestEnemyHQGuess = getClosestEnemyHQ(symmetryGuess);
+        closestEnemyHQGuessDir = getBestDirTo(closestEnemyHQGuess);
+        // Debug.println("Guessing enemy HQ at " + closestEnemyHQGuess);
     }
 
     public void checkIfHQNear() throws GameActionException {
@@ -203,26 +260,74 @@ public class Headquarters extends Robot {
     public int getNextCarrierType() throws GameActionException {
         int carrierType;
         if (currentState == State.INIT) {
-            if (nearestMnWell == null) {
-                // if theres an mn but not an ad, the first 2 should be mn and the second should
-                // be ad
-                if (carrierCount < 2) {
-                    // next should be an mn carrier
-                    carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                } else {
+            if (nearestMnWell != null && nearestAdWell != null) {
+                if (isSmallMap()) {
                     carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else if (carrierCount == 0) {
+                    // Send first carrier to mana
+                    carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else if (closestEnemyHQGuess == null) {
+                    // Delay building another carrier until we know where the enemy HQ is
+                    carrierType = -1;
+                } else {
+                    // Now that we have an HQ guess, decide on AD or MN based on how far it is
+                    int estInterceptTime = Util.distance(home, closestEnemyHQGuess) + Util.AVG_FIRST_COMBAT_LENGTH;
+                    // If the first carriers can finish a cycle before launchers can reach us,
+                    // go 1/3
+                    if (estInterceptTime > Util.CARRIER_TURNS_TO_FILL + 1.5 * Util.distance(nearestAdWell, home)) {
+                        // We should have already built the mana carrier.
+                        // But if we haven't, build it now.
+                        if (manaCarrierTracker.size() == 0) {
+                            carrierType = Comms.HQFlag.CARRIER_MANA;
+                        } else {
+                            carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                        }
+                    } else {
+                        // Otherwise, go 3/1
+                        if (carrierCount < 3) {
+                            carrierType = Comms.HQFlag.CARRIER_MANA;
+                        } else {
+                            carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                        }
+                    }
                 }
-            } else {
-                // if theres both ad and mn, or neither, then first 2 should be ad and second 2
-                // should be mn
-                if (Util.MAP_AREA <= Util.MAX_AREA_FOR_FAST_INIT) {
+            } else if (nearestMnWell != null) {
+                // If there is only mana
+                if (isSmallMap()) {
                     carrierType = Comms.HQFlag.CARRIER_MANA;
                 } else {
                     if (carrierCount < 3) {
-                        // next should be an ad carrier
                         carrierType = Comms.HQFlag.CARRIER_MANA;
                     } else {
-                        // next should be an mn carrier
+                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                    }
+                }
+            } else if (nearestAdWell != null) {
+                // Only adamantium
+                if (isSemiSmallMap()) {
+                    // If we're on a small map, send the first 2 to adamantium
+                    if (carrierCount < 2) {
+                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                    } else {
+                        carrierType = Comms.HQFlag.CARRIER_MANA;
+                    }
+                } else {
+                    // If we're on a big map, go 1/3
+                    if (carrierCount < 3) {
+                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                    } else {
+                        carrierType = Comms.HQFlag.CARRIER_MANA;
+                    }
+                }
+            } else {
+                // Small map, still go all mana
+                if (isSmallMap()) {
+                    carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else {
+                    // If there are neither, go 2/2
+                    if (carrierCount < 2) {
+                        carrierType = Comms.HQFlag.CARRIER_MANA;
+                    } else {
                         carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
                     }
                 }
@@ -238,7 +343,7 @@ public class Headquarters extends Robot {
     }
 
     public Direction getBestDirTo(MapLocation loc) throws GameActionException {
-        Direction dir = Nav.getBestDir(loc, 5000);
+        Direction dir = Nav.getBestDir(loc, 10000);
         if (dir == Direction.CENTER) {
             dir = home.directionTo(loc);
         }
@@ -274,7 +379,12 @@ public class Headquarters extends Robot {
                     }
                     dirToBuild = nearestAdWellDir;
                 } else {
-                    dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
+                    // Build init towards the center
+                    if (currentState == State.INIT) {
+                        dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
+                    } else {
+                        dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
+                    }
                 }
             }
         } else {
@@ -295,7 +405,12 @@ public class Headquarters extends Robot {
                     }
                     dirToBuild = nearestMnWellDir;
                 } else {
-                    dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
+                    // Build init towards the center
+                    if (currentState == State.INIT) {
+                        dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
+                    } else {
+                        dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
+                    }
                 }
             }
         }
@@ -331,6 +446,10 @@ public class Headquarters extends Robot {
 
     public void buildCarrier(int carrierType) throws GameActionException {
         Debug.printString("BC " + carrierType);
+        if (carrierType == -1) {
+            Debug.println("INVALID CARRIER TYPE. Sending mana carrier instead");
+            carrierType = Comms.HQFlag.CARRIER_MANA;
+        }
 
         // get predetermined next carrier type and location
         MapLocation newLoc = getNextCarrierLocation(carrierType);
@@ -370,13 +489,13 @@ public class Headquarters extends Robot {
             target = closestEnemyHQGuess;
             if (closestEnemyHQGuess != null) {
                 dir = closestEnemyHQGuessDir;
-                Debug.printString("HQ " + target + " Dir " + dir);
+                // Debug.printString("HQ " + target + " Dir " + dir);
                 return Util.findInitLocation(currLoc, dir);
             }
         }
 
         if (target == null) {
-            Debug.printString("No HQ");
+            // Debug.printString("No HQ");
             dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
         } else {
             dir = getBestDirTo(target);
@@ -419,9 +538,10 @@ public class Headquarters extends Robot {
             // build carriers
             if (carrierCount < initCarriersWanted) {
                 buildCarrier();
-                // We don't build more than one carrier at a time so that
-                // we can communicate the correct resource type it should be.
-                break;
+                // If the next carrier is the same time, build another.
+                int nextCarrierType = getNextCarrierType();
+                if (nextFlag == nextCarrierType)
+                    continue;
             }
             break;
         }

@@ -28,6 +28,9 @@ public class Util {
 
     static final int EXP_TARGET_DIST_TO_LEAVE_HQ = 15;
 
+    static final int CARRIER_TURNS_TO_FILL = 30;
+    static final int AVG_FIRST_COMBAT_LENGTH = 15;
+
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
             Direction.NORTH,
@@ -232,8 +235,9 @@ public class Util {
     // 2. Cooldown multiplier
     // 3. Distance to currLoc
     static MapLocation getBestCollectLoc(MapLocation well) throws GameActionException {
+        // If we aren't next to the well, and there are only 2 spots left, pick the well
         int numOpenSpots = getNumOpenCollectSpots(well);
-        if (numOpenSpots == 2) {
+        if (numOpenSpots == 2 && !rc.getLocation().isAdjacentTo(well)) {
             return well;
         }
 
@@ -257,7 +261,7 @@ public class Util {
             multiplier = info.getCooldownMultiplier(rc.getTeam());
             dist = loc.distanceSquaredTo(currLoc);
 
-            // Disincentivize current squares.
+            // Disincentivize squares with currents
             if (info.getCurrentDirection() != Direction.CENTER) {
                 multiplier += 10;
             }

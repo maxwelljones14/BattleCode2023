@@ -87,11 +87,17 @@ public class Headquarters extends Robot {
         combatSectorToTurnWritten = new FastIntIntMap();
     }
 
+    public void localResign() {
+        if (rc.getRoundNum() >= 400 && rc.getRobotCount() < 4)
+            rc.resign();
+    }
+
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         // if (rc.getRoundNum() == 20) {
         // rc.resign();
         // }
+        // localResign();
         adamCarrierTracker.update();
         manaCarrierTracker.update();
         clearOldEnemyInfo();
