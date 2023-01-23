@@ -127,9 +127,9 @@ public class Headquarters extends Robot {
         Comms.writeOurHqFlag(myHqNum, nextFlag);
         nextFlag = 0;
         doStateAction();
-        // displayCombatSectors();
         // displayExploreSectors();
         // displayMineSectors();
+        // displayCombatSectors();
     }
 
     public void checkIfHQNear() throws GameActionException {
@@ -405,7 +405,7 @@ public class Headquarters extends Robot {
                 MapLocation locToBuild = getLauncherLocation();
                 if (nearHQ) {
                     locToBuild = getLauncherLocation(enemyHQLoc);
-                } else if (isSmallMap()) {
+                } else if (isSemiSmallMap()) {
                     locToBuild = getLauncherLocation(
                             new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
                 } else if (rc.getRoundNum() < 3) {

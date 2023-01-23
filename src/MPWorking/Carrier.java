@@ -14,25 +14,32 @@ public class Carrier extends Robot {
         DEPOSITING,
     }
 
-    CarrierState currState;
+    static CarrierState currState;
 
-    ResourceType resourceTarget;
-    MapLocation seenIsland;
+    static ResourceType resourceTarget;
+    static MapLocation seenIsland;
 
-    int turnStartedMining;
+    static int turnStartedMining;
 
     static RobotInfo[] enemyAttackable;
     static RobotInfo[] friendlyAttackable;
-    RobotInfo closestEnemy;
-    RobotInfo closestFriendly;
+    static RobotInfo closestEnemy;
+    static RobotInfo closestFriendly;
+    static int numAttackingEnemyCount;
 
-    FastLocSet wellsVisitedThisCycle;
-    FastLocSet wellSectorsVisitedThisCycle;
-    WellInfo closestWell;
-    boolean visitedSectorCenter;
+    static FastLocSet wellsVisitedThisCycle;
+    static FastLocSet wellSectorsVisitedThisCycle;
+    static WellInfo closestWell;
+    static boolean visitedSectorCenter;
 
-    public final int CARRIERS_PER_WELL_TO_LEAVE = 12;
-    public final int RESET_WELLS_VISITED_TIMEOUT = 100;
+    static MapLocation closestHQ;
+    static public int lastTurnReported;
+    static MapLocation runAwayTarget;
+
+    public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
+    public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
+
+    public static final int REPORTING_COOLDOWN = 10;
 
     public Carrier(RobotController r) throws GameActionException {
         super(r);
@@ -46,6 +53,7 @@ public class Carrier extends Robot {
         }
         wellsVisitedThisCycle = new FastLocSet();
         wellSectorsVisitedThisCycle = new FastLocSet();
+        lastTurnReported = 0;
     }
 
     public MapLocation findUnconqueredIsland() throws GameActionException {
@@ -64,10 +72,8 @@ public class Carrier extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
 
-        enemyAttackable = getEnemyAttackable();
-        friendlyAttackable = getFriendlyAttackable();
-        closestEnemy = getClosestRobot(enemyAttackable);
-        closestFriendly = getClosestRobot(friendlyAttackable);
+        closestHQ = getClosestFriendlyHQ(currLoc);
+        resetLocalEnemyInformation();
 
         Debug.printString(resourceTarget.toString());
 
@@ -83,10 +89,30 @@ public class Carrier extends Robot {
         doStateAction();
     }
 
+    public void resetLocalEnemyInformation() throws GameActionException {
+        enemyAttackable = getEnemyAttackable();
+        friendlyAttackable = getFriendlyAttackable();
+        closestEnemy = getClosestRobot(enemyAttackable);
+        closestFriendly = getClosestRobot(friendlyAttackable);
+        numAttackingEnemyCount = 0;
+
+        RobotInfo robot;
+        for (int i = 0; i < enemyAttackable.length; i++) {
+            robot = enemyAttackable[i];
+            if (robot.type == RobotType.LAUNCHER
+                    && robot.location.distanceSquaredTo(currLoc) <= RobotType.LAUNCHER.actionRadiusSquared) {
+                numAttackingEnemyCount++;
+            }
+        }
+
+        runAwayTarget = shouldRunAwayTarget();
+        updateHomeifCurrHomeAttacked();
+    }
+
     public void trySwitchState() throws GameActionException {
         switch (currState) {
             case MINING:
-                if (shouldRunAwayTarget() != null) {
+                if (shouldReport()) {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
                 } else if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
@@ -97,7 +123,7 @@ public class Carrier extends Robot {
                 }
                 break;
             case PLACING_ANCHOR:
-                if (shouldRunAwayTarget() != null) {
+                if (shouldReport()) {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
                 } else if (rc.getAnchor() == null) {
@@ -113,10 +139,11 @@ public class Carrier extends Robot {
                     } else {
                         enterMineState();
                     }
+                    lastTurnReported = rc.getRoundNum();
                 }
                 break;
             case DEPOSITING:
-                if (shouldRunAwayTarget() != null) {
+                if (shouldReport()) {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
                 } else if (rc.getResourceAmount(resourceTarget) == 0) {
@@ -124,6 +151,12 @@ public class Carrier extends Robot {
                 }
                 break;
         }
+    }
+
+    public boolean shouldReport() {
+        return runAwayTarget != null &&
+                rc.getRoundNum() - lastTurnReported > REPORTING_COOLDOWN &&
+                runAwayTarget.isWithinDistanceSquared(closestHQ, RobotType.HEADQUARTERS.visionRadiusSquared);
     }
 
     public void enterMineState() {
@@ -145,26 +178,30 @@ public class Carrier extends Robot {
             for (int j = 0; j < headquarterLocations.length; j++) {
                 MapLocation loc = headquarterLocations[j];
                 if (loc.x == -1 || sectorCenters[nearestSector]
-                        .distanceSquaredTo(loc) <= RobotType.LAUNCHER.actionRadiusSquared) {
+                        .isWithinDistanceSquared(loc, RobotType.LAUNCHER.actionRadiusSquared)) {
                     eligibleHomes[j] = false;
                 }
             }
-
         }
+
         if (!eligibleHomes[homeIdx]) {
-            Debug.printString("need new home");
-            int closestDist = Integer.MAX_VALUE;
             MapLocation closestHome = home;
+            int closestDist = Util.distance(currLoc, home);
+            int newIdx = 0;
             for (int j = 0; j < headquarterLocations.length; j++) {
                 MapLocation possibleHome = headquarterLocations[j];
                 int currDist = Util.distance(currLoc, possibleHome);
-                if (possibleHome.x != -1 && eligibleHomes[j] && currDist <= closestDist) {
+                if (possibleHome.x != -1 && eligibleHomes[j] && currDist < closestDist) {
                     closestHome = possibleHome;
                     closestDist = currDist;
+                    newIdx = j;
                 }
             }
-            home = closestHome;
-            Debug.printString("home now " + home);
+            if (!home.equals(closestHome)) {
+                home = closestHome;
+                homeIdx = newIdx;
+                Debug.printString("New home: " + home);
+            }
         }
     }
 
@@ -173,6 +210,7 @@ public class Carrier extends Robot {
 
         switch (currState) {
             case MINING:
+                runFromEnemy();
                 // Reset wellsVisitedThisCycle every so often if we haven't found one
                 if (turnStartedMining + RESET_WELLS_VISITED_TIMEOUT < rc.getRoundNum()) {
                     wellsVisitedThisCycle.clear();
@@ -180,17 +218,7 @@ public class Carrier extends Robot {
                     turnStartedMining = rc.getRoundNum();
                 }
 
-                // If we can see a well, move towards it
-                WellInfo[] wells = rc.senseNearbyWells(resourceTarget);
-                int closestDist = Integer.MAX_VALUE;
-                for (WellInfo well : wells) {
-                    MapLocation wellLocation = well.getMapLocation();
-                    int dist = Util.distance(rc.getLocation(), wellLocation);
-                    if (dist < closestDist && (!wellsVisitedThisCycle.contains(wellLocation) || dist <= 2)) {
-                        closestDist = dist;
-                        closestWell = well;
-                    }
-                }
+                loadClosestWell();
 
                 collect: if (closestWell != null) {
                     MapLocation wellLoc = closestWell.getMapLocation();
@@ -280,6 +308,7 @@ public class Carrier extends Robot {
                 }
                 break;
             case PLACING_ANCHOR:
+                runFromEnemy();
                 // pick up anchor if home has anchor
                 if (rc.canTakeAnchor(home, Anchor.STANDARD)) {
                     rc.takeAnchor(home, Anchor.STANDARD);
@@ -316,15 +345,12 @@ public class Carrier extends Robot {
                 }
                 break;
             case REPORTING:
-                MapLocation target = shouldRunAwayTarget();
-                if (target != null) {
-                    Nav.move(currLoc.add(currLoc.directionTo(target)).add(currLoc.directionTo(target)));
-                }
-                updateHomeifCurrHomeAttacked();
+                runFromEnemy();
                 Nav.move(home);
                 transfer();
                 break;
             case DEPOSITING:
+                runFromEnemy();
                 if (!transfer()) {
                     Nav.move(home);
                     transfer();
@@ -333,13 +359,35 @@ public class Carrier extends Robot {
         }
     }
 
+    public void loadClosestWell() throws GameActionException {
+        // If we can see a well, move towards it
+        WellInfo[] wells = rc.senseNearbyWells(resourceTarget);
+        int closestDist = Integer.MAX_VALUE;
+        for (WellInfo well : wells) {
+            MapLocation wellLocation = well.getMapLocation();
+            int dist = Util.distance(rc.getLocation(), wellLocation);
+            if (dist < closestDist && (!wellsVisitedThisCycle.contains(wellLocation) || dist <= 2)) {
+                closestDist = dist;
+                closestWell = well;
+            }
+        }
+    }
+
+    public void runFromEnemy() throws GameActionException {
+        if (runAwayTarget != null) {
+            Debug.printString("RA: " + runAwayTarget);
+            Nav.move(runAwayTarget);
+        }
+    }
+
     /**
-     * Transfers to home if possible. Returns true if transfer was successful.
+     * Transfers to the closestHQ if possible. Returns true if transfer was
+     * successful.
      */
     public boolean transfer() throws GameActionException {
-        if (rc.canTransferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget))) {
+        if (rc.canTransferResource(closestHQ, resourceTarget, rc.getResourceAmount(resourceTarget))) {
             Debug.printString("Transfering");
-            rc.transferResource(home, resourceTarget, rc.getResourceAmount(resourceTarget));
+            rc.transferResource(closestHQ, resourceTarget, rc.getResourceAmount(resourceTarget));
             return true;
         }
         return false;
@@ -410,9 +458,40 @@ public class Carrier extends Robot {
     public void killClosestEnemy() throws GameActionException {
         if (closestEnemy == null)
             return;
+        // Transfering is more important. Carrier attacks are inefficient.
+        if (transfer())
+            return;
+        // Being within 8 means we can move once and be adjacent to an HQ
+        if (rc.getLocation().isWithinDistanceSquared(closestHQ, 8) && rc.isActionReady() && rc.getWeight() > 0) {
+            Direction dir = rc.getLocation().directionTo(closestHQ);
+            Direction[] dirs = { dir, dir.rotateLeft(), dir.rotateRight() };
+            for (Direction d : dirs) {
+                MapLocation newLoc = rc.getLocation().add(d);
+                if (newLoc.isAdjacentTo(closestHQ) && rc.canMove(d)) {
+                    rc.move(d);
+                    currLoc = rc.getLocation();
+                    transfer();
+                    break;
+                }
+            }
+        }
 
-        // Throw resource at any enemy you see and run.
-        attack(closestEnemy.location);
+        if (numAttackingEnemyCount > 0) {
+            // If the number of turns we expect to die in is less than the number of turns
+            // it takes to get home, run home to transfer.
+            int turnsDead = rc.getHealth() / (numAttackingEnemyCount * RobotType.LAUNCHER.damage);
+            int turnsToHome = (rc.getMovementCooldownTurns()
+                    + Util.distance(currLoc, closestHQ) * Pathfinding.getBaseMovementCooldown())
+                    / GameConstants.COOLDOWNS_PER_TURN;
+            if (turnsDead > turnsToHome) {
+                Nav.move(closestHQ);
+                return;
+            }
+        }
+
+        // Throw resource at an enemy launcher you see and run.
+        if (closestEnemy.type == RobotType.LAUNCHER)
+            attack(closestEnemy.location);
 
         // Move towards an enemy if you can kill it
         if (rc.getWeight() * GameConstants.CARRIER_DAMAGE_FACTOR >= closestEnemy.health &&
@@ -437,15 +516,15 @@ public class Carrier extends Robot {
         // - the closest enemy is closer than the clsoest friendly
         if (closestEnemy != null) {
             if (enemyAttackable.length + 2 >= friendlyAttackable.length) {
-                target = Pathfinding.getGreedyTargetAway(closestEnemy.getLocation());
-                str = "Enemies++ " + closestEnemy.type;
+                target = Util.invertLocation(closestEnemy.getLocation());
+                str = "Enemies++";
             }
 
             if (closestFriendly != null &&
                     currLoc.distanceSquaredTo(closestEnemy.location) < currLoc
                             .distanceSquaredTo(closestFriendly.location)) {
-                target = Pathfinding.getGreedyTargetAway(closestEnemy.getLocation());
-                str = "Close enemy " + closestEnemy.type;
+                target = Util.invertLocation(closestEnemy.getLocation());
+                str = "Enemy";
             }
 
             Debug.printString(str);

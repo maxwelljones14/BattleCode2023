@@ -30,8 +30,13 @@ public class Launcher extends Robot {
     static int numEnemies;
     static MapLocation closestAttackingEnemy;
     static MapLocation lastClosestAttackingEnemy;
+    static int turnSawLastClosestAttackingEnemy;
+    static int enemyAttackingHealth;
+    static int lastEnemyAttackingHealth;
+    static int friendlyAttackingHealth;
     static MapLocation closestEnemyLocation;
     static int numEnemyLaunchersAttackingUs;
+    public static final int LAST_ATTACKING_ENEMY_TIMEOUT = 2;
 
     static boolean healthLow;
     static boolean healthHigh;
@@ -40,6 +45,8 @@ public class Launcher extends Robot {
 
     static FastLocSet seenEnemyHQLocs;
     static int HQwaitCounter;
+    boolean goingToSymLoc;
+    static MapLocation exploreTarget;
 
     static boolean hasReported;
 
@@ -73,6 +80,7 @@ public class Launcher extends Robot {
 
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
+        loadExploreTarget();
 
         trySwitchState();
         Debug.printString("S: " + currState);
@@ -93,6 +101,8 @@ public class Launcher extends Robot {
             HQwaitCounter--;
         }
         closestInjured = null;
+        enemyAttackingHealth = 0;
+        friendlyAttackingHealth = rc.getHealth();
 
         int closestLauncherDist = Integer.MAX_VALUE;
         RobotInfo closestEnemyInfo = null;
@@ -106,6 +116,7 @@ public class Launcher extends Robot {
             int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
             RobotType botType = bot.getType();
             if (botType == RobotType.LAUNCHER || botType == RobotType.DESTABILIZER) {
+                enemyAttackingHealth += botHealth;
                 if (candidateDist <= actionRadiusSquared /* && canAttack */) {
                     numAttackingEnemyCount += 1;
                     overallEnemyLauncherDx += (candidateLoc.x - currLoc.x);
@@ -129,7 +140,12 @@ public class Launcher extends Robot {
                         lowestHealth = botHealth;
                     }
                 }
-
+            } else if (botType == RobotType.HEADQUARTERS) {
+                if (candidateDist <= RobotType.HEADQUARTERS.actionRadiusSquared) {
+                    numAttackingEnemyCount++;
+                    overallEnemyLauncherDx += (candidateLoc.x - currLoc.x);
+                    overallEnemyLauncherDy += (candidateLoc.y - currLoc.y);
+                }
             }
         }
         if (numAttackingEnemyCount != 0) {
@@ -141,6 +157,7 @@ public class Launcher extends Robot {
         if (closestAttackingEnemy != null) {
             closestEnemyLocation = closestAttackingEnemy;
             lastClosestAttackingEnemy = closestAttackingEnemy;
+            lastEnemyAttackingHealth = enemyAttackingHealth;
             int enemyHealth = closestEnemyInfo.getHealth();
             healthLow = rc.getHealth() <= enemyHealth - LOW_HEALTH_DIFF;
             healthHigh = rc.getHealth() >= HIGH_HEALTH_DIFF + enemyHealth;
@@ -169,6 +186,7 @@ public class Launcher extends Robot {
                         numFriendlies++;
                     }
                     numAggressiveFriendlies++;
+                    friendlyAttackingHealth += Fbot.getHealth();
                     break;
                 default:
                     break;
@@ -223,9 +241,13 @@ public class Launcher extends Robot {
                             int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
                             int numTroopsCloser = rc.senseNearbyRobots(closestEnemyLocation, ourDist - 1,
                                     rc.getTeam()).length;
-                            if (HQwaitCounter != 0 || numTroopsCloser >= MAX_LAUNCHERS_PER_ENEMY_HQ) {
+                            int exploreTargetDist = Util.distance(currLoc, exploreTarget);
+                            if (HQwaitCounter != 0 ||
+                                    numTroopsCloser >= MAX_LAUNCHERS_PER_ENEMY_HQ ||
+                                    exploreTargetDist <= Util.EXP_TARGET_DIST_TO_LEAVE_HQ) {
                                 currState = LauncherState.EXPLORING;
-                                HQwaitCounter = 5;
+                                HQwaitCounter = 8;
+                                Debug.println("Switching to exploring because of HQ");
                                 return;
                             }
                             if (ourDist <= RobotType.HEADQUARTERS.actionRadiusSquared) {
@@ -420,7 +442,7 @@ public class Launcher extends Robot {
                 + overallEnemyLauncherDy);
         if (dir == null) {
             Debug.printString("RA bad");
-            tryAttackBestEnemy(closestEnemy);
+            tryAttackBestEnemy();
             return;
         }
         Debug.printString("RA, Dest: " + dir);
@@ -644,10 +666,9 @@ public class Launcher extends Robot {
         return bestDirSoFar;
     }
 
-    public void launcherExplore() throws GameActionException {
+    public void loadExploreTarget() throws GameActionException {
         MapLocation target;
-
-        boolean goingToSymLoc = false;
+        goingToSymLoc = false;
         MapLocation symLoc = chooseSymmetricLoc();
         MapLocation combatSector = null;
 
@@ -656,7 +677,12 @@ public class Launcher extends Robot {
             combatSector = sectorCenters[combatSectorIdx];
         }
 
-        if (combatSector != null && symLoc != null) {
+        if (lastClosestAttackingEnemy != null
+                && turnSawLastClosestAttackingEnemy + LAST_ATTACKING_ENEMY_TIMEOUT >= rc.getRoundNum()
+                && friendlyAttackingHealth >= lastEnemyAttackingHealth) {
+            Debug.printString("LastEnemy");
+            target = lastClosestAttackingEnemy;
+        } else if (combatSector != null && symLoc != null) {
             int combSecDist = Util.manhattan(currLoc, combatSector);
             int symLocDist = Util.manhattan(currLoc, symLoc);
             int controlStatus = Comms.readSectorControlStatus(combatSectorIdx);
@@ -694,6 +720,11 @@ public class Launcher extends Robot {
                 Debug.printString("Exploring");
             }
         }
+
+        exploreTarget = target;
+    }
+
+    public void launcherExplore() throws GameActionException {
         int numCloseFriendlies = 0;
         int overallFriendlyDx = 0;
         int overallFriendlyDy = 0;
@@ -726,16 +757,16 @@ public class Launcher extends Robot {
         // Nav.move(newTarget);
         // return;
         // }
-        Debug.setIndicatorLine(Debug.INDICATORS, currLoc, target, 255, 0, 200);
-        if (currLoc.distanceSquaredTo(target) <= Util.JUST_OUTSIDE_OF_VISION_RADIUS) {
-            Nav.move(target); // tryMoveSafely
+        Debug.setIndicatorLine(Debug.INDICATORS, currLoc, exploreTarget, 255, 0, 200);
+        if (currLoc.distanceSquaredTo(exploreTarget) <= Util.JUST_OUTSIDE_OF_VISION_RADIUS) {
+            Nav.move(exploreTarget); // tryMoveSafely
             Debug.printString("saf mov");
         } else {
-            Nav.move(target);
+            Nav.move(exploreTarget);
             Debug.printString("reg mov");
         }
         if (goingToSymLoc) {
-            markSymmetricLocSeen(target);
+            markSymmetricLocSeen(exploreTarget);
         }
         tryAttackBestEnemy();
     }
