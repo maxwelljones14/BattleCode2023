@@ -377,6 +377,7 @@ public class Carrier extends Robot {
         if (runAwayTarget != null) {
             Debug.printString("RA: " + runAwayTarget);
             Nav.move(runAwayTarget);
+            currLoc = rc.getLocation();
         }
     }
 
@@ -485,6 +486,7 @@ public class Carrier extends Robot {
                     / GameConstants.COOLDOWNS_PER_TURN;
             if (turnsDead > turnsToHome) {
                 Nav.move(closestHQ);
+                currLoc = rc.getLocation();
                 return;
             }
         }
