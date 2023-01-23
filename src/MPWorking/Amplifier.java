@@ -55,6 +55,7 @@ public class Amplifier extends Robot {
     }
 
     public void trySwitchState() throws GameActionException {
+        // if ur near 3 friends set that target and follow them for 15 rounds
         switch (currState) {
             case CHILLING:
                 break;
@@ -62,7 +63,7 @@ public class Amplifier extends Robot {
                 // only be going to new destination for 15 rounds then restart normal procedures
                 if ((exploreSectorLoc != null
                         && currLoc.distanceSquaredTo(exploreSectorLoc) <= Util.AMP_JUST_INSIDE_VISION_RADIUS)
-                        || roundsSinceStartedExploring > Util.AMP_ROUNDS_TO_EXPLORE) {
+                        || roundsSinceStartedExploring > Util.AMP_ROUNDS_TO_EXPLORE || friendlyAttackable.length > 3) {
                     // unclaim the index
                     Comms.writeExploreSectorClaimStatus(claimedExploreSector, Comms.ClaimStatus.UNCLAIMED);
                     currState = AmplifierState.CHILLING;
@@ -72,6 +73,7 @@ public class Amplifier extends Robot {
                 }
                 roundsSinceStartedExploring++;
                 break;
+
         }
     }
 
@@ -286,10 +288,10 @@ public class Amplifier extends Robot {
         if (centerOfFriends != null &&
                 currLoc.distanceSquaredTo(home) > visionRadiusSquared) {
             goingToFriends = true;
-            Direction friendsToHomeDir = centerOfFriends.directionTo(home);
+            Direction homeToFriendsDir = home.directionTo(centerOfFriends);
             // go slightly behind your friends
             Debug.printString("staying behind");
-            target = centerOfFriends.add(friendsToHomeDir).add(friendsToHomeDir).add(friendsToHomeDir);
+            target = centerOfFriends.add(homeToFriendsDir).add(homeToFriendsDir).add(homeToFriendsDir);
         } else if (combatSectorIdx != Comms.UNDEFINED_SECTOR_INDEX) {
             Debug.printString("going for it");
             target = sectorCenters[combatSectorIdx];
@@ -299,8 +301,7 @@ public class Amplifier extends Robot {
         }
 
         // oscillate near just outside of sector
-        if ((!goingToFriends && currLoc.distanceSquaredTo(target) <= Util.AMP_JUST_INSIDE_VISION_RADIUS) ||
-                (goingToFriends && currLoc.distanceSquaredTo(target) <= 2)) {
+        if ((!goingToFriends && currLoc.distanceSquaredTo(target) <= Util.AMP_JUST_INSIDE_VISION_RADIUS)) {
             // go explore for a bit
             Debug.printString("switching to explore for a bit");
             switchState(AmplifierState.EXPLORING);
