@@ -257,7 +257,7 @@ public class Nav {
         if (rc.getLocation().distanceSquaredTo(target) == 0)
             return;
         // Sync launcher movement
-        if (rc.getType() == RobotType.LAUNCHER && rc.getRoundNum() % 3 == 0) {
+        if (rc.getType() == RobotType.LAUNCHER && rc.getRoundNum() % 2 == 0) {
             return;
         }
 

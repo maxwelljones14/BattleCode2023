@@ -28,7 +28,7 @@ public class Headquarters extends Robot {
     static int anchorCount;
 
     static final int initCarriersWanted = 4;
-    static final int initLaunchersWanted = 3;
+    static final int initLaunchersWanted = 4;
     static final int minCarriersBeforeAnchor = 20;
 
     static MapLocation currLoc;

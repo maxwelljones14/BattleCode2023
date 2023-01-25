@@ -28,7 +28,7 @@ public class Util {
 
     static final int EXP_TARGET_DIST_TO_LEAVE_HQ = 15;
 
-    static final int CARRIER_TURNS_TO_FILL = 30;
+    static final int CARRIER_TURNS_TO_FILL = 40;
     static final int AVG_FIRST_COMBAT_LENGTH = 15;
 
     /** Array containing all the possible movement directions. */

@@ -324,7 +324,7 @@ public class Launcher extends Robot {
 
     public void moveAndAttack(Direction dir) throws GameActionException {
         // Sync launcher movement
-        if (rc.getRoundNum() % 3 == 0) {
+        if (rc.getRoundNum() % 2 == 0) {
             return;
         }
 
