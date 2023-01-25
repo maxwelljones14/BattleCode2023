@@ -58,6 +58,8 @@ public class Robot {
 
     static FastLocSet emptySymLocs;
 
+    static MapLocation closestFriendlyIsland;
+
     static final int MIN_BC_TO_FLUSH_SECTOR_DB = 1500;
     static final int BC_TO_WRITE_SECTOR = 150;
     static final int MIN_BC_TO_FLUSH = 1200;
@@ -118,6 +120,8 @@ public class Robot {
         exploreMode = false;
 
         emptySymLocs = new FastLocSet();
+
+        closestFriendlyIsland = null;
     }
 
     public void loadHQLocations() throws GameActionException {
@@ -981,7 +985,7 @@ public class Robot {
             RobotInfo enemy = EnemySensable[i];
             int sectorIdx = whichXLoc[enemy.location.x] + whichYLoc[enemy.location.y];
 
-            int controlStatus = Comms.ControlStatus.MIN_ENEMY_STATUS;
+            int controlStatus = Comms.ControlStatus.ENEMY_PASSIVE;
             switch (enemy.getType()) {
                 case HEADQUARTERS:
                 case CARRIER:
@@ -1267,7 +1271,8 @@ public class Robot {
             if (sector == Comms.UNDEFINED_SECTOR_INDEX) {
                 break;
             }
-            if (Comms.readSectorControlStatus(sector) < Comms.ControlStatus.MIN_ENEMY_STATUS &&
+            int controlStatus = Comms.readSectorControlStatus(sector);
+            if (!Comms.isEnemyControlStatus(controlStatus) &&
                     Comms.readCombatSectorClaimStatus(sector) == Comms.ClaimStatus.UNCLAIMED) {
                 break;
             }
@@ -1369,7 +1374,7 @@ public class Robot {
 
     public void printEnemySectors() throws GameActionException {
         for (int i = 0; i < numSectors; i++) {
-            if (Comms.readSectorControlStatus(i) >= Comms.ControlStatus.MIN_ENEMY_STATUS) {
+            if (Comms.isEnemyControlStatus(Comms.readSectorControlStatus(i))) {
                 Debug.println("Enemy sector " + i + " at " + sectorCenters[i] + " with status "
                         + Comms.readSectorControlStatus(i));
             }
@@ -1616,6 +1621,58 @@ public class Robot {
                 bestLoc = hqLoc;
             }
         }
+        return bestLoc;
+    }
+
+    // TODO: Break this up over several turns if there are lots of sectors?
+    public MapLocation getClosestFriendlyIsland() throws GameActionException {
+        MapLocation bestLoc = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist;
+        MapLocation loc;
+
+        for (int i = numSectors; --i >= 0;) {
+            int sectorAll = Comms.readSectorAll(i);
+            // Island flag
+            if ((sectorAll >> 5) == 0)
+                continue;
+            // Control status
+            if ((sectorAll & 0b111) != Comms.ControlStatus.FRIENDLY_ISLAND)
+                continue;
+            loc = sectorCenters[i];
+            dist = currLoc.distanceSquaredTo(loc);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestLoc = loc;
+            }
+        }
+
+        return bestLoc;
+    }
+
+    // TODO: Break this up over several turns if there are lots of sectors?
+    public MapLocation getClosestNeutralIsland() throws GameActionException {
+        MapLocation bestLoc = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist;
+        MapLocation loc;
+
+        for (int i = numSectors; --i >= 0;) {
+            int sectorAll = Comms.readSectorAll(i);
+            // Island flag
+            if ((sectorAll >> 5) == 0)
+                continue;
+            // Control status
+            if ((sectorAll & 0b111) != Comms.ControlStatus.NEUTRAL_ISLAND)
+                continue;
+            loc = sectorCenters[i];
+            dist = currLoc.distanceSquaredTo(loc);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestLoc = loc;
+            }
+        }
+
         return bestLoc;
     }
 }

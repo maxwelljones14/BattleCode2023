@@ -60,6 +60,9 @@ public class Headquarters extends Robot {
 
     static int symmetryGuess;
 
+    public static int turnBuiltAnchor = -1;
+    public static int BUILD_ANCHOR_COOLDOWN = 50;
+
     public Headquarters(RobotController r) throws GameActionException {
         super(r);
         checkIfHQNear();
@@ -425,7 +428,9 @@ public class Headquarters extends Robot {
                 }
                 break;
             case CHILLING:
-                if (carrierCount >= minCarriersBeforeAnchor && rc.getNumAnchors(Anchor.STANDARD) == 0) {
+                if (carrierCount >= minCarriersBeforeAnchor &&
+                        rc.getNumAnchors(Anchor.STANDARD) == 0 &&
+                        rc.getRoundNum() >= turnBuiltAnchor + BUILD_ANCHOR_COOLDOWN) {
                     // start saving for anchor if you have minCarriersBeforeAnchor carriers already
                     stateStack.push(currentState);
                     changeState(State.BUILDING_ANCHOR);
@@ -561,12 +566,15 @@ public class Headquarters extends Robot {
                 }
                 break;
             case BUILDING_ANCHOR:
-                // make 5 carriers and then switch to anchor mode
                 if (rc.canBuildAnchor(Anchor.STANDARD)) {
                     // If we can build an anchor do it!
                     rc.buildAnchor(Anchor.STANDARD);
                     Debug.printString("Building anchor! ");
                     anchorCount++;
+                    turnBuiltAnchor = rc.getRoundNum();
+                    // Immediately exit so that a carrier taking the anchor
+                    // on the same turn does not make us build another anchor.
+                    changeState(stateStack.pop());
                 } else {
                     if (canBuildRobotTypeAndAnchor(RobotType.LAUNCHER, Anchor.STANDARD)) {
                         buildLauncher(getLauncherLocation());
@@ -631,11 +639,11 @@ public class Headquarters extends Robot {
                 % Util.CLEAR_ENEMY_INFO_PERIOD; sectorIdx < numSectors; sectorIdx += Util.CLEAR_ENEMY_INFO_PERIOD) {
             int controlStatus = Comms.readSectorControlStatus(sectorIdx);
             // Mocked controlStatusSet
-            // We assume an island is friendly if we don't know
-            // A neutral/enemy island will override a friendly island if one is found.
+            // We assume an island is neutral if we don't know
+            // A friendly island will override a neutral island if one is found.
             if (controlStatus == Comms.ControlStatus.ENEMY_PASSIVE
                     || controlStatus == Comms.ControlStatus.ENEMY_AGGRESIVE) {
-                int newControlStatus = Comms.readSectorIslands(sectorIdx) == 1 ? Comms.ControlStatus.FRIENDLY_ISLAND
+                int newControlStatus = Comms.readSectorIslands(sectorIdx) == 1 ? Comms.ControlStatus.NEUTRAL_ISLAND
                         : Comms.ControlStatus.EXPLORING;
                 // Mark old combat sectors as need to be explored.
                 // Debug.println("Clearing combat sector at : " + sectorCenters[sectorIdx]);
@@ -693,7 +701,7 @@ public class Headquarters extends Robot {
             int controlStatus = Comms.readSectorControlStatus(i);
             // Combat sector
             combatSector: if (combatSectorIndex < Comms.COMBAT_SECTOR_SLOTS
-                    && controlStatus >= Comms.ControlStatus.MIN_ENEMY_STATUS) {
+                    && Comms.isEnemyControlStatus(controlStatus)) {
                 // If the sector is already a combat sector, don't add it again
                 for (int j = Comms.COMBAT_SECTOR_SLOTS - 1; j >= 0; j--) {
                     if (Comms.readCombatSectorIndex(j) == i) {

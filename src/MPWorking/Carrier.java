@@ -17,7 +17,6 @@ public class Carrier extends Robot {
     static CarrierState currState;
 
     static ResourceType resourceTarget;
-    static MapLocation seenIsland;
 
     static int turnStartedMining;
 
@@ -35,6 +34,8 @@ public class Carrier extends Robot {
     static MapLocation closestHQ;
     static public int lastTurnReported;
     static MapLocation runAwayTarget;
+
+    static MapLocation closestNeutralIsland;
 
     public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
@@ -77,13 +78,6 @@ public class Carrier extends Robot {
 
         Debug.printString(resourceTarget.toString());
 
-        // mark the first island we see
-        if (seenIsland == null) {
-            seenIsland = findUnconqueredIsland();
-        } else {
-            Debug.printString("Isl: " + seenIsland);
-        }
-
         trySwitchState();
         Debug.printString(currState.toString());
         doStateAction();
@@ -117,8 +111,10 @@ public class Carrier extends Robot {
                     sectorToReport = 1;
                 } else if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
                     currState = CarrierState.DEPOSITING;
-                } else if ((seenIsland != null && rc.canTakeAnchor(home, Anchor.STANDARD)) ||
-                        rc.getAnchor() != null) {
+                } else if (rc.getAnchor() != null) {
+                    currState = CarrierState.PLACING_ANCHOR;
+                } else if (rc.canTakeAnchor(home, Anchor.STANDARD)
+                        && (closestNeutralIsland = getClosestNeutralIsland()) != null) {
                     currState = CarrierState.PLACING_ANCHOR;
                 }
                 break;
@@ -131,6 +127,9 @@ public class Carrier extends Robot {
                 }
                 break;
             case REPORTING:
+                // Note: We don't try to take an anchor directly from reporting
+                // because we probably saw an enemy recently and we don't want
+                // to risk getting killed.
                 if (sectorToReport == 0) {
                     if (rc.getAnchor() != null) {
                         currState = CarrierState.PLACING_ANCHOR;
@@ -146,6 +145,11 @@ public class Carrier extends Robot {
                 if (shouldReport()) {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
+                } else if (rc.getAnchor() != null) {
+                    currState = CarrierState.PLACING_ANCHOR;
+                } else if (rc.canTakeAnchor(home, Anchor.STANDARD) &&
+                        (closestNeutralIsland = getClosestNeutralIsland()) != null) {
+                    currState = CarrierState.PLACING_ANCHOR;
                 } else if (rc.getResourceAmount(resourceTarget) == 0) {
                     enterMineState();
                 }
@@ -322,29 +326,48 @@ public class Carrier extends Robot {
                     Debug.println("ERROR: No anchor in PLACING_ANCHOR state");
                 }
 
-                // seenIsland might be null if it was unsuccessfully reloaded previously
-                // if we're near an island and have an anchor, place the anchor and reset
-                if (seenIsland != null && rc.canSenseLocation(seenIsland)) {
-                    // if i get to the island and its taken already then find another island
-                    if (rc.senseTeamOccupyingIsland(rc.senseIsland(seenIsland)) != Team.NEUTRAL) {
-                        seenIsland = findUnconqueredIsland();
-                        Debug.printString("Island already claimed");
-                    }
-                }
+                closestNeutralIsland = getClosestNeutralIsland();
 
-                if (placeAnchor()) {
-                    Nav.move(home);
+                // If no neutral islands, go home
+                if (closestNeutralIsland == null) {
+                    if (!returnAnchor()) {
+                        Nav.move(home);
+                        returnAnchor();
+                    }
                     return;
                 }
 
-                if (seenIsland != null) {
-                    Nav.move(seenIsland);
-                    placeAnchor();
-                } else if (!returnAnchor()) {
-                    // No anchor. Go home
-                    Nav.move(home);
-                    returnAnchor();
+                int[] islandIdxs = rc.senseNearbyIslands();
+                if (islandIdxs.length == 0) {
+                    // No islands nearby yet, so just go to the closest neutral island
+                    Nav.move(closestNeutralIsland);
+                    return;
                 }
+
+                // If we're near a neutral island, go to it
+                int islandIdx = -1;
+                for (int i = islandIdxs.length; --i >= 0;) {
+                    if (rc.senseTeamOccupyingIsland(islandIdxs[i]) == Team.NEUTRAL) {
+                        islandIdx = islandIdxs[i];
+                        break;
+                    }
+                }
+
+                if (islandIdx == -1) {
+                    // No neutral islands nearby, so just go to the closest neutral island
+                    Nav.move(closestNeutralIsland);
+                    return;
+                }
+
+                MapLocation target = Util.getClosestEmptyIslandLoc(islandIdx);
+                if (target == null) {
+                    // If no placement loc, just go to the closest location on the island
+                    // and wait for someone to leave.
+                    target = Util.getClosestIslandLoc(islandIdx);
+                }
+
+                Nav.move(target);
+                placeAnchor();
                 break;
             case REPORTING:
                 runFromEnemy();
@@ -423,7 +446,6 @@ public class Carrier extends Robot {
         if (rc.canPlaceAnchor() && islandTeam == Team.NEUTRAL) {
             rc.placeAnchor();
             recordIsland(rc.senseIsland(loc), whichSector(loc));
-            seenIsland = null;
             Debug.printString("Placed anchor");
             return true;
         }

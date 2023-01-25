@@ -464,4 +464,74 @@ public class Util {
 
         return cooldown;
     }
+
+    // The best heal location is
+    // 1. On the island
+    // 2. In a cloud
+    // (3. Closest to other launchers) (TODO: implement this)
+    // 4. Closest to you
+    static MapLocation getBestHealLoc(int islandIdx) throws GameActionException {
+        MapLocation[] islandLocs = rc.senseNearbyIslandLocations(islandIdx);
+        MapLocation bestLoc = null;
+        int bestScore = Integer.MIN_VALUE;
+        int score = 0;
+        MapLocation loc;
+        RobotInfo robot;
+        for (int i = islandLocs.length; --i >= 0;) {
+            loc = islandLocs[i];
+            robot = rc.senseRobotAtLocation(loc);
+            if (robot != null && robot.ID != rc.getID())
+                continue;
+
+            score = 0;
+            if (rc.senseCloud(loc)) {
+                score += 1000;
+            }
+            score -= rc.getLocation().distanceSquaredTo(loc);
+            if (score > bestScore) {
+                bestScore = score;
+                bestLoc = loc;
+            }
+        }
+        return bestLoc;
+    }
+
+    static MapLocation getClosestEmptyIslandLoc(int islandIdx) throws GameActionException {
+        MapLocation[] islandLocs = rc.senseNearbyIslandLocations(islandIdx);
+        MapLocation bestLoc = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist = 0;
+        MapLocation loc;
+        RobotInfo robot;
+        for (int i = islandLocs.length; --i >= 0;) {
+            loc = islandLocs[i];
+            robot = rc.senseRobotAtLocation(loc);
+            if (robot != null && robot.ID != rc.getID())
+                continue;
+
+            dist = rc.getLocation().distanceSquaredTo(loc);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestLoc = loc;
+            }
+        }
+        return bestLoc;
+    }
+
+    static MapLocation getClosestIslandLoc(int islandIdx) throws GameActionException {
+        MapLocation[] islandLocs = rc.senseNearbyIslandLocations(islandIdx);
+        MapLocation bestLoc = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist = 0;
+        MapLocation loc;
+        for (int i = islandLocs.length; --i >= 0;) {
+            loc = islandLocs[i];
+            dist = rc.getLocation().distanceSquaredTo(loc);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestLoc = loc;
+            }
+        }
+        return bestLoc;
+    }
 }

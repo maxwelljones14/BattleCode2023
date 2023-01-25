@@ -14,6 +14,7 @@ public class Launcher extends Robot {
         RUNNING,
         REPORTING,
         HELPING, // UNUSED
+        HEALING,
     }
 
     static LauncherState currState;
@@ -45,7 +46,7 @@ public class Launcher extends Robot {
 
     static FastLocSet seenEnemyHQLocs;
     static int HQwaitCounter;
-    boolean goingToSymLoc;
+    static boolean goingToSymLoc;
     static MapLocation exploreTarget;
 
     static boolean hasReported;
@@ -56,11 +57,16 @@ public class Launcher extends Robot {
     static MapLocation closestInjured;
     public static final int HEALTH_DECREASED_TIMEOUT = 2;
 
+    static MapLocation closestFriendlyIsland;
+
     public static final int MAX_LAUNCHERS_PER_ENEMY_HQ = 4;
-    public static final int LOW_HEALTH_REPORT_THRESHOLD = 50;
-    public static final int LOW_HEALTH_THRESHOLD = 30;
+    public static final int LOW_HEALTH_REPORT_THRESHOLD = 30;
+    public static final int LOW_HEALTH_THRESHOLD = 20;
     public static final int LOW_HEALTH_DIFF = 20;
-    public static final int HIGH_HEALTH_DIFF = 50;
+    public static final int HIGH_HEALTH_DIFF = 30;
+
+    public static final int LOW_HEAL_THRESHOLD = 60;
+    public static final int HIGH_HEAL_THRESHOLD = 100;
 
     public Launcher(RobotController r) throws GameActionException {
         super(r);
@@ -80,6 +86,7 @@ public class Launcher extends Robot {
 
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
+        closestFriendlyIsland = null;
         loadExploreTarget();
 
         trySwitchState();
@@ -257,10 +264,30 @@ public class Launcher extends Robot {
                         }
                         currState = LauncherState.ATTACKING;
                     }
+                } else if (hasReported) {
+                    if (shouldHeal()) {
+                        currState = LauncherState.HEALING;
+                    } else {
+                        currState = LauncherState.EXPLORING;
+                    }
+                }
+                break;
+            case HEALING:
+                closestFriendlyIsland = getClosestFriendlyIsland();
+                if (closestFriendlyIsland == null || rc.getHealth() == RobotType.LAUNCHER.health) {
+                    if (shouldRunAway()) {
+                        currState = LauncherState.RUNNING;
+                    } else if (shouldHelpInjured()) {
+                        currState = LauncherState.HELPING;
+                    } else {
+                        currState = LauncherState.EXPLORING;
+                    }
                 }
                 break;
             default:
-                if (closestEnemy != null) {
+                if (shouldHeal()) {
+                    currState = LauncherState.HEALING;
+                } else if (closestEnemy != null) {
                     if (shouldRunAway()) {
                         currState = LauncherState.RUNNING;
                     } else if (shouldHelpInjured()) {
@@ -319,6 +346,8 @@ public class Launcher extends Robot {
             case HELPING:
                 helpLauncher();
                 break;
+            case HEALING:
+                goToNearestIsland();
         }
     }
 
@@ -341,6 +370,12 @@ public class Launcher extends Robot {
         tryAttackBestEnemy(bestEnemy);
         rc.move(dir);
         tryAttackBestEnemy(bestEnemy);
+    }
+
+    public void moveAndAttack(MapLocation loc) throws GameActionException {
+        tryAttackBestEnemy();
+        Nav.move(loc);
+        tryAttackBestEnemy();
     }
 
     public void helpLauncher() throws GameActionException {
@@ -425,16 +460,29 @@ public class Launcher extends Robot {
         // advantage and you can't one shot enemy
     }
 
-    // public void moveAndAttack(Direction[] targetDirs, boolean attackFirst) throws
-    // GameActionException {
-    // if (attackFirst) {
-    // tryAttackBestEnemy(closestEnemy);
-    // tryMoveDest(targetDirs);
-    // } else {
-    // tryMoveDest(targetDirs);
-    // tryAttackBestEnemy();
-    // }
-    // }
+    // If this returns true, loads the friendly island
+    public boolean shouldHeal() throws GameActionException {
+        if (rc.getHealth() <= LOW_HEAL_THRESHOLD) {
+            closestFriendlyIsland = getClosestFriendlyIsland();
+            return closestFriendlyIsland != null;
+        }
+
+        // If a friendly robot is under the low heal treshold and you're under
+        // the high heal threshold, also go heal
+        if (rc.getHealth() > HIGH_HEAL_THRESHOLD)
+            return false;
+
+        RobotInfo robot;
+        for (int i = FriendlySensable.length; --i >= 0;) {
+            robot = FriendlySensable[i];
+            if (robot.getType() == RobotType.LAUNCHER && robot.getHealth() <= LOW_HEAL_THRESHOLD) {
+                closestFriendlyIsland = getClosestFriendlyIsland();
+                return closestFriendlyIsland != null;
+            }
+        }
+
+        return false;
+    }
 
     public void runAwayFromEnemy() throws GameActionException {
         MapLocation dest;
@@ -695,9 +743,9 @@ public class Launcher extends Robot {
             boolean closeToHQ = Util.manhattan(combatSector,
                     getClosestFriendlyHQ(combatSector)) <= Util.COMB_TO_HOME_DIST;
             boolean protectAggressive = combSecDist * Util.SYM_TO_COMB_HOME_AGGRESSIVE_DIST_RATIO < symLocDist &&
-                    controlStatus >= Comms.ControlStatus.ENEMY_AGGRESIVE;
+                    controlStatus == Comms.ControlStatus.ENEMY_AGGRESIVE;
             boolean protectPassive = (combSecDist * Util.SYM_TO_COMB_HOME_PASSIVE_DIST_RATIO < symLocDist &&
-                    controlStatus >= Comms.ControlStatus.ENEMY_PASSIVE);
+                    controlStatus == Comms.ControlStatus.ENEMY_PASSIVE);
             if (protect || (closeToHQ && (protectAggressive || protectPassive))) {
                 target = combatSector;
                 Debug.printString("PrefCombSec");
@@ -872,5 +920,50 @@ public class Launcher extends Robot {
         if (attackLoc != null && rc.canAttack(attackLoc)) {
             rc.attack(attackLoc);
         }
+    }
+
+    public void goToNearestIsland() throws GameActionException {
+        // closestFriendlyIsland should be non-null
+        if (closestFriendlyIsland == null) {
+            Debug.println("Error: closestFriendlyIsland is null");
+            return;
+        }
+
+        int[] islandIdxs = rc.senseNearbyIslands();
+        if (islandIdxs.length == 0) {
+            // No islands nearby, so just go to the closest one
+            Debug.printString("GOTO ISL");
+            moveAndAttack(closestFriendlyIsland);
+            return;
+        }
+
+        // Go to the friendly island
+        int islandIdx = -1;
+        for (int i = islandIdxs.length; --i >= 0;) {
+            if (rc.senseTeamOccupyingIsland(islandIdxs[i]) == team) {
+                // Found our team's island
+                islandIdx = islandIdxs[i];
+                break;
+            }
+        }
+
+        if (islandIdx == -1) {
+            // No islands nearby, so just go to the closest one
+            Debug.printString("GOTO ISL");
+            moveAndAttack(closestFriendlyIsland);
+            return;
+        }
+
+        // Find the best spot to heal.
+        MapLocation bestHealLoc = Util.getBestHealLoc(islandIdx);
+        if (bestHealLoc == null) {
+            // No good spots to heal, so just go to the closest one
+            Debug.printString("NO HEAL");
+            moveAndAttack(closestFriendlyIsland);
+            return;
+        }
+
+        Debug.printString("HEAL LOC");
+        moveAndAttack(bestHealLoc);
     }
 }

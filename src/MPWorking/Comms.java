@@ -9,7 +9,6 @@ public class Comms {
     private static int[] bufferPool;
     private static boolean[] dirtyFlags;
 
-    private static int[] thresholds = { 0, 1, 2, 3, 5, 10, 50 };
 
     public final static int OUR_HQ_SLOTS = 4;
     public final static int SECTOR_SLOTS = 100;
@@ -23,13 +22,13 @@ public class Comms {
         public static final int UNKNOWN = 0;
         public static final int EXPLORING = 1;
         public static final int EMPTY = 2;
-        public static final int FRIENDLY_ISLAND = 3;
-        public static final int NEUTRAL_ISLAND = 4;
 
-        public static final int MIN_ENEMY_STATUS = 5;
-        public static final int ENEMY_PASSIVE = 5;
-        public static final int ENEMY_ISLAND = 6;
-        public static final int ENEMY_AGGRESIVE = 7;
+        public static final int ENEMY_PASSIVE = 3;
+        public static final int ENEMY_ISLAND = 4;
+        public static final int ENEMY_AGGRESIVE = 5;
+
+        public static final int NEUTRAL_ISLAND = 6;
+        public static final int FRIENDLY_ISLAND = 7;
 
         public static final int NUM_CONTROL_STATUS = 8;
     }
@@ -271,23 +270,14 @@ public class Comms {
             rc.writeSharedArray(63, bufferPool[63]);
     }
 
-    private static int adjustCount(int value) {
-        if (value <= thresholds[0]) {
-            return 0;
-        } else if (value <= thresholds[1]) {
-            return 1;
-        } else if (value <= thresholds[2]) {
-            return 2;
-        } else if (value <= thresholds[3]) {
-            return 3;
-        } else if (value <= thresholds[4]) {
-            return 4;
-        } else if (value <= thresholds[5]) {
-            return 5;
-        } else if (value <= thresholds[6]) {
-            return 6;
-        } else {
-            return 7;
+    public static boolean isEnemyControlStatus(int controlStatus) {
+        switch (controlStatus) {
+            case ControlStatus.ENEMY_PASSIVE:
+            case ControlStatus.ENEMY_ISLAND:
+            case ControlStatus.ENEMY_AGGRESIVE:
+                return true;
+            default:
+                return false;
         }
     }
 

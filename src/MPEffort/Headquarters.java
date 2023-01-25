@@ -97,7 +97,7 @@ public class Headquarters extends Robot {
         // if (rc.getRoundNum() == 20) {
         // rc.resign();
         // }
-        // localResign();
+        localResign();
         adamCarrierTracker.update();
         manaCarrierTracker.update();
         clearOldEnemyInfo();
