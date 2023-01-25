@@ -31,6 +31,9 @@ public class Util {
     static final int CARRIER_TURNS_TO_FILL = 40;
     static final int AVG_FIRST_COMBAT_LENGTH = 15;
 
+    public static final int TURN_TO_IGNORE_EARLY_MINING_SECTORS = 10;
+    public static final int DIST_TO_IGNORE_EARLY_MINING_SECTORS = 10;
+
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
             Direction.NORTH,

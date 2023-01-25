@@ -283,7 +283,16 @@ public class Carrier extends Robot {
                         target = resourceTarget == ResourceType.ADAMANTIUM
                                 ? sectorDatabase.at(mineSectorIndex).getAdamWell()
                                 : sectorDatabase.at(mineSectorIndex).getManaWell();
-                        Debug.printString("Well in sector: " + target);
+
+                        // If it's too early and the well is far,
+                        // don't look at this well and just explore.
+                        if (roundNum <= Util.TURN_TO_IGNORE_EARLY_MINING_SECTORS &&
+                                Util.distance(currLoc, target) > Util.DIST_TO_IGNORE_EARLY_MINING_SECTORS) {
+                            target = Explore.getExploreTarget();
+                            Debug.printString("Early, exploring");
+                        } else {
+                            Debug.printString("Well in sector: " + target);
+                        }
 
                         // If we have visited the center of the sector and we can't see the well,
                         // travel the corners of the sector until we find the well
@@ -377,7 +386,7 @@ public class Carrier extends Robot {
             case DEPOSITING:
                 runFromEnemy();
                 if (!transfer()) {
-                    Nav.move(home);
+                    Nav.move(closestHQ);
                     transfer();
                 }
                 break;

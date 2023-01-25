@@ -38,18 +38,20 @@ public class Headquarters extends Robot {
     static MapLocation closestEnemyHQGuess;
     static Direction closestEnemyHQGuessDir;
 
-    static MapLocation nearestAdWell;
-    static MapLocation nearestMnWell;
-    static Direction nearestAdWellDir;
-    static Direction nearestMnWellDir;
+    static MapLocation nearestVisibleAdWell;
+    static MapLocation nearestVisibleMnWell;
+    static Direction nearestVisibleAdWellDir;
+    static Direction nearestVisibleMnWellDir;
     static MapLocation nearestAdWellSector;
     static MapLocation nearestMnWellSector;
+    static Direction nearestAdWellSectorDir;
+    static Direction nearestMnWellSectorDir;
 
     static MapLocation[] locsToBuildCarriers;
     static MapLocation[] locsToBuildLaunchers;
 
     static final double MANA_TO_ADAM_CARRIER_RATIO = 0.7 / 0.3;
-    static final int ROUNDS_TO_STALE_UNIT = 50;
+    static final int ROUNDS_TO_STALE_UNIT = 75;
     FastUnitTracker adamCarrierTracker;
     FastUnitTracker manaCarrierTracker;
 
@@ -74,10 +76,15 @@ public class Headquarters extends Robot {
             numHqs = rc.getRobotCount();
         initSectorPermutation();
 
-        nearestAdWell = null;
-        nearestMnWell = null;
-        nearestAdWellDir = null;
-        nearestMnWellDir = null;
+        nearestVisibleAdWell = null;
+        nearestVisibleMnWell = null;
+        nearestVisibleAdWellDir = null;
+        nearestVisibleMnWellDir = null;
+        nearestAdWellSector = null;
+        nearestMnWellSector = null;
+        nearestAdWellSectorDir = null;
+        nearestMnWellSectorDir = null;
+
         locsToBuildCarriers = new MapLocation[initCarriersWanted];
         locsToBuildLaunchers = new MapLocation[initLaunchersWanted];
 
@@ -103,7 +110,7 @@ public class Headquarters extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        // localResign();
+        localResign();
         adamCarrierTracker.update();
         manaCarrierTracker.update();
         clearOldEnemyInfo();
@@ -135,6 +142,8 @@ public class Headquarters extends Robot {
         if (numHqs == 1 || rc.getRoundNum() >= 2) {
             loadSymmetry();
         }
+
+        loadClosestMiningSector();
 
         setPrioritySectors();
         toggleState();
@@ -181,15 +190,18 @@ public class Headquarters extends Robot {
         invalidateSymmetries();
         updateSymmetryLocs();
         symmetryAll = Comms.readSymmetryAll();
-        guessSymmetry();
+        // guessSymmetry();
         guessClosestEnemyHQ();
     }
 
     public void guessClosestEnemyHQ() throws GameActionException {
-        closestEnemyHQGuess = getClosestEnemyHQGuess();
+        MapLocation newEnemyHQGuess = getClosestEnemyHQGuess();
         // closestEnemyHQGuess = getClosestEnemyHQ(symmetryGuess);
-        closestEnemyHQGuessDir = getBestDirTo(closestEnemyHQGuess);
-        // Debug.println("Guessing enemy HQ at " + closestEnemyHQGuess);
+        if (closestEnemyHQGuess == null || !newEnemyHQGuess.equals(closestEnemyHQGuess)) {
+            closestEnemyHQGuess = newEnemyHQGuess;
+            closestEnemyHQGuessDir = getBestDirTo(closestEnemyHQGuess);
+            // Debug.println("Guessing enemy HQ at " + closestEnemyHQGuess);
+        }
     }
 
     public void checkIfHQNear() throws GameActionException {
@@ -215,17 +227,17 @@ public class Headquarters extends Robot {
             int dist = currLoc.distanceSquaredTo(well.getMapLocation());
             if (well.getResourceType() == ResourceType.ADAMANTIUM && dist <= closestAdWellDistance) {
                 closestAdWellDistance = dist;
-                nearestAdWell = well.getMapLocation();
+                nearestVisibleAdWell = well.getMapLocation();
             } else if (well.getResourceType() == ResourceType.MANA && dist <= closestMnWellDistance) {
                 closestMnWellDistance = dist;
-                nearestMnWell = well.getMapLocation();
+                nearestVisibleMnWell = well.getMapLocation();
             }
         }
 
         // Immediately write these to the mine sectors
         int mineSectorIndex = getNextEmptyMineSectorIdx(0);
-        if (nearestAdWell != null) {
-            int sectorIdx = whichSector(nearestAdWell);
+        if (nearestVisibleAdWell != null) {
+            int sectorIdx = whichSector(nearestVisibleAdWell);
             Comms.writeSectorAdamantiumFlag(sectorIdx, 1);
 
             // Mine sector
@@ -241,8 +253,8 @@ public class Headquarters extends Robot {
             }
         }
 
-        if (nearestMnWell != null) {
-            int sectorIdx = whichSector(nearestMnWell);
+        if (nearestVisibleMnWell != null) {
+            int sectorIdx = whichSector(nearestVisibleMnWell);
             Comms.writeSectorManaFlag(sectorIdx, 1);
 
             // Mine sector
@@ -260,12 +272,68 @@ public class Headquarters extends Robot {
         }
     }
 
+    public void loadClosestMiningSector() throws GameActionException {
+        // look in sectors for nearest mn well
+        int mineSectorIndex = getNearestMineSectorIdx(ResourceType.MANA, null);
+        MapLocation mnWellSector = mineSectorIndex == Comms.UNDEFINED_SECTOR_INDEX ? null
+                : sectorCenters[mineSectorIndex];
+        if (mnWellSector != null) {
+            if (nearestMnWellSector == null || !nearestMnWellSector.equals(mnWellSector)) {
+                nearestMnWellSector = mnWellSector;
+                nearestMnWellSectorDir = null;
+            }
+        }
+
+        // look in sectors for nearest ad well
+        mineSectorIndex = getNearestMineSectorIdx(ResourceType.ADAMANTIUM, null);
+        MapLocation adWellSector = mineSectorIndex == Comms.UNDEFINED_SECTOR_INDEX ? null
+                : sectorCenters[mineSectorIndex];
+        if (adWellSector != null) {
+            if (nearestAdWellSector == null || !nearestAdWellSector.equals(adWellSector)) {
+                nearestAdWellSector = adWellSector;
+                nearestAdWellSectorDir = null;
+            }
+        }
+    }
+
+    public MapLocation getNearestMnWell() {
+        if (nearestVisibleMnWell != null) {
+            return nearestVisibleMnWell;
+        }
+
+        if (nearestMnWellSector == null) {
+            return null;
+        }
+
+        if (rc.getRoundNum() < Util.TURN_TO_IGNORE_EARLY_MINING_SECTORS &&
+                Util.distance(home, nearestMnWellSector) > Util.DIST_TO_IGNORE_EARLY_MINING_SECTORS) {
+            return null;
+        }
+
+        return nearestMnWellSector;
+    }
+
+    public MapLocation getNearestAdWell() {
+        return nearestVisibleAdWell != null ? nearestVisibleAdWell : nearestAdWellSector;
+    }
+
     public int getNextCarrierType() throws GameActionException {
         int carrierType;
+        MapLocation nearestMnWell = getNearestMnWell();
+        MapLocation nearestAdWell = getNearestAdWell();
+
         if (currentState == State.INIT) {
             if (nearestMnWell != null && nearestAdWell != null) {
+                // Full information. Proceed as normal.
                 if (isSmallMap()) {
                     carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else if (isSemiSmallMap()) {
+                    // Go 3/1
+                    if (carrierCount < 3) {
+                        carrierType = Comms.HQFlag.CARRIER_MANA;
+                    } else {
+                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                    }
                 } else if (carrierCount == 0) {
                     // Send first carrier to mana
                     carrierType = Comms.HQFlag.CARRIER_MANA;
@@ -298,6 +366,11 @@ public class Headquarters extends Robot {
                 // If there is only mana
                 if (isSmallMap()) {
                     carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else if (rc.getRoundNum() == 1 && !lastHq && carrierCount != 0) {
+                    // If we are not the last HQ and have built one carrier already,
+                    // let all HQs place their visible wells in mining sectors so
+                    // that we can make a more informed decision
+                    carrierType = -1;
                 } else {
                     if (carrierCount < 3) {
                         carrierType = Comms.HQFlag.CARRIER_MANA;
@@ -307,15 +380,26 @@ public class Headquarters extends Robot {
                 }
             } else if (nearestAdWell != null) {
                 // Only adamantium
-                if (isSemiSmallMap()) {
-                    // If we're on a small map, send the first 2 to adamantium
-                    if (carrierCount < 2) {
+                if (isSmallMap()) {
+                    // Adamantium who?
+                    carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else if (isSemiSmallMap()) {
+                    // Semi small: 3/1
+                    if (carrierCount < 1) {
                         carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
                     } else {
                         carrierType = Comms.HQFlag.CARRIER_MANA;
                     }
+                } else if (carrierCount == 0) {
+                    // Send first carrier to mana
+                    carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else if (rc.getRoundNum() == 1 && !lastHq && carrierCount != 0) {
+                    // If we are not the last HQ and have built one carrier already,
+                    // let all HQs place their visible wells in mining sectors so
+                    // that we can make a more informed decision
+                    carrierType = -1;
                 } else {
-                    // If we're on a big map, go 1/3
+                    // Big: 1/3
                     if (carrierCount < 3) {
                         carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
                     } else {
@@ -326,8 +410,20 @@ public class Headquarters extends Robot {
                 // Small map, still go all mana
                 if (isSmallMap()) {
                     carrierType = Comms.HQFlag.CARRIER_MANA;
+                } else if (isSemiSmallMap()) {
+                    // Go 3/1
+                    if (carrierCount < 3) {
+                        carrierType = Comms.HQFlag.CARRIER_MANA;
+                    } else {
+                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
+                    }
+                } else if (rc.getRoundNum() == 1 && !lastHq && carrierCount != 0) {
+                    // If we are not the last HQ and have built one carrier already,
+                    // let all HQs place their visible wells in mining sectors so
+                    // that we can make a more informed decision
+                    carrierType = -1;
                 } else {
-                    // If there are neither, go 2/2
+                    // Go 2/2
                     if (carrierCount < 2) {
                         carrierType = Comms.HQFlag.CARRIER_MANA;
                     } else {
@@ -354,66 +450,44 @@ public class Headquarters extends Robot {
     }
 
     public MapLocation getNextCarrierLocation(int carrierType) throws GameActionException {
-        /*
-         * 1. figure out next carrier type
-         * in firstRounds make the first 2 AD and the second 2 MN
-         * otherwise copy the buildCarrier logic
-         * 
-         * 2. based on this, find closest of that well
-         * 3. get locations for this using Util.findInitLocation(currLoc, dir from 2)
-         */
-
         Direction dirToBuild = null;
+
         if (carrierType == Comms.HQFlag.CARRIER_ADAMANTIUM) {
-            if (nearestAdWell != null) {
-                if (nearestAdWellDir == null) {
-                    nearestAdWellDir = getBestDirTo(nearestAdWell);
+            if (nearestVisibleAdWell != null) {
+                if (nearestVisibleAdWellDir == null) {
+                    nearestVisibleAdWellDir = getBestDirTo(nearestVisibleAdWell);
                 }
-                dirToBuild = nearestAdWellDir;
+                dirToBuild = nearestVisibleAdWellDir;
+            } else if (nearestAdWellSector != null) {
+                if (nearestAdWellSectorDir == null) {
+                    nearestAdWellSectorDir = getBestDirTo(nearestAdWellSector);
+                }
+                dirToBuild = nearestAdWellSectorDir;
             } else {
-                // look in sectors for nearest ad well
-                int mineSectorIndex = getNearestMineSectorIdx(ResourceType.ADAMANTIUM, null);
-                MapLocation adWellSector = mineSectorIndex == Comms.UNDEFINED_SECTOR_INDEX ? null
-                        : sectorCenters[mineSectorIndex];
-                if (adWellSector != null) {
-                    if (nearestAdWellSector == null || !nearestAdWellSector.equals(adWellSector)) {
-                        nearestAdWellSector = adWellSector;
-                        nearestAdWellDir = getBestDirTo(nearestAdWellSector);
-                    }
-                    dirToBuild = nearestAdWellDir;
+                // Build init towards the center
+                if (currentState == State.INIT) {
+                    dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
                 } else {
-                    // Build init towards the center
-                    if (currentState == State.INIT) {
-                        dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
-                    } else {
-                        dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
-                    }
+                    dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
                 }
             }
         } else {
-            if (nearestMnWell != null) {
-                if (nearestMnWellDir == null) {
-                    nearestMnWellDir = getBestDirTo(nearestMnWell);
+            if (nearestVisibleMnWell != null) {
+                if (nearestVisibleMnWellDir == null) {
+                    nearestVisibleMnWellDir = getBestDirTo(nearestVisibleMnWell);
                 }
-                dirToBuild = nearestMnWellDir;
+                dirToBuild = nearestVisibleMnWellDir;
+            } else if (nearestMnWellSector != null) {
+                if (nearestMnWellSectorDir == null) {
+                    nearestMnWellSectorDir = getBestDirTo(nearestMnWellSector);
+                }
+                dirToBuild = nearestMnWellSectorDir;
             } else {
-                // look in sectors for nearest mn well
-                int mineSectorIndex = getNearestMineSectorIdx(ResourceType.MANA, null);
-                MapLocation mnWellSector = mineSectorIndex == Comms.UNDEFINED_SECTOR_INDEX ? null
-                        : sectorCenters[mineSectorIndex];
-                if (mnWellSector != null) {
-                    if (nearestMnWellSector == null || !nearestMnWellSector.equals(mnWellSector)) {
-                        nearestMnWellSector = mnWellSector;
-                        nearestMnWellDir = getBestDirTo(nearestMnWellSector);
-                    }
-                    dirToBuild = nearestMnWellDir;
+                // Build init towards the center
+                if (currentState == State.INIT) {
+                    dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
                 } else {
-                    // Build init towards the center
-                    if (currentState == State.INIT) {
-                        dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
-                    } else {
-                        dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
-                    }
+                    dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
                 }
             }
         }
