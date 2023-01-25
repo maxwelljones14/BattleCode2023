@@ -534,751 +534,683 @@ public class BFSCooldown20 {
 
 
         // check (-1, 0)
-        if (rc.canSenseLocation(l111) && rc.sensePassability(l111)) { 
+        if (rc.canSenseLocation(l111) && rc.sensePassability(l111)) {
             d111 = 0.4375;
             mapInfo = rc.senseMapInfo(l111);
             currentDir = mapInfo.getCurrentDirection();
             d111 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, -1)
-        if (rc.canSenseLocation(l97) && rc.sensePassability(l97)) { 
+        if (rc.canSenseLocation(l97) && rc.sensePassability(l97)) {
             d97 = Math.min(0.5, d111);
             mapInfo = rc.senseMapInfo(l97);
             currentDir = mapInfo.getCurrentDirection();
             d97 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, 1)
-        if (rc.canSenseLocation(l127) && rc.sensePassability(l127)) { 
+        if (rc.canSenseLocation(l127) && rc.sensePassability(l127)) {
             d127 = Math.min(0.375, d111);
             mapInfo = rc.senseMapInfo(l127);
             currentDir = mapInfo.getCurrentDirection();
             d127 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, 0)
-        if (rc.canSenseLocation(l113) && rc.sensePassability(l113)) { 
+        if (rc.canSenseLocation(l113) && rc.sensePassability(l113)) {
             d113 = Math.min(0.3125, Math.min(d97, d127));
             mapInfo = rc.senseMapInfo(l113);
             currentDir = mapInfo.getCurrentDirection();
             d113 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, -1)
-        if (rc.canSenseLocation(l96) && rc.sensePassability(l96)) { 
+        if (rc.canSenseLocation(l96) && rc.sensePassability(l96)) {
             d96 = Math.min(0.1875, Math.min(d111, d97));
             mapInfo = rc.senseMapInfo(l96);
             currentDir = mapInfo.getCurrentDirection();
             d96 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, 1)
-        if (rc.canSenseLocation(l126) && rc.sensePassability(l126)) { 
+        if (rc.canSenseLocation(l126) && rc.sensePassability(l126)) {
             d126 = Math.min(0.125, Math.min(d111, d127));
             mapInfo = rc.senseMapInfo(l126);
             currentDir = mapInfo.getCurrentDirection();
             d126 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, -1)
-        if (rc.canSenseLocation(l98) && rc.sensePassability(l98)) { 
+        if (rc.canSenseLocation(l98) && rc.sensePassability(l98)) {
             d98 = Math.min(0.25, Math.min(d97, d113));
             mapInfo = rc.senseMapInfo(l98);
             currentDir = mapInfo.getCurrentDirection();
             d98 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, 1)
-        if (rc.canSenseLocation(l128) && rc.sensePassability(l128)) { 
+        if (rc.canSenseLocation(l128) && rc.sensePassability(l128)) {
             d128 = Math.min(0.0625, Math.min(d127, d113));
             mapInfo = rc.senseMapInfo(l128);
             currentDir = mapInfo.getCurrentDirection();
             d128 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, 0)
-        if (rc.canSenseLocation(l110) && rc.sensePassability(l110)) { 
+        if (rc.canSenseLocation(l110) && rc.sensePassability(l110)) {
             d110 = Math.min(d111, Math.min(d96, d126));
             mapInfo = rc.senseMapInfo(l110);
             currentDir = mapInfo.getCurrentDirection();
             d110 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, -2)
-        if (rc.canSenseLocation(l82) && rc.sensePassability(l82)) { 
+        if (rc.canSenseLocation(l82) && rc.sensePassability(l82)) {
             d82 = Math.min(d97, Math.min(d96, d98));
             mapInfo = rc.senseMapInfo(l82);
             currentDir = mapInfo.getCurrentDirection();
             d82 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, 2)
-        if (rc.canSenseLocation(l142) && rc.sensePassability(l142)) { 
+        if (rc.canSenseLocation(l142) && rc.sensePassability(l142)) {
             d142 = Math.min(d127, Math.min(d126, d128));
             mapInfo = rc.senseMapInfo(l142);
             currentDir = mapInfo.getCurrentDirection();
             d142 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, 0)
-        if (rc.canSenseLocation(l114) && rc.sensePassability(l114)) { 
+        if (rc.canSenseLocation(l114) && rc.sensePassability(l114)) {
             d114 = Math.min(d113, Math.min(d98, d128));
             mapInfo = rc.senseMapInfo(l114);
             currentDir = mapInfo.getCurrentDirection();
             d114 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, -1)
-        if (rc.canSenseLocation(l95) && rc.sensePassability(l95)) { 
+        if (rc.canSenseLocation(l95) && rc.sensePassability(l95)) {
             d95 = Math.min(d111, Math.min(d96, d110));
             mapInfo = rc.senseMapInfo(l95);
             currentDir = mapInfo.getCurrentDirection();
             d95 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, 1)
-        if (rc.canSenseLocation(l125) && rc.sensePassability(l125)) { 
+        if (rc.canSenseLocation(l125) && rc.sensePassability(l125)) {
             d125 = Math.min(d111, Math.min(d126, d110));
             mapInfo = rc.senseMapInfo(l125);
             currentDir = mapInfo.getCurrentDirection();
             d125 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, -2)
-        if (rc.canSenseLocation(l81) && rc.sensePassability(l81)) { 
+        if (rc.canSenseLocation(l81) && rc.sensePassability(l81)) {
             d81 = Math.min(d97, Math.min(d96, Math.min(d82, d95)));
             mapInfo = rc.senseMapInfo(l81);
             currentDir = mapInfo.getCurrentDirection();
             d81 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, 2)
-        if (rc.canSenseLocation(l141) && rc.sensePassability(l141)) { 
+        if (rc.canSenseLocation(l141) && rc.sensePassability(l141)) {
             d141 = Math.min(d127, Math.min(d126, Math.min(d142, d125)));
             mapInfo = rc.senseMapInfo(l141);
             currentDir = mapInfo.getCurrentDirection();
             d141 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, -2)
-        if (rc.canSenseLocation(l83) && rc.sensePassability(l83)) { 
+        if (rc.canSenseLocation(l83) && rc.sensePassability(l83)) {
             d83 = Math.min(d97, Math.min(d98, d82));
             mapInfo = rc.senseMapInfo(l83);
             currentDir = mapInfo.getCurrentDirection();
             d83 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, 2)
-        if (rc.canSenseLocation(l143) && rc.sensePassability(l143)) { 
+        if (rc.canSenseLocation(l143) && rc.sensePassability(l143)) {
             d143 = Math.min(d127, Math.min(d128, d142));
             mapInfo = rc.senseMapInfo(l143);
             currentDir = mapInfo.getCurrentDirection();
             d143 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, -1)
-        if (rc.canSenseLocation(l99) && rc.sensePassability(l99)) { 
+        if (rc.canSenseLocation(l99) && rc.sensePassability(l99)) {
             d99 = Math.min(d113, Math.min(d98, Math.min(d114, d83)));
             mapInfo = rc.senseMapInfo(l99);
             currentDir = mapInfo.getCurrentDirection();
             d99 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, 1)
-        if (rc.canSenseLocation(l129) && rc.sensePassability(l129)) { 
+        if (rc.canSenseLocation(l129) && rc.sensePassability(l129)) {
             d129 = Math.min(d113, Math.min(d128, Math.min(d114, d143)));
             mapInfo = rc.senseMapInfo(l129);
             currentDir = mapInfo.getCurrentDirection();
             d129 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, -2)
-        if (rc.canSenseLocation(l80) && rc.sensePassability(l80)) { 
+        if (rc.canSenseLocation(l80) && rc.sensePassability(l80)) {
             d80 = Math.min(d96, Math.min(d95, d81));
             mapInfo = rc.senseMapInfo(l80);
             currentDir = mapInfo.getCurrentDirection();
             d80 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, 2)
-        if (rc.canSenseLocation(l140) && rc.sensePassability(l140)) { 
+        if (rc.canSenseLocation(l140) && rc.sensePassability(l140)) {
             d140 = Math.min(d126, Math.min(d125, d141));
             mapInfo = rc.senseMapInfo(l140);
             currentDir = mapInfo.getCurrentDirection();
             d140 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, -2)
-        if (rc.canSenseLocation(l84) && rc.sensePassability(l84)) { 
+        if (rc.canSenseLocation(l84) && rc.sensePassability(l84)) {
             d84 = Math.min(d98, Math.min(d83, d99));
             mapInfo = rc.senseMapInfo(l84);
             currentDir = mapInfo.getCurrentDirection();
             d84 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, 2)
-        if (rc.canSenseLocation(l144) && rc.sensePassability(l144)) { 
+        if (rc.canSenseLocation(l144) && rc.sensePassability(l144)) {
             d144 = Math.min(d128, Math.min(d143, d129));
             mapInfo = rc.senseMapInfo(l144);
             currentDir = mapInfo.getCurrentDirection();
             d144 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, 0)
-        if (rc.canSenseLocation(l109) && rc.sensePassability(l109)) { 
+        if (rc.canSenseLocation(l109) && rc.sensePassability(l109)) {
             d109 = Math.min(d110, Math.min(d95, d125));
             mapInfo = rc.senseMapInfo(l109);
             currentDir = mapInfo.getCurrentDirection();
             d109 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, -3)
-        if (rc.canSenseLocation(l67) && rc.sensePassability(l67)) { 
+        if (rc.canSenseLocation(l67) && rc.sensePassability(l67)) {
             d67 = Math.min(d82, Math.min(d81, d83));
             mapInfo = rc.senseMapInfo(l67);
             currentDir = mapInfo.getCurrentDirection();
             d67 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, 3)
-        if (rc.canSenseLocation(l157) && rc.sensePassability(l157)) { 
+        if (rc.canSenseLocation(l157) && rc.sensePassability(l157)) {
             d157 = Math.min(d142, Math.min(d141, d143));
             mapInfo = rc.senseMapInfo(l157);
             currentDir = mapInfo.getCurrentDirection();
             d157 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, 0)
-        if (rc.canSenseLocation(l115) && rc.sensePassability(l115)) { 
+        if (rc.canSenseLocation(l115) && rc.sensePassability(l115)) {
             d115 = Math.min(d114, Math.min(d99, d129));
             mapInfo = rc.senseMapInfo(l115);
             currentDir = mapInfo.getCurrentDirection();
             d115 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, -1)
-        if (rc.canSenseLocation(l94) && rc.sensePassability(l94)) { 
+        if (rc.canSenseLocation(l94) && rc.sensePassability(l94)) {
             d94 = Math.min(d110, Math.min(d95, Math.min(d80, d109)));
             mapInfo = rc.senseMapInfo(l94);
             currentDir = mapInfo.getCurrentDirection();
             d94 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, 1)
-        if (rc.canSenseLocation(l124) && rc.sensePassability(l124)) { 
+        if (rc.canSenseLocation(l124) && rc.sensePassability(l124)) {
             d124 = Math.min(d110, Math.min(d125, Math.min(d140, d109)));
             mapInfo = rc.senseMapInfo(l124);
             currentDir = mapInfo.getCurrentDirection();
             d124 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, -3)
-        if (rc.canSenseLocation(l66) && rc.sensePassability(l66)) { 
+        if (rc.canSenseLocation(l66) && rc.sensePassability(l66)) {
             d66 = Math.min(d82, Math.min(d81, Math.min(d80, d67)));
             mapInfo = rc.senseMapInfo(l66);
             currentDir = mapInfo.getCurrentDirection();
             d66 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, 3)
-        if (rc.canSenseLocation(l156) && rc.sensePassability(l156)) { 
+        if (rc.canSenseLocation(l156) && rc.sensePassability(l156)) {
             d156 = Math.min(d142, Math.min(d141, Math.min(d140, d157)));
             mapInfo = rc.senseMapInfo(l156);
             currentDir = mapInfo.getCurrentDirection();
             d156 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, -3)
-        if (rc.canSenseLocation(l68) && rc.sensePassability(l68)) { 
+        if (rc.canSenseLocation(l68) && rc.sensePassability(l68)) {
             d68 = Math.min(d82, Math.min(d83, Math.min(d84, d67)));
             mapInfo = rc.senseMapInfo(l68);
             currentDir = mapInfo.getCurrentDirection();
             d68 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, 3)
-        if (rc.canSenseLocation(l158) && rc.sensePassability(l158)) { 
+        if (rc.canSenseLocation(l158) && rc.sensePassability(l158)) {
             d158 = Math.min(d142, Math.min(d143, Math.min(d144, d157)));
             mapInfo = rc.senseMapInfo(l158);
             currentDir = mapInfo.getCurrentDirection();
             d158 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, -1)
-        if (rc.canSenseLocation(l100) && rc.sensePassability(l100)) { 
+        if (rc.canSenseLocation(l100) && rc.sensePassability(l100)) {
             d100 = Math.min(d114, Math.min(d99, Math.min(d84, d115)));
             mapInfo = rc.senseMapInfo(l100);
             currentDir = mapInfo.getCurrentDirection();
             d100 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, 1)
-        if (rc.canSenseLocation(l130) && rc.sensePassability(l130)) { 
+        if (rc.canSenseLocation(l130) && rc.sensePassability(l130)) {
             d130 = Math.min(d114, Math.min(d129, Math.min(d144, d115)));
             mapInfo = rc.senseMapInfo(l130);
             currentDir = mapInfo.getCurrentDirection();
             d130 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, -2)
-        if (rc.canSenseLocation(l79) && rc.sensePassability(l79)) { 
+        if (rc.canSenseLocation(l79) && rc.sensePassability(l79)) {
             d79 = Math.min(d95, Math.min(d80, d94));
             mapInfo = rc.senseMapInfo(l79);
             currentDir = mapInfo.getCurrentDirection();
             d79 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, 2)
-        if (rc.canSenseLocation(l139) && rc.sensePassability(l139)) { 
+        if (rc.canSenseLocation(l139) && rc.sensePassability(l139)) {
             d139 = Math.min(d125, Math.min(d140, d124));
             mapInfo = rc.senseMapInfo(l139);
             currentDir = mapInfo.getCurrentDirection();
             d139 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, -3)
-        if (rc.canSenseLocation(l65) && rc.sensePassability(l65)) { 
+        if (rc.canSenseLocation(l65) && rc.sensePassability(l65)) {
             d65 = Math.min(d81, Math.min(d80, Math.min(d66, d79)));
             mapInfo = rc.senseMapInfo(l65);
             currentDir = mapInfo.getCurrentDirection();
             d65 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, 3)
-        if (rc.canSenseLocation(l155) && rc.sensePassability(l155)) { 
+        if (rc.canSenseLocation(l155) && rc.sensePassability(l155)) {
             d155 = Math.min(d141, Math.min(d140, Math.min(d156, d139)));
             mapInfo = rc.senseMapInfo(l155);
             currentDir = mapInfo.getCurrentDirection();
             d155 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, -3)
-        if (rc.canSenseLocation(l69) && rc.sensePassability(l69)) { 
+        if (rc.canSenseLocation(l69) && rc.sensePassability(l69)) {
             d69 = Math.min(d83, Math.min(d84, d68));
             mapInfo = rc.senseMapInfo(l69);
             currentDir = mapInfo.getCurrentDirection();
             d69 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, 3)
-        if (rc.canSenseLocation(l159) && rc.sensePassability(l159)) { 
+        if (rc.canSenseLocation(l159) && rc.sensePassability(l159)) {
             d159 = Math.min(d143, Math.min(d144, d158));
             mapInfo = rc.senseMapInfo(l159);
             currentDir = mapInfo.getCurrentDirection();
             d159 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, -2)
-        if (rc.canSenseLocation(l85) && rc.sensePassability(l85)) { 
+        if (rc.canSenseLocation(l85) && rc.sensePassability(l85)) {
             d85 = Math.min(d99, Math.min(d84, Math.min(d100, d69)));
             mapInfo = rc.senseMapInfo(l85);
             currentDir = mapInfo.getCurrentDirection();
             d85 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, 2)
-        if (rc.canSenseLocation(l145) && rc.sensePassability(l145)) { 
+        if (rc.canSenseLocation(l145) && rc.sensePassability(l145)) {
             d145 = Math.min(d129, Math.min(d144, Math.min(d130, d159)));
             mapInfo = rc.senseMapInfo(l145);
             currentDir = mapInfo.getCurrentDirection();
             d145 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-4, 0)
-        if (rc.canSenseLocation(l108) && rc.sensePassability(l108)) { 
+        if (rc.canSenseLocation(l108) && rc.sensePassability(l108)) {
             d108 = Math.min(d109, Math.min(d94, d124));
             mapInfo = rc.senseMapInfo(l108);
             currentDir = mapInfo.getCurrentDirection();
             d108 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, -4)
-        if (rc.canSenseLocation(l52) && rc.sensePassability(l52)) { 
+        if (rc.canSenseLocation(l52) && rc.sensePassability(l52)) {
             d52 = Math.min(d67, Math.min(d66, d68));
             mapInfo = rc.senseMapInfo(l52);
             currentDir = mapInfo.getCurrentDirection();
             d52 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, 4)
-        if (rc.canSenseLocation(l172) && rc.sensePassability(l172)) { 
+        if (rc.canSenseLocation(l172) && rc.sensePassability(l172)) {
             d172 = Math.min(d157, Math.min(d156, d158));
             mapInfo = rc.senseMapInfo(l172);
             currentDir = mapInfo.getCurrentDirection();
             d172 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (4, 0)
-        if (rc.canSenseLocation(l116) && rc.sensePassability(l116)) { 
+        if (rc.canSenseLocation(l116) && rc.sensePassability(l116)) {
             d116 = Math.min(d115, Math.min(d100, d130));
             mapInfo = rc.senseMapInfo(l116);
             currentDir = mapInfo.getCurrentDirection();
             d116 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-4, -1)
-        if (rc.canSenseLocation(l93) && rc.sensePassability(l93)) { 
+        if (rc.canSenseLocation(l93) && rc.sensePassability(l93)) {
             d93 = Math.min(d109, Math.min(d94, Math.min(d79, d108)));
             mapInfo = rc.senseMapInfo(l93);
             currentDir = mapInfo.getCurrentDirection();
             d93 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-4, 1)
-        if (rc.canSenseLocation(l123) && rc.sensePassability(l123)) { 
+        if (rc.canSenseLocation(l123) && rc.sensePassability(l123)) {
             d123 = Math.min(d109, Math.min(d124, Math.min(d139, d108)));
             mapInfo = rc.senseMapInfo(l123);
             currentDir = mapInfo.getCurrentDirection();
             d123 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, -4)
-        if (rc.canSenseLocation(l51) && rc.sensePassability(l51)) { 
+        if (rc.canSenseLocation(l51) && rc.sensePassability(l51)) {
             d51 = Math.min(d67, Math.min(d66, Math.min(d65, d52)));
             mapInfo = rc.senseMapInfo(l51);
             currentDir = mapInfo.getCurrentDirection();
             d51 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, 4)
-        if (rc.canSenseLocation(l171) && rc.sensePassability(l171)) { 
+        if (rc.canSenseLocation(l171) && rc.sensePassability(l171)) {
             d171 = Math.min(d157, Math.min(d156, Math.min(d155, d172)));
             mapInfo = rc.senseMapInfo(l171);
             currentDir = mapInfo.getCurrentDirection();
             d171 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, -4)
-        if (rc.canSenseLocation(l53) && rc.sensePassability(l53)) { 
+        if (rc.canSenseLocation(l53) && rc.sensePassability(l53)) {
             d53 = Math.min(d67, Math.min(d68, Math.min(d69, d52)));
             mapInfo = rc.senseMapInfo(l53);
             currentDir = mapInfo.getCurrentDirection();
             d53 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, 4)
-        if (rc.canSenseLocation(l173) && rc.sensePassability(l173)) { 
+        if (rc.canSenseLocation(l173) && rc.sensePassability(l173)) {
             d173 = Math.min(d157, Math.min(d158, Math.min(d159, d172)));
             mapInfo = rc.senseMapInfo(l173);
             currentDir = mapInfo.getCurrentDirection();
             d173 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (4, -1)
-        if (rc.canSenseLocation(l101) && rc.sensePassability(l101)) { 
+        if (rc.canSenseLocation(l101) && rc.sensePassability(l101)) {
             d101 = Math.min(d115, Math.min(d100, Math.min(d85, d116)));
             mapInfo = rc.senseMapInfo(l101);
             currentDir = mapInfo.getCurrentDirection();
             d101 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (4, 1)
-        if (rc.canSenseLocation(l131) && rc.sensePassability(l131)) { 
+        if (rc.canSenseLocation(l131) && rc.sensePassability(l131)) {
             d131 = Math.min(d115, Math.min(d130, Math.min(d145, d116)));
             mapInfo = rc.senseMapInfo(l131);
             currentDir = mapInfo.getCurrentDirection();
             d131 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, -3)
-        if (rc.canSenseLocation(l64) && rc.sensePassability(l64)) { 
+        if (rc.canSenseLocation(l64) && rc.sensePassability(l64)) {
             d64 = Math.min(d80, Math.min(d79, d65));
             mapInfo = rc.senseMapInfo(l64);
             currentDir = mapInfo.getCurrentDirection();
             d64 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, 3)
-        if (rc.canSenseLocation(l154) && rc.sensePassability(l154)) { 
+        if (rc.canSenseLocation(l154) && rc.sensePassability(l154)) {
             d154 = Math.min(d140, Math.min(d139, d155));
             mapInfo = rc.senseMapInfo(l154);
             currentDir = mapInfo.getCurrentDirection();
             d154 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, -3)
-        if (rc.canSenseLocation(l70) && rc.sensePassability(l70)) { 
+        if (rc.canSenseLocation(l70) && rc.sensePassability(l70)) {
             d70 = Math.min(d84, Math.min(d69, d85));
             mapInfo = rc.senseMapInfo(l70);
             currentDir = mapInfo.getCurrentDirection();
             d70 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, 3)
-        if (rc.canSenseLocation(l160) && rc.sensePassability(l160)) { 
+        if (rc.canSenseLocation(l160) && rc.sensePassability(l160)) {
             d160 = Math.min(d144, Math.min(d159, d145));
             mapInfo = rc.senseMapInfo(l160);
             currentDir = mapInfo.getCurrentDirection();
             d160 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-4, -2)
-        if (rc.canSenseLocation(l78) && rc.sensePassability(l78)) { 
+        if (rc.canSenseLocation(l78) && rc.sensePassability(l78)) {
             d78 = Math.min(d94, Math.min(d79, Math.min(d93, d64)));
             mapInfo = rc.senseMapInfo(l78);
             currentDir = mapInfo.getCurrentDirection();
             d78 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-4, 2)
-        if (rc.canSenseLocation(l138) && rc.sensePassability(l138)) { 
+        if (rc.canSenseLocation(l138) && rc.sensePassability(l138)) {
             d138 = Math.min(d124, Math.min(d139, Math.min(d123, d154)));
             mapInfo = rc.senseMapInfo(l138);
             currentDir = mapInfo.getCurrentDirection();
             d138 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, -4)
-        if (rc.canSenseLocation(l50) && rc.sensePassability(l50)) { 
+        if (rc.canSenseLocation(l50) && rc.sensePassability(l50)) {
             d50 = Math.min(d66, Math.min(d65, Math.min(d51, d64)));
             mapInfo = rc.senseMapInfo(l50);
             currentDir = mapInfo.getCurrentDirection();
             d50 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, 4)
-        if (rc.canSenseLocation(l170) && rc.sensePassability(l170)) { 
+        if (rc.canSenseLocation(l170) && rc.sensePassability(l170)) {
             d170 = Math.min(d156, Math.min(d155, Math.min(d171, d154)));
             mapInfo = rc.senseMapInfo(l170);
             currentDir = mapInfo.getCurrentDirection();
             d170 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, -4)
-        if (rc.canSenseLocation(l54) && rc.sensePassability(l54)) { 
+        if (rc.canSenseLocation(l54) && rc.sensePassability(l54)) {
             d54 = Math.min(d68, Math.min(d69, Math.min(d53, d70)));
             mapInfo = rc.senseMapInfo(l54);
             currentDir = mapInfo.getCurrentDirection();
             d54 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, 4)
-        if (rc.canSenseLocation(l174) && rc.sensePassability(l174)) { 
+        if (rc.canSenseLocation(l174) && rc.sensePassability(l174)) {
             d174 = Math.min(d158, Math.min(d159, Math.min(d173, d160)));
             mapInfo = rc.senseMapInfo(l174);
             currentDir = mapInfo.getCurrentDirection();
             d174 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (4, -2)
-        if (rc.canSenseLocation(l86) && rc.sensePassability(l86)) { 
+        if (rc.canSenseLocation(l86) && rc.sensePassability(l86)) {
             d86 = Math.min(d100, Math.min(d85, Math.min(d101, d70)));
             mapInfo = rc.senseMapInfo(l86);
             currentDir = mapInfo.getCurrentDirection();
             d86 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (4, 2)
-        if (rc.canSenseLocation(l146) && rc.sensePassability(l146)) { 
+        if (rc.canSenseLocation(l146) && rc.sensePassability(l146)) {
             d146 = Math.min(d130, Math.min(d145, Math.min(d131, d160)));
             mapInfo = rc.senseMapInfo(l146);
             currentDir = mapInfo.getCurrentDirection();
             d146 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));
+                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
 

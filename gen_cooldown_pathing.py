@@ -144,8 +144,7 @@ def gen_bfs(radius):
         {indent}currentDir = mapInfo.getCurrentDirection();
         {indent}d{encode(x,y)} += 10 * (mapInfo.getCooldownMultiplier(team)) + 
         {indent}{indent} (currentDir == CENTER ? 0 :
-        {indent}{indent} ({direction_to(x,y)}_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 :
-        {indent}{indent} ({opposite(direction_to(x,y))}_ADJ.indexOf(currentDir.ordinal() >= 0 ? 5 : 0))));"""
+        {indent}{indent} ({direction_to(x,y)}_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));"""
                     out += f"""
         }}"""
                     visited.add(encode(x,y))
