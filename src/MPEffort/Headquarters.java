@@ -88,7 +88,7 @@ public class Headquarters extends Robot {
     }
 
     public void localResign() {
-        if (rc.getRoundNum() >= 400 && rc.getRobotCount() < 4)
+        if (rc.getRoundNum() >= 400 && rc.getRobotCount() <= numHqs)
             rc.resign();
     }
 

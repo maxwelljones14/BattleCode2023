@@ -104,13 +104,13 @@ public class Headquarters extends Robot {
         // if (rc.getRoundNum() == 20) {
         // rc.resign();
         // }
-        if (rc.getRoundNum() >= 400 && rc.getRobotCount() < 4)
+        if (rc.getRoundNum() >= 400 && rc.getRobotCount() <= numHqs)
             rc.resign();
     }
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        localResign();
+        // localResign();
         adamCarrierTracker.update();
         manaCarrierTracker.update();
         clearOldEnemyInfo();
