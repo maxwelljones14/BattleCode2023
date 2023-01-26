@@ -287,15 +287,19 @@ public class Util {
         return bestCollect == null ? well : bestCollect;
     }
 
-    static MapLocation findInitLocation(MapLocation currLoc, Direction dir) throws GameActionException {
+    static MapLocation findInitLocation(RobotType type, MapLocation currLoc, Direction dir) throws GameActionException {
         int count = 0;
         MapLocation buildLocation = null;
         while (count < 8 && buildLocation == null) {
             MapLocation[] possibleLocations = Util.findInitLocationPossibilities(currLoc, dir);
             for (int x = 0; x < possibleLocations.length; x++) {
                 MapLocation newLoc = possibleLocations[x];
-                if (rc.canSenseLocation(newLoc) && rc.sensePassability(newLoc)
-                        && rc.senseRobotAtLocation(newLoc) == null) {
+                if (rc.canBuildRobot(type, newLoc) &&
+                // Don't mix up carriers reading the wrong HQ's flag
+                        (type == RobotType.LAUNCHER ||
+                                !Headquarters.nearFriendlyHQ ||
+                                Headquarters.friendlyHQLoc.distanceSquaredTo(newLoc) > Robot.home
+                                        .distanceSquaredTo(newLoc))) {
                     buildLocation = newLoc;
                     // Debug.println("Found build location: " + buildLocation + " with dir: " + dir
                     // + "");

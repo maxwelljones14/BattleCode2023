@@ -12,6 +12,7 @@ public class Carrier extends Robot {
         PLACING_ANCHOR,
         REPORTING,
         DEPOSITING,
+        REPORTING_EARLY_WELL,
     }
 
     static CarrierState currState;
@@ -41,6 +42,8 @@ public class Carrier extends Robot {
 
     static int lastTurnCombatSectorNearby;
 
+    static boolean needToReportEarlyWell;
+
     public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
 
@@ -63,6 +66,7 @@ public class Carrier extends Robot {
         lastTurnReported = 0;
         lastTurnCombatSectorNearby = -1;
         switchedResourceTarget = false;
+        needToReportEarlyWell = true;
     }
 
     public MapLocation findUnconqueredIsland() throws GameActionException {
@@ -115,7 +119,10 @@ public class Carrier extends Robot {
     public void trySwitchState() throws GameActionException {
         switch (currState) {
             case MINING:
-                if (shouldReport()) {
+                if (shouldReportEarlyWell()) {
+                    currState = CarrierState.REPORTING_EARLY_WELL;
+                    sectorToReport = 1;
+                } else if (shouldReport()) {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
                 } else if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
@@ -163,6 +170,24 @@ public class Carrier extends Robot {
                     enterMineState();
                 }
                 break;
+            case REPORTING_EARLY_WELL:
+                // closestWell should never be null.
+                if (closestWell == null) {
+                    enterMineState();
+                    Debug.println("ERROR: closestWell is null in REPORTING_EARLY_WELL state.");
+                    break;
+                }
+                // Someone else reported the same well already.
+                int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, null);
+                boolean isSameSector = whichSector(closestWell.getMapLocation()) == mineSectorIndex;
+                if (isSameSector || sectorToReport == 0) {
+                    if (rc.getResourceAmount(resourceTarget) != 0) {
+                        currState = CarrierState.DEPOSITING;
+                    } else {
+                        enterMineState();
+                    }
+                }
+                break;
         }
     }
 
@@ -171,6 +196,31 @@ public class Carrier extends Robot {
                 rc.getRoundNum() - lastTurnReported > REPORTING_COOLDOWN &&
                 !closestEnemy.getLocation().isWithinDistanceSquared(closestHQ,
                         RobotType.HEADQUARTERS.visionRadiusSquared);
+    }
+
+    public boolean shouldReportEarlyWell() throws GameActionException {
+        if (!needToReportEarlyWell) {
+            return false;
+        }
+
+        loadClosestWell();
+        if (closestWell == null) {
+            return false;
+        }
+
+        int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, null);
+        if (mineSectorIndex != Comms.UNDEFINED_SECTOR_INDEX) {
+            needToReportEarlyWell = false;
+            return false;
+        }
+
+        // Make sure this was added to the sector database
+        // It might not have been if we see it on an even turn.
+        // since which info is updated flip flops between odd and even turns.
+        sectorDatabase.at(whichSector(closestWell.getMapLocation())).addWell(closestWell.getMapLocation(),
+                resourceTarget);
+        needToReportEarlyWell = false;
+        return true;
     }
 
     public void enterMineState() {
@@ -406,6 +456,11 @@ public class Carrier extends Robot {
                     Nav.move(closestHQ);
                     transfer();
                 }
+                break;
+            case REPORTING_EARLY_WELL:
+                runFromEnemy();
+                Nav.move(home);
+                transfer();
                 break;
         }
     }

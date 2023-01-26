@@ -55,8 +55,10 @@ public class Headquarters extends Robot {
     FastUnitTracker adamCarrierTracker;
     FastUnitTracker manaCarrierTracker;
 
-    static boolean nearHQ;
+    static boolean nearEnemyHQ;
     static MapLocation enemyHQLoc;
+    static boolean nearFriendlyHQ;
+    static MapLocation friendlyHQLoc;
 
     static FastIntIntMap combatSectorToTurnWritten;
 
@@ -207,15 +209,26 @@ public class Headquarters extends Robot {
 
     public void checkIfHQNear() throws GameActionException {
         EnemySensable = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        nearEnemyHQ = false;
         for (int x = 0; x < EnemySensable.length; x++) {
             RobotInfo enemy = EnemySensable[x];
             if (enemy.getType() == RobotType.HEADQUARTERS) {
-                nearHQ = true;
+                nearEnemyHQ = true;
                 enemyHQLoc = enemy.getLocation();
-                return;
+                break;
             }
         }
-        nearHQ = false;
+
+        FriendlySensable = rc.senseNearbyRobots(-1, team);
+        nearFriendlyHQ = false;
+        for (int x = 0; x < FriendlySensable.length; x++) {
+            RobotInfo enemy = FriendlySensable[x];
+            if (enemy.getType() == RobotType.HEADQUARTERS) {
+                nearFriendlyHQ = true;
+                friendlyHQLoc = enemy.getLocation();
+                break;
+            }
+        }
     }
 
     public void findClosestVisibleWells() throws GameActionException {
@@ -381,7 +394,7 @@ public class Headquarters extends Robot {
                     // that we can make a more informed decision
                     carrierType = -1;
                 } else {
-                    // Big map: 1/3 (We've already built the first carrier)
+                    // Big map: 2/2 (We've already built the first carrier)
                     carrierType = initCarrierRatio(2, 2);
                 }
             } else {
@@ -462,7 +475,7 @@ public class Headquarters extends Robot {
                 }
             }
         }
-        return Util.findInitLocation(currLoc, dirToBuild);
+        return Util.findInitLocation(RobotType.CARRIER, currLoc, dirToBuild);
     }
 
     public void toggleState() throws GameActionException {
@@ -540,7 +553,7 @@ public class Headquarters extends Robot {
             if (closestEnemyHQGuess != null) {
                 dir = closestEnemyHQGuessDir;
                 // Debug.printString("HQ " + target + " Dir " + dir);
-                return Util.findInitLocation(currLoc, dir);
+                return Util.findInitLocation(RobotType.LAUNCHER, currLoc, dir);
             }
         }
 
@@ -551,7 +564,7 @@ public class Headquarters extends Robot {
             dir = getBestDirTo(target);
         }
 
-        return Util.findInitLocation(currLoc, dir);
+        return Util.findInitLocation(RobotType.LAUNCHER, currLoc, dir);
     }
 
     public void buildLauncher(MapLocation newLoc) throws GameActionException {
@@ -572,7 +585,7 @@ public class Headquarters extends Robot {
             // symmetry isn't guessed until then.
             buildLauncher: if (launcherCount < initLaunchersWanted) {
                 MapLocation locToBuild = getLauncherLocation();
-                if (nearHQ) {
+                if (nearEnemyHQ) {
                     locToBuild = getLauncherLocation(enemyHQLoc);
                 } else if (isSemiSmallMap()) {
                     locToBuild = getLauncherLocation(

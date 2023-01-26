@@ -77,12 +77,18 @@ public class Robot {
             home = rc.getLocation();
         } else {
             RobotInfo[] sensableWithinVisionRad = rc.senseNearbyRobots(visionRadiusSquared, rc.getTeam());
+            MapLocation closestHQ = null;
+            int closestHQDist = Integer.MAX_VALUE;
             for (RobotInfo robot : sensableWithinVisionRad) {
                 if (robot.getType() == RobotType.HEADQUARTERS) {
-                    MapLocation robotLoc = robot.getLocation();
-                    home = robotLoc;
+                    int dist = robot.getLocation().distanceSquaredTo(rc.getLocation());
+                    if (dist < closestHQDist) {
+                        closestHQDist = dist;
+                        closestHQ = robot.getLocation();
+                    }
                 }
             }
+            home = closestHQ;
             loadHQLocations();
         }
 
