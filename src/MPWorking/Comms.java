@@ -16,6 +16,7 @@ public class Comms {
     public final static int EXPLORE_SECTOR_SLOTS = 13;
     public final static int MINE_SECTOR_SLOTS = 12;
     public final static int SYMMETRY_SLOTS = 1;
+    public final static int NUM_HQS_SLOTS = 1;
 
     // ControlStatus priorities are in increasing priority.
     public class ControlStatus {
@@ -50,6 +51,14 @@ public class Comms {
 
         bufferPool = new int[64];
         dirtyFlags = new boolean[64];
+    }
+
+    public static void writeNumHqs(int num) throws GameActionException {
+        writeNumHqsDoNotCall(num - 1);
+    }
+
+    public static int readNumHqs() throws GameActionException {
+        return readNumHqsDoNotCall() + 1;
     }
 
     public static MapLocation readOurHqLocation(int idx) throws GameActionException {
@@ -5540,6 +5549,30 @@ public class Comms {
 
     public static void writeBPSymmetryAll(int value) throws GameActionException {
         writeToBufferPool(54, (bufferPool[54] & 65311) | (value << 5));
+    }
+
+    public static int readNumHqsDoNotCall() throws GameActionException {
+        return (rc.readSharedArray(54) & 24) >>> 3;
+    }
+
+    public static void writeNumHqsDoNotCall(int value) throws GameActionException {
+        rc.writeSharedArray(54, (rc.readSharedArray(54) & 65511) | (value << 3));
+    }
+
+    public static void writeBPNumHqsDoNotCall(int value) throws GameActionException {
+        writeToBufferPool(54, (bufferPool[54] & 65511) | (value << 3));
+    }
+
+    public static int readNumHqsAll() throws GameActionException {
+        return (rc.readSharedArray(54) & 24) >>> 3;
+    }
+
+    public static void writeNumHqsAll(int value) throws GameActionException {
+        rc.writeSharedArray(54, (rc.readSharedArray(54) & 65511) | (value << 3));
+    }
+
+    public static void writeBPNumHqsAll(int value) throws GameActionException {
+        writeToBufferPool(54, (bufferPool[54] & 65511) | (value << 3));
     }
 
     // BUFFER POOL READ AND WRITE METHODS

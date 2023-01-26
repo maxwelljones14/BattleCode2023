@@ -72,9 +72,10 @@ public class Headquarters extends Robot {
         currentState = State.INIT;
         currLoc = rc.getLocation();
 
-        if (numHqs == -1)
-            numHqs = rc.getRobotCount();
         initSectorPermutation();
+
+        closestEnemyHQGuess = null;
+        closestEnemyHQGuessDir = null;
 
         nearestVisibleAdWell = null;
         nearestVisibleMnWell = null;
@@ -314,7 +315,20 @@ public class Headquarters extends Robot {
     }
 
     public MapLocation getNearestAdWell() {
-        return nearestVisibleAdWell != null ? nearestVisibleAdWell : nearestAdWellSector;
+        if (nearestVisibleAdWell != null) {
+            return nearestVisibleAdWell;
+        }
+
+        if (nearestAdWellSector == null) {
+            return null;
+        }
+
+        if (rc.getRoundNum() < Util.TURN_TO_IGNORE_EARLY_MINING_SECTORS &&
+                Util.distance(home, nearestAdWellSector) > Util.DIST_TO_IGNORE_EARLY_MINING_SECTORS) {
+            return null;
+        }
+
+        return nearestAdWellSector;
     }
 
     public int getNextCarrierType() throws GameActionException {
@@ -323,112 +337,62 @@ public class Headquarters extends Robot {
         MapLocation nearestAdWell = getNearestAdWell();
 
         if (currentState == State.INIT) {
-            if (nearestMnWell != null && nearestAdWell != null) {
+            // Always build MANA first. Some logic is dependent on that.
+            if (carrierCount == 0) {
+                carrierType = Comms.HQFlag.CARRIER_MANA;
+            } else if (isSmallMap()) {
+                // 4/0
+                carrierType = initCarrierRatio(4, 0);
+            } else if (isSemiSmallMap()) {
+                // 3/1
+                carrierType = initCarrierRatio(3, 1);
+            } else if (nearestMnWell != null && nearestAdWell != null) {
                 // Full information. Proceed as normal.
-                if (isSmallMap()) {
-                    carrierType = Comms.HQFlag.CARRIER_MANA;
-                } else if (isSemiSmallMap()) {
-                    // Go 3/1
-                    if (carrierCount < 3) {
-                        carrierType = Comms.HQFlag.CARRIER_MANA;
-                    } else {
-                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                    }
-                } else if (carrierCount == 0) {
-                    // Send first carrier to mana
-                    carrierType = Comms.HQFlag.CARRIER_MANA;
-                } else if (closestEnemyHQGuess == null) {
+                if (closestEnemyHQGuess == null) {
                     // Delay building another carrier until we know where the enemy HQ is
                     carrierType = -1;
                 } else {
                     // Now that we have an HQ guess, decide on AD or MN based on how far it is
                     int estInterceptTime = Util.distance(home, closestEnemyHQGuess) + Util.AVG_FIRST_COMBAT_LENGTH;
                     // If the first carriers can finish a cycle before launchers can reach us,
-                    // go 1/3
+                    // go 2/2
                     if (estInterceptTime > Util.CARRIER_TURNS_TO_FILL + 1.5 * Util.distance(nearestAdWell, home)) {
-                        // We should have already built the mana carrier.
-                        // But if we haven't, build it now.
-                        if (manaCarrierTracker.size() == 0) {
-                            carrierType = Comms.HQFlag.CARRIER_MANA;
-                        } else {
-                            carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                        }
+                        carrierType = initCarrierRatio(2, 2);
                     } else {
                         // Otherwise, go 3/1
-                        if (carrierCount < 3) {
-                            carrierType = Comms.HQFlag.CARRIER_MANA;
-                        } else {
-                            carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                        }
+                        carrierType = initCarrierRatio(3, 1);
                     }
                 }
             } else if (nearestMnWell != null) {
                 // If there is only mana
-                if (isSmallMap()) {
-                    carrierType = Comms.HQFlag.CARRIER_MANA;
-                } else if (rc.getRoundNum() == 1 && !lastHq && carrierCount != 0) {
+                if (rc.getRoundNum() == 1 && !lastHq) {
                     // If we are not the last HQ and have built one carrier already,
                     // let all HQs place their visible wells in mining sectors so
                     // that we can make a more informed decision
                     carrierType = -1;
                 } else {
-                    if (carrierCount < 3) {
-                        carrierType = Comms.HQFlag.CARRIER_MANA;
-                    } else {
-                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                    }
+                    carrierType = initCarrierRatio(3, 1);
                 }
             } else if (nearestAdWell != null) {
                 // Only adamantium
-                if (isSmallMap()) {
-                    // Adamantium who?
-                    carrierType = Comms.HQFlag.CARRIER_MANA;
-                } else if (isSemiSmallMap()) {
-                    // Semi small: 3/1
-                    if (carrierCount < 1) {
-                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                    } else {
-                        carrierType = Comms.HQFlag.CARRIER_MANA;
-                    }
-                } else if (carrierCount == 0) {
-                    // Send first carrier to mana
-                    carrierType = Comms.HQFlag.CARRIER_MANA;
-                } else if (rc.getRoundNum() == 1 && !lastHq && carrierCount != 0) {
+                if (rc.getRoundNum() == 1 && !lastHq) {
                     // If we are not the last HQ and have built one carrier already,
                     // let all HQs place their visible wells in mining sectors so
                     // that we can make a more informed decision
                     carrierType = -1;
                 } else {
-                    // Big: 1/3
-                    if (carrierCount < 3) {
-                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                    } else {
-                        carrierType = Comms.HQFlag.CARRIER_MANA;
-                    }
+                    // Big map: 1/3 (We've already built the first carrier)
+                    carrierType = initCarrierRatio(2, 2);
                 }
             } else {
-                // Small map, still go all mana
-                if (isSmallMap()) {
-                    carrierType = Comms.HQFlag.CARRIER_MANA;
-                } else if (isSemiSmallMap()) {
-                    // Go 3/1
-                    if (carrierCount < 3) {
-                        carrierType = Comms.HQFlag.CARRIER_MANA;
-                    } else {
-                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                    }
-                } else if (rc.getRoundNum() == 1 && !lastHq && carrierCount != 0) {
+                if (rc.getRoundNum() == 1 && !lastHq && carrierCount != 0) {
                     // If we are not the last HQ and have built one carrier already,
                     // let all HQs place their visible wells in mining sectors so
                     // that we can make a more informed decision
                     carrierType = -1;
                 } else {
                     // Go 2/2
-                    if (carrierCount < 2) {
-                        carrierType = Comms.HQFlag.CARRIER_MANA;
-                    } else {
-                        carrierType = Comms.HQFlag.CARRIER_ADAMANTIUM;
-                    }
+                    carrierType = initCarrierRatio(2, 2);
                 }
             }
         } else {
@@ -439,6 +403,13 @@ public class Headquarters extends Robot {
             }
         }
         return carrierType;
+    }
+
+    public int initCarrierRatio(int mana, int adam) {
+        if (carrierCount < mana) {
+            return Comms.HQFlag.CARRIER_MANA;
+        }
+        return Comms.HQFlag.CARRIER_ADAMANTIUM;
     }
 
     public Direction getBestDirTo(MapLocation loc) throws GameActionException {
@@ -606,7 +577,7 @@ public class Headquarters extends Robot {
                 } else if (isSemiSmallMap()) {
                     locToBuild = getLauncherLocation(
                             new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
-                } else if (rc.getRoundNum() < 3) {
+                } else if (closestEnemyHQGuess == null) {
                     break buildLauncher;
                 }
 
@@ -684,6 +655,9 @@ public class Headquarters extends Robot {
 
             Comms.initPrioritySectors();
             Comms.initSymmetry();
+
+            numHqs = rc.getRobotCount();
+            Comms.writeNumHqs(numHqs);
             return;
         }
 
@@ -697,6 +671,7 @@ public class Headquarters extends Robot {
             }
         }
 
+        numHqs = Comms.readNumHqs();
         if (myHqNum == numHqs - 1) {
             lastHq = true;
         }

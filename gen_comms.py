@@ -52,6 +52,12 @@ SCHEMA = {
             'horizontal': 1,
             'rotational': 1,
         }
+    },
+    'num_hqs': {
+        'slots': 1,
+        'bits': {
+            'do_not_call': 2,
+        }
     }
 }
 

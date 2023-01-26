@@ -234,13 +234,16 @@ public class Util {
     }
 
     // Find the best loc based on
-    // 1. If there are only 2 spots left, pick the well loc
+    // 1. If there is only 1 spot left, move into it if you're next to the well
     // 2. Cooldown multiplier
     // 3. Distance to currLoc
     static MapLocation getBestCollectLoc(MapLocation well) throws GameActionException {
-        // If we aren't next to the well, and there are only 2 spots left, pick the well
+        // If there is only 1 spot left and it is the well, one of the carriers
+        // adajcent to the well should move into it.
         int numOpenSpots = getNumOpenCollectSpots(well);
-        if (numOpenSpots == 2 && !rc.getLocation().isAdjacentTo(well)) {
+        if (numOpenSpots == 1 &&
+                rc.getLocation().isAdjacentTo(well) &&
+                rc.senseRobotAtLocation(well) == null) {
             return well;
         }
 

@@ -46,6 +46,14 @@ public class Comms {
         dirtyFlags = new boolean[64];
     }
 
+    public static void writeNumHqs(int num) throws GameActionException {
+        writeNumHqsDoNotCall(num - 1);
+    }
+
+    public static int readNumHqs() throws GameActionException {
+        return readNumHqsDoNotCall() + 1;
+    }
+
     public static MapLocation readOurHqLocation(int idx) throws GameActionException {
         return new MapLocation(readOurHqXCoord(idx), readOurHqYCoord(idx));
     }
