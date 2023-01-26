@@ -38,6 +38,9 @@ if __name__ == '__main__':
     debug_verbose_on = "static final boolean VERBOSE = true;"
     debug_verbose_off = "static final boolean VERBOSE = false;"
 
+    local_resign_off = "// localResign();"
+    local_resign_on = "localResign();"
+
     copyanything(working_src, snapshot_dst)
 
     for r, d, f in os.walk(snapshot_dst):
@@ -50,6 +53,7 @@ if __name__ == '__main__':
             # Replace the target string
             filedata = filedata.replace(working_name, snapshot_name)
             filedata = filedata.replace(debug_verbose_on, debug_verbose_off)
+            filedata = filedata.replace(local_resign_off, local_resign_on)
 
             # Write the file out again
             with open(file_path, 'w') as new_file:
