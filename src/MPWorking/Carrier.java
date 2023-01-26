@@ -16,7 +16,9 @@ public class Carrier extends Robot {
 
     static CarrierState currState;
 
+    static ResourceType originalResourceTarget;
     static ResourceType resourceTarget;
+    static boolean switchedResourceTarget;
 
     static int turnStartedMining;
 
@@ -37,6 +39,8 @@ public class Carrier extends Robot {
 
     static MapLocation closestNeutralIsland;
 
+    static int lastTurnCombatSectorNearby;
+
     public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
 
@@ -48,13 +52,17 @@ public class Carrier extends Robot {
         turnStartedMining = 0;
         int assignment = Comms.readOurHqFlag(homeIdx);
         if (assignment == Comms.HQFlag.CARRIER_ADAMANTIUM) {
+            originalResourceTarget = ResourceType.ADAMANTIUM;
             resourceTarget = ResourceType.ADAMANTIUM;
         } else {
+            originalResourceTarget = ResourceType.MANA;
             resourceTarget = ResourceType.MANA;
         }
         wellsVisitedThisCycle = new FastLocSet();
         wellSectorsVisitedThisCycle = new FastLocSet();
         lastTurnReported = 0;
+        lastTurnCombatSectorNearby = -1;
+        switchedResourceTarget = false;
     }
 
     public MapLocation findUnconqueredIsland() throws GameActionException {
@@ -75,6 +83,7 @@ public class Carrier extends Robot {
 
         closestHQ = getClosestFriendlyHQ(currLoc);
         resetLocalEnemyInformation();
+        checkCombatSectorNearby();
 
         Debug.printString(resourceTarget.toString());
 
@@ -171,6 +180,14 @@ public class Carrier extends Robot {
         turnStartedMining = rc.getRoundNum();
         closestWell = null;
         visitedSectorCenter = false;
+        resourceTarget = originalResourceTarget;
+
+        if (resourceTarget == ResourceType.ADAMANTIUM && shouldSwitchToMana()) {
+            resourceTarget = ResourceType.MANA;
+            switchedResourceTarget = true;
+        } else {
+            switchedResourceTarget = false;
+        }
     }
 
     public void updateHomeifCurrHomeAttacked() throws GameActionException {
@@ -565,5 +582,20 @@ public class Carrier extends Robot {
             Debug.printString(str);
         }
         return target;
+    }
+
+    public void checkCombatSectorNearby() throws GameActionException {
+        // Switch to mining mana if there is a combat sector near the closestHQ.
+        int sector = getNearestCombatSector(closestHQ);
+        if (sector == Comms.UNDEFINED_SECTOR_INDEX)
+            return;
+        if (Util.distance(sectorCenters[sector], closestHQ) <= Util.DIST_TO_SWITCH_TO_MANA) {
+            lastTurnCombatSectorNearby = rc.getRoundNum();
+        }
+    }
+
+    public boolean shouldSwitchToMana() {
+        return !switchedResourceTarget &&
+                rc.getRoundNum() - lastTurnCombatSectorNearby < Util.SWITCH_TO_MANA_TIMEOUT;
     }
 }

@@ -173,14 +173,14 @@ public class SectorInfo {
 
         if (controlStatusSet[Comms.ControlStatus.FRIENDLY_ISLAND]) {
             return Comms.ControlStatus.FRIENDLY_ISLAND;
-        } else if (controlStatusSet[Comms.ControlStatus.NEUTRAL_ISLAND]) {
-            return Comms.ControlStatus.NEUTRAL_ISLAND;
         } else if (controlStatusSet[Comms.ControlStatus.ENEMY_AGGRESIVE] && !isEnemyInfoStale) {
             return Comms.ControlStatus.ENEMY_AGGRESIVE;
         } else if (controlStatusSet[Comms.ControlStatus.ENEMY_ISLAND]) {
             return Comms.ControlStatus.ENEMY_ISLAND;
         } else if (controlStatusSet[Comms.ControlStatus.ENEMY_PASSIVE] && !isEnemyInfoStale) {
             return Comms.ControlStatus.ENEMY_PASSIVE;
+        } else if (controlStatusSet[Comms.ControlStatus.NEUTRAL_ISLAND]) {
+            return Comms.ControlStatus.NEUTRAL_ISLAND;
         } else if (controlStatusSet[Comms.ControlStatus.EMPTY]) {
             return Comms.ControlStatus.EMPTY;
         } else if (controlStatusSet[Comms.ControlStatus.EXPLORING]) {

@@ -34,6 +34,11 @@ public class Util {
     public static final int TURN_TO_IGNORE_EARLY_MINING_SECTORS = 10;
     public static final int DIST_TO_IGNORE_EARLY_MINING_SECTORS = 10;
 
+    // ~2 sectors
+    public static final int DIST_TO_SWITCH_TO_MANA = 12;
+    // Max number of turns a combat sector near home before we decide to NOT switch
+    public static final int SWITCH_TO_MANA_TIMEOUT = 10;
+
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
             Direction.NORTH,

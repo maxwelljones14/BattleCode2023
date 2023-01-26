@@ -1045,6 +1045,16 @@ public class Robot {
      * @throws GameActionException
      */
     public int getNearestCombatSector() throws GameActionException {
+        return getNearestCombatSector(currLoc);
+    }
+
+    /**
+     * Returns nearest combat sector or UNDEFINED_SECTOR_INDEX otherwise
+     * 
+     * @return
+     * @throws GameActionException
+     */
+    public int getNearestCombatSector(MapLocation loc) throws GameActionException {
         int closestSector = Comms.UNDEFINED_SECTOR_INDEX;
         int closestDistance = Integer.MAX_VALUE;
         for (int i = 0; i < Comms.COMBAT_SECTOR_SLOTS; i++) {
@@ -1052,7 +1062,7 @@ public class Robot {
             if (nearestSector == Comms.UNDEFINED_SECTOR_INDEX) {
                 continue;
             }
-            int distance = currLoc.distanceSquaredTo(sectorCenters[nearestSector]);
+            int distance = loc.distanceSquaredTo(sectorCenters[nearestSector]);
             if (distance < closestDistance) {
                 closestDistance = distance;
                 closestSector = nearestSector;

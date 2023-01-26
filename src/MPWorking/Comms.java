@@ -24,11 +24,12 @@ public class Comms {
         public static final int EXPLORING = 1;
         public static final int EMPTY = 2;
 
-        public static final int ENEMY_PASSIVE = 3;
-        public static final int ENEMY_ISLAND = 4;
-        public static final int ENEMY_AGGRESIVE = 5;
+        public static final int NEUTRAL_ISLAND = 3;
 
-        public static final int NEUTRAL_ISLAND = 6;
+        public static final int ENEMY_PASSIVE = 4;
+        public static final int ENEMY_ISLAND = 5;
+        public static final int ENEMY_AGGRESIVE = 6;
+
         public static final int FRIENDLY_ISLAND = 7;
 
         public static final int NUM_CONTROL_STATUS = 8;
