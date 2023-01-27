@@ -1,0 +1,83 @@
+# Credit to Producing Perfection (https://github.com/awesomelemonade/Battlecode2022)
+name: Run Matches
+on: [workflow_dispatch, pull_request]
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  test_private_action_job:
+    name: Run Matches
+    runs-on: ubuntu-latest
+    steps:
+      # checkout this repo
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      # run python/java to play against precompiled programs - pipe results to file
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+          architecture: 'x64'
+      - name: Download JDK 8
+        run: curl https://transfer.sh/WGa3IW/jdk-8u301-linux-x64.tar.gz -o jdk-8u301-linux-x64.tar.gz
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'jdkfile'
+          jdkFile: jdk-8u301-linux-x64.tar.gz
+          java-version: '8.0.301'
+          architecture: x64
+      - name: Java Version
+        run: java -version
+      - name: Make Executable
+        run: chmod +x gradlew
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
+      - name: Gradle Update
+        run: ./gradlew update
+      - name: Build with Gradle
+        run: ./gradlew build
+      - name: List Tasks
+        run: ./gradlew tasks
+      - name: Run Match
+        run: python run_matches.py
+      # upload match files as artifact
+      - name: Archive Match Files
+        uses: actions/upload-artifact@v2
+        with:
+          name: matches
+          path: matches
+          retention-days: 90
+      # upload summary as artifact
+      - name: Archive Summary
+        uses: actions/upload-artifact@v2
+        with:
+          name: matches-summary
+          path: matches-summary.txt
+          retention-days: 90
+      # Post results on github comments - https://github.com/marketplace/actions/create-or-update-comment
+      - name: Find Comment
+        uses: peter-evans/find-comment@v1
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Build Output
+      - name: Generate Comment
+        id: get-comment-body
+        run: |
+          body="$(cat matches-summary.txt)"
+          body="${body//'%'/'%25'}"
+          body="${body//$'\n'/'%0A'}"
+          body="${body//$'\r'/'%0D'}" 
+          echo "::set-output name=body::$body"
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          # comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            Build Output (updated for ${{ github.event.pull_request.head.sha }})
+            Workflow Run (#${{ github.run_number }}): ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            ${{ steps.get-comment-body.outputs.body }}
+          edit-mode: replace
