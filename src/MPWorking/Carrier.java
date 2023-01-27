@@ -29,6 +29,7 @@ public class Carrier extends Robot {
     static RobotInfo closestFriendly;
     static int numAttackingEnemyCount;
 
+    static FastLocSet blacklistedWells;
     static FastLocSet wellsVisitedThisCycle;
     static FastLocSet wellSectorsVisitedThisCycle;
     static WellInfo closestWell;
@@ -61,6 +62,8 @@ public class Carrier extends Robot {
             originalResourceTarget = ResourceType.MANA;
             resourceTarget = ResourceType.MANA;
         }
+
+        blacklistedWells = new FastLocSet();
         wellsVisitedThisCycle = new FastLocSet();
         wellSectorsVisitedThisCycle = new FastLocSet();
         lastTurnReported = 0;
@@ -238,6 +241,47 @@ public class Carrier extends Robot {
         } else {
             switchedResourceTarget = false;
         }
+
+        // Propagate blacklisted wells for one cycle in case we went to report
+        MapLocation[] blacklistedWellLocs = blacklistedWells.getKeys();
+        for (int i = blacklistedWellLocs.length; --i >= 0;) {
+            wellsVisitedThisCycle.add(blacklistedWellLocs[i]);
+            wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(blacklistedWellLocs[i])]);
+        }
+
+        blacklistedWells.clear();
+    }
+
+    // Blacklist a well if you see an enemy launcher within action radius of it
+    // and you know about another well.
+    public void blacklistWells() throws GameActionException {
+        if (closestWell == null) {
+            return;
+        }
+
+        MapLocation wellLoc = closestWell.getMapLocation();
+        int closestEnemyLauncherDist = Integer.MAX_VALUE;
+        int dist;
+        RobotInfo robot;
+        for (int i = enemyAttackable.length; --i >= 0;) {
+            robot = enemyAttackable[i];
+            dist = robot.getLocation().distanceSquaredTo(wellLoc);
+            if (dist < closestEnemyLauncherDist) {
+                closestEnemyLauncherDist = dist;
+            }
+        }
+
+        if (closestEnemyLauncherDist <= RobotType.LAUNCHER.actionRadiusSquared) {
+            wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(wellLoc)]);
+            int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, wellSectorsVisitedThisCycle);
+            if (mineSectorIndex != Comms.UNDEFINED_SECTOR_INDEX &&
+                    Util.distance(sectorCenters[mineSectorIndex], wellLoc) <= Util.MAX_BLACKLIST_DIST) {
+                // We found another well. Blacklist this one for this cycle and the next.
+                blacklistedWells.add(wellLoc);
+                wellsVisitedThisCycle.add(wellLoc);
+                closestWell = null;
+            }
+        }
     }
 
     public void updateHomeifCurrHomeAttacked() throws GameActionException {
@@ -291,6 +335,7 @@ public class Carrier extends Robot {
                 }
 
                 loadClosestWell();
+                blacklistWells();
 
                 collect: if (closestWell != null) {
                     MapLocation wellLoc = closestWell.getMapLocation();
@@ -472,7 +517,9 @@ public class Carrier extends Robot {
         for (WellInfo well : wells) {
             MapLocation wellLocation = well.getMapLocation();
             int dist = Util.distance(rc.getLocation(), wellLocation);
-            if (dist < closestDist && (!wellsVisitedThisCycle.contains(wellLocation) || dist <= 2)) {
+            if (dist < closestDist &&
+                    (!wellsVisitedThisCycle.contains(wellLocation) || dist <= 2) &&
+                    (!blacklistedWells.contains(wellLocation))) {
                 closestDist = dist;
                 closestWell = well;
             }
