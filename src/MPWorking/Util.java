@@ -193,6 +193,28 @@ public class Util {
         return locs[FastMath.nextInt(locs.length)];
     }
 
+    // Get init locs such that taking direction from currLoc will give dir.
+    static MapLocation[] getInitLocs(Direction dir) {
+        MapLocation currLoc = rc.getLocation();
+        MapLocation mainLoc1 = currLoc.add(dir);
+        MapLocation mainLoc2 = mainLoc1.add(dir);
+        switch (dir) {
+            case NORTH:
+            case SOUTH:
+            case EAST:
+            case WEST:
+                return new MapLocation[] { mainLoc2.add(dir), mainLoc2, mainLoc1,
+                        mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()) };
+            case NORTHEAST:
+            case SOUTHEAST:
+            case SOUTHWEST:
+            case NORTHWEST:
+                return new MapLocation[] { mainLoc2, mainLoc1 };
+            default:
+                return new MapLocation[] { currLoc };
+        }
+    }
+
     static MapLocation[] findInitLocationPossibilities(MapLocation loc, Direction dir) {
         MapLocation mainLoc1 = loc.add(dir);
         MapLocation mainLoc2 = mainLoc1.add(dir);

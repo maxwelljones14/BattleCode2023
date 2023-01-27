@@ -70,6 +70,8 @@ public class Carrier extends Robot {
         lastTurnCombatSectorNearby = -1;
         switchedResourceTarget = false;
         needToReportEarlyWell = true;
+
+        Explore.assignExplore3Dir(home.directionTo(rc.getLocation()));
     }
 
     public MapLocation findUnconqueredIsland() throws GameActionException {
@@ -212,7 +214,8 @@ public class Carrier extends Robot {
         }
 
         int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, null);
-        if (mineSectorIndex != Comms.UNDEFINED_SECTOR_INDEX) {
+        if (mineSectorIndex != Comms.UNDEFINED_SECTOR_INDEX &&
+                !shouldIgnoreEarlyWell(sectorCenters[mineSectorIndex])) {
             needToReportEarlyWell = false;
             return false;
         }
@@ -398,9 +401,8 @@ public class Carrier extends Robot {
 
                         // If it's too early and the well is far,
                         // don't look at this well and just explore.
-                        if (roundNum <= Util.TURN_TO_IGNORE_EARLY_MINING_SECTORS &&
-                                Util.distance(currLoc, target) > Util.DIST_TO_IGNORE_EARLY_MINING_SECTORS) {
-                            target = Explore.getExploreTarget();
+                        if (shouldIgnoreEarlyWell(target)) {
+                            target = Explore.getExplore3Target();
                             Debug.printString("Early, exploring");
                         } else {
                             Debug.printString("Well in sector: " + target);
@@ -425,7 +427,7 @@ public class Carrier extends Robot {
                             // Debug.println("Trying corner: " + target);
                         }
                     } else {
-                        target = Explore.getExploreTarget();
+                        target = Explore.getExplore3Target();
                         Debug.printString("Exploring");
                     }
                     Nav.move(target);
@@ -524,6 +526,11 @@ public class Carrier extends Robot {
                 closestWell = well;
             }
         }
+    }
+
+    public boolean shouldIgnoreEarlyWell(MapLocation target) {
+        return roundNum <= Util.TURN_TO_IGNORE_EARLY_MINING_SECTORS &&
+                Util.distance(home, target) > Util.DIST_TO_IGNORE_EARLY_MINING_SECTORS;
     }
 
     public void runFromEnemy() throws GameActionException {

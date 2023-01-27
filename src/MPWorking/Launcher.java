@@ -810,7 +810,6 @@ public class Launcher extends Robot {
         // Nav.move(newTarget);
         // return;
         // }
-        Debug.setIndicatorLine(Debug.INDICATORS, currLoc, exploreTarget, 255, 0, 200);
         if (currLoc.distanceSquaredTo(exploreTarget) <= Util.JUST_OUTSIDE_OF_VISION_RADIUS) {
             Nav.move(exploreTarget); // tryMoveSafely
             Debug.printString("saf mov");

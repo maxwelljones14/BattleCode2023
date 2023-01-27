@@ -252,8 +252,10 @@ public class Nav {
     static void move(MapLocation target, boolean greedy, boolean avoidHQ) throws GameActionException {
         if (target == null)
             return;
+        Debug.setIndicatorLine(rc.getLocation(), target, 255, 0, 200);
         if (!rc.isMovementReady())
             return;
+        Debug.setIndicatorLine(rc.getLocation(), target, 0, 0, 200);
         if (rc.getLocation().distanceSquaredTo(target) == 0)
             return;
         // Sync launcher movement

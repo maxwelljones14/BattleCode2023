@@ -2,6 +2,8 @@ package MPWorking;
 
 import battlecode.common.*;
 
+import MPWorking.fast.FastSort;
+
 public class Explore {
     static RobotController rc;
 
@@ -104,8 +106,12 @@ public class Explore {
     }
 
     static void checkDirection() {
-        if (isValidExploreDir(exploreDir) && explore3Target.isWithinDistanceSquared(rc.getLocation(), visionRadius))
+        if (isValidExploreDir(exploreDir)) {
+            if (explore3Target.isWithinDistanceSquared(rc.getLocation(), visionRadius)) {
+                assignExplore3Dir(exploreDir);
+            }
             return;
+        }
         // System.err.println("Checking new direction!");
         switch (exploreDir) {
             case SOUTHEAST:
@@ -207,9 +213,97 @@ public class Explore {
                 turnSetExploreTarget = rc.getRoundNum();
                 // Estimate the amount of time you expect to take to get to the target
                 EXPLORE_TARGET_TIMEOUT = (int) (2 * Util.distance(currLoc, exploreTarget)
-                        * rc.getType().movementCooldown / GameConstants.COOLDOWNS_PER_TURN);
+                        * Pathfinding.getBaseMovementCooldown() / GameConstants.COOLDOWNS_PER_TURN);
                 return;
             }
         }
+    }
+
+    static Direction[] getOptimalExploreOrder() {
+        Direction[] dirs = Util.directions;
+        int[] scores = new int[dirs.length];
+        for (int i = dirs.length; i-- > 0;) {
+            scores[i] = getExploreScore(dirs[i]);
+        }
+
+        // Sort the directions by score
+        FastSort.sort(scores);
+        Direction[] sortedDirs = new Direction[dirs.length];
+        for (int i = FastSort.size; --i >= 0;) {
+            sortedDirs[FastSort.size - i - 1] = dirs[FastSort.indices[i]];
+        }
+
+        return sortedDirs;
+    }
+
+    // Find the furthest point in this direction that is within the map
+    // The score is the distance squared to that point
+    static int getExploreScore(Direction dir) {
+        MapLocation currLoc = rc.getLocation();
+        int x = currLoc.x, y = currLoc.y;
+        int dist1;
+        int dist2;
+        switch (dir) {
+            case NORTH:
+                y = rc.getMapHeight() - 1;
+                break;
+            case SOUTH:
+                y = 0;
+                break;
+            case EAST:
+                x = rc.getMapWidth() - 1;
+                break;
+            case WEST:
+                x = 0;
+                break;
+            case NORTHEAST:
+                dist1 = rc.getMapHeight() - 1 - currLoc.y;
+                dist2 = rc.getMapWidth() - 1 - currLoc.x;
+                if (dist1 < dist2) {
+                    y = rc.getMapHeight() - 1;
+                    x = currLoc.x + dist1;
+                } else {
+                    x = rc.getMapWidth() - 1;
+                    y = currLoc.y + dist2;
+                }
+                break;
+            case NORTHWEST:
+                dist1 = rc.getMapHeight() - 1 - currLoc.y;
+                dist2 = currLoc.x;
+                if (dist1 < dist2) {
+                    y = rc.getMapHeight() - 1;
+                    x = currLoc.x - dist1;
+                } else {
+                    x = 0;
+                    y = currLoc.y + dist2;
+                }
+                break;
+            case SOUTHEAST:
+                dist1 = currLoc.y;
+                dist2 = rc.getMapWidth() - 1 - currLoc.x;
+                if (dist1 < dist2) {
+                    y = 0;
+                    x = currLoc.x + dist1;
+                } else {
+                    x = rc.getMapWidth() - 1;
+                    y = currLoc.y - dist2;
+                }
+                break;
+            case SOUTHWEST:
+                dist1 = currLoc.y;
+                dist2 = currLoc.x;
+                if (dist1 < dist2) {
+                    y = 0;
+                    x = currLoc.x - dist1;
+                } else {
+                    x = 0;
+                    y = currLoc.y - dist2;
+                }
+                break;
+            case CENTER:
+                break;
+        }
+
+        return rc.getLocation().distanceSquaredTo(new MapLocation(x, y));
     }
 }

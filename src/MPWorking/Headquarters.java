@@ -64,6 +64,8 @@ public class Headquarters extends Robot {
 
     static int symmetryGuess;
 
+    static Direction[] exploreDirections;
+
     public static int turnBuiltAnchor = -1;
     public static int BUILD_ANCHOR_COOLDOWN = 50;
 
@@ -101,6 +103,8 @@ public class Headquarters extends Robot {
 
         combatSectorToTurnWritten = new FastIntIntMap();
         symmetryGuess = Util.SymmetryType.ROTATIONAL;
+
+        exploreDirections = Explore.getOptimalExploreOrder();
     }
 
     public void localResign() {
@@ -319,8 +323,7 @@ public class Headquarters extends Robot {
             return null;
         }
 
-        if (rc.getRoundNum() < Util.TURN_TO_IGNORE_EARLY_MINING_SECTORS &&
-                Util.distance(home, nearestMnWellSector) > Util.DIST_TO_IGNORE_EARLY_MINING_SECTORS) {
+        if (shouldIgnoreMiningSector(nearestMnWellSector)) {
             return null;
         }
 
@@ -336,12 +339,16 @@ public class Headquarters extends Robot {
             return null;
         }
 
-        if (rc.getRoundNum() < Util.TURN_TO_IGNORE_EARLY_MINING_SECTORS &&
-                Util.distance(home, nearestAdWellSector) > Util.DIST_TO_IGNORE_EARLY_MINING_SECTORS) {
+        if (shouldIgnoreMiningSector(nearestAdWellSector)) {
             return null;
         }
 
         return nearestAdWellSector;
+    }
+
+    public boolean shouldIgnoreMiningSector(MapLocation miningSector) {
+        return rc.getRoundNum() < Util.TURN_TO_IGNORE_EARLY_MINING_SECTORS &&
+                Util.distance(home, miningSector) > Util.DIST_TO_IGNORE_EARLY_MINING_SECTORS;
     }
 
     public int getNextCarrierType() throws GameActionException {
@@ -442,7 +449,7 @@ public class Headquarters extends Robot {
                     nearestVisibleAdWellDir = getBestDirTo(nearestVisibleAdWell);
                 }
                 dirToBuild = nearestVisibleAdWellDir;
-            } else if (nearestAdWellSector != null) {
+            } else if (nearestAdWellSector != null && !shouldIgnoreMiningSector(nearestAdWellSector)) {
                 if (nearestAdWellSectorDir == null) {
                     nearestAdWellSectorDir = getBestDirTo(nearestAdWellSector);
                 }
@@ -450,7 +457,7 @@ public class Headquarters extends Robot {
             } else {
                 // Build init towards the center
                 if (currentState == State.INIT) {
-                    dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
+                    return findNextExploreInitLoc();
                 } else {
                     dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
                 }
@@ -461,7 +468,7 @@ public class Headquarters extends Robot {
                     nearestVisibleMnWellDir = getBestDirTo(nearestVisibleMnWell);
                 }
                 dirToBuild = nearestVisibleMnWellDir;
-            } else if (nearestMnWellSector != null) {
+            } else if (nearestMnWellSector != null && !shouldIgnoreMiningSector(nearestMnWellSector)) {
                 if (nearestMnWellSectorDir == null) {
                     nearestMnWellSectorDir = getBestDirTo(nearestMnWellSector);
                 }
@@ -469,7 +476,7 @@ public class Headquarters extends Robot {
             } else {
                 // Build init towards the center
                 if (currentState == State.INIT) {
-                    dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
+                    return findNextExploreInitLoc();
                 } else {
                     dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
                 }
@@ -884,5 +891,22 @@ public class Headquarters extends Robot {
                 exploreSectorIndex = getNextEmptyExploreSectorIdx(exploreSectorIndex + 1);
             }
         }
+    }
+
+    public MapLocation findNextExploreInitLoc() {
+        for (int i = 0; i < exploreDirections.length; i++) {
+            if (exploreDirections[i] == null)
+                continue;
+
+            MapLocation[] exploreLocs = Util.getInitLocs(exploreDirections[i]);
+            for (int j = 0; j < exploreLocs.length; j++) {
+                if (rc.canBuildRobot(RobotType.CARRIER, exploreLocs[j])) {
+                    exploreDirections[i] = null;
+                    return exploreLocs[j];
+                }
+            }
+        }
+
+        return null;
     }
 }
