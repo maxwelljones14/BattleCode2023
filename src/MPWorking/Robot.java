@@ -22,6 +22,7 @@ public class Robot {
 
     static int symmetryAll;
     static MapLocation[] enemyHQs;
+    static boolean symmetryChanged;
 
     static int actionRadiusSquared;
     static int visionRadiusSquared;
@@ -125,6 +126,7 @@ public class Robot {
 
         exploreMode = false;
 
+        symmetryChanged = false;
         emptySymLocs = new FastLocSet();
 
         closestFriendlyIsland = null;
@@ -171,7 +173,10 @@ public class Robot {
             // Must recalculate
             int currSymmetryAll = Comms.readSymmetryAll();
             if (currSymmetryAll != symmetryAll) {
+                symmetryChanged = true;
                 updateSymmetryLocs();
+            } else {
+                symmetryChanged = false;
             }
             invalidateSymmetries();
         }
@@ -1516,14 +1521,20 @@ public class Robot {
         int symmetry = getSymmetry(loc);
         switch (symmetry) {
             case Util.SymmetryType.VERTICAL:
+                if (Comms.readSymmetryVertical() == 0)
+                    return;
                 Debug.println("Invalidating vertical: " + loc);
                 Comms.writeSymmetryVertical(0);
                 break;
             case Util.SymmetryType.HORIZONTAL:
+                if (Comms.readSymmetryHorizontal() == 0)
+                    return;
                 Debug.println("Invalidating horizontal: " + loc);
                 Comms.writeSymmetryHorizontal(0);
                 break;
             case Util.SymmetryType.ROTATIONAL:
+                if (Comms.readSymmetryRotational() == 0)
+                    return;
                 Debug.println("Invalidating rotational: " + loc);
                 Comms.writeSymmetryRotational(0);
                 break;
@@ -1587,7 +1598,13 @@ public class Robot {
             if (sectorIdx == Comms.UNDEFINED_SECTOR_INDEX) {
                 continue;
             }
+            // Debug.println("Combat sector: " + sectorCenters[sectorIdx], 11749);
             int status = Comms.readSectorControlStatus(sectorIdx);
+            if (status == 2) {
+                // The enemy info for this combat sector was removed but the
+                // combat sector is still there, assume it is aggressive.
+                status = Comms.ControlStatus.ENEMY_AGGRESIVE;
+            }
             if (status < closestStatus)
                 continue;
             if (sectorDatabase.at(sectorIdx).hasVisitedRecently())
@@ -1597,6 +1614,7 @@ public class Robot {
                 closestDistance = distance;
                 closestSector = sectorIdx;
                 closestStatus = status;
+                // Debug.println("Best sector: " + sectorCenters[closestSector] + " status: " + closestStatus, 11749);
             }
         }
         return closestSector;

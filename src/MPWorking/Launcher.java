@@ -44,9 +44,12 @@ public class Launcher extends Robot {
 
     static RobotInfo[] enemyAttackable;
 
-    static FastLocSet seenEnemyHQLocs;
+    static FastLocSet seenSymmetricLocs;
     static int HQwaitCounter;
     static boolean goingToSymLoc;
+    static FastLocSet manaSymSet;
+    static MapLocation[] symManaSectors;
+    static boolean isSymLocHQ;
     static MapLocation exploreTarget;
 
     static boolean hasReported;
@@ -72,12 +75,15 @@ public class Launcher extends Robot {
     public static final int LOW_HEAL_THRESHOLD = 60;
     public static final int HIGH_HEAL_THRESHOLD = 100;
 
+    public static final int MAX_SYM_MANA_SECTORS = 2;
+
     public Launcher(RobotController r) throws GameActionException {
         super(r);
         currState = LauncherState.EXPLORING;
-        seenEnemyHQLocs = new FastLocSet();
+        seenSymmetricLocs = new FastLocSet();
         HQwaitCounter = 0;
         hasReported = false;
+        manaSymSet = new FastLocSet();
         idToHealth = new FastIntIntMap();
         idToTurnInjured = new FastIntIntMap();
         idToLocInjured = new FastIntLocMap();
@@ -91,6 +97,7 @@ public class Launcher extends Robot {
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
         closestFriendlyIsland = null;
+        updateSymManaSectors();
         loadExploreTarget();
 
         trySwitchState();
@@ -835,11 +842,13 @@ public class Launcher extends Robot {
     public void markSymmetricLocSeen(MapLocation target) throws GameActionException {
         if (rc.canSenseLocation(target)) {
             RobotInfo robot = rc.senseRobotAtLocation(target);
-            if (robot == null || robot.getType() != RobotType.HEADQUARTERS ||
-                    rc.getLocation().distanceSquaredTo(target) <= actionRadiusSquared) {
-                seenEnemyHQLocs.add(target);
-                // Debug.println("Seen enemy HQ at " + target + ": " +
-                // rc.getLocation().distanceSquaredTo(target));
+            if (isSymLocHQ) {
+                if (robot == null || robot.getType() != RobotType.HEADQUARTERS ||
+                        rc.getLocation().distanceSquaredTo(target) <= actionRadiusSquared) {
+                    seenSymmetricLocs.add(target);
+                }
+            } else if (rc.getLocation().distanceSquaredTo(target) <= 8) {
+                seenSymmetricLocs.add(target);
             }
         }
     }
@@ -856,9 +865,20 @@ public class Launcher extends Robot {
             // boolean notTraversed = controlStatus == Comms.ControlStatus.UNKNOWN ||
             // controlStatus == Comms.ControlStatus.EXPLORING;
 
-            if (currDist < bestDist && !seenEnemyHQLocs.contains(possibleLoc)) {
+            if (currDist < bestDist && !seenSymmetricLocs.contains(possibleLoc)) {
                 bestLoc = possibleLoc;
                 bestDist = currDist;
+                isSymLocHQ = true;
+            }
+        }
+
+        for (int i = symManaSectors.length; --i >= 0;) {
+            possibleLoc = symManaSectors[i];
+            currDist = currLoc.distanceSquaredTo(possibleLoc);
+            if (currDist < bestDist && !seenSymmetricLocs.contains(possibleLoc)) {
+                bestLoc = possibleLoc;
+                bestDist = currDist;
+                isSymLocHQ = false;
             }
         }
 
@@ -866,9 +886,10 @@ public class Launcher extends Robot {
         if (isSemiSmallMap()) {
             possibleLoc = new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2);
             currDist = currLoc.distanceSquaredTo(possibleLoc);
-            if (currDist < bestDist && !seenEnemyHQLocs.contains(possibleLoc)) {
+            if (currDist < bestDist && !seenSymmetricLocs.contains(possibleLoc)) {
                 bestLoc = possibleLoc;
                 bestDist = currDist;
+                isSymLocHQ = false;
             }
         }
 
@@ -987,5 +1008,53 @@ public class Launcher extends Robot {
 
         Debug.printString("HEAL LOC");
         moveAndAttack(bestHealLoc);
+    }
+
+    public void updateSymManaSectors() throws GameActionException {
+        boolean shouldUpdate = false;
+        if (symmetryChanged) {
+            // Symmetry changed, so update
+            shouldUpdate = true;
+            manaSymSet.clear();
+            // Debug.println("Symmetry changed, so updating mana sectors");
+        }
+
+        // Check if the closest MAX_SYM_MANA_SECTORS mana sectors have changed
+        for (int i = 0; i < MAX_SYM_MANA_SECTORS; i++) {
+            int manaSectorIdx = getNearestMineSectorIdx(ResourceType.MANA, manaSymSet);
+            if (manaSectorIdx == Comms.UNDEFINED_SECTOR_INDEX)
+                break;
+            if (!manaSymSet.contains(sectorCenters[manaSectorIdx])) {
+                // Found a new mana well, so update
+                shouldUpdate = true;
+                manaSymSet.clear();
+                // Debug.println("New mana sector found, so updating");
+                break;
+            }
+        }
+
+        if (!shouldUpdate)
+            return;
+
+        // Put up to MAX_SYM_MANA_SECTORS mana sectors in symmetry
+        MapLocation[] manaSym = new MapLocation[MAX_SYM_MANA_SECTORS * 3];
+        FastLocSet manaSymSet = new FastLocSet();
+        MapLocation[] possibleFlips;
+        int numManaSym = 0;
+        for (int i = 0; i < MAX_SYM_MANA_SECTORS; i++) {
+            int manaSectorIdx = getNearestMineSectorIdx(ResourceType.MANA, manaSymSet);
+            if (manaSectorIdx == Comms.UNDEFINED_SECTOR_INDEX)
+                break;
+            if (seenSymmetricLocs.contains(sectorCenters[manaSectorIdx]))
+                continue;
+            manaSymSet.add(sectorCenters[manaSectorIdx]);
+            possibleFlips = Util.getValidSymmetryLocs(sectorCenters[manaSectorIdx], symmetryAll);
+            for (int j = possibleFlips.length; --j >= 0;) {
+                manaSym[numManaSym++] = possibleFlips[j];
+            }
+        }
+
+        symManaSectors = new MapLocation[numManaSym];
+        System.arraycopy(manaSym, 0, symManaSectors, 0, numManaSym);
     }
 }

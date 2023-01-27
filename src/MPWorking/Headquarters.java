@@ -117,7 +117,7 @@ public class Headquarters extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        // localResign();
+        localResign();
         adamCarrierTracker.update();
         manaCarrierTracker.update();
         clearOldEnemyInfo();
@@ -715,18 +715,23 @@ public class Headquarters extends Robot {
                 int newControlStatus = Comms.readSectorIslands(sectorIdx) == 1 ? Comms.ControlStatus.NEUTRAL_ISLAND
                         : Comms.ControlStatus.EXPLORING;
                 // Mark old combat sectors as need to be explored.
-                // Debug.println("Clearing combat sector at : " + sectorCenters[sectorIdx]);
+                // Debug.println("Clearing enemy info sector at : " + sectorCenters[sectorIdx]);
                 Comms.writeSectorControlStatus(sectorIdx, newControlStatus);
             }
         }
 
-        // Clear old combat sectors
+        // Clear old combat sectors if they have no enemy info
         int[] combatSectorsWritten = combatSectorToTurnWritten.getKeys();
         for (int combatSectorIdx : combatSectorsWritten) {
             int turn = combatSectorToTurnWritten.getVal(combatSectorIdx);
-            if (turn + Util.CLEAR_COMBAT_SECTOR_TIMEOUT < rc.getRoundNum()) {
+            int sectorIdx = Comms.readCombatSectorIndex(combatSectorIdx);
+            if (Comms.isEnemyControlStatus(Comms.readSectorControlStatus(sectorIdx))) {
+                combatSectorToTurnWritten.addReplace(combatSectorIdx, rc.getRoundNum());
+            } else if (turn + Util.CLEAR_COMBAT_SECTOR_TIMEOUT < rc.getRoundNum()) {
                 Comms.writeCombatSectorIndex(combatSectorIdx, Comms.UNDEFINED_SECTOR_INDEX);
                 combatSectorToTurnWritten.remove(combatSectorIdx);
+                // Debug.println("Clearing combat sector at : " +
+                // sectorCenters[combatSectorIdx]);
             }
         }
     }
