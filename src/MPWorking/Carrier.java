@@ -45,6 +45,8 @@ public class Carrier extends Robot {
 
     static boolean needToReportEarlyWell;
 
+    static boolean isFirstCycle;
+
     public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
 
@@ -52,7 +54,6 @@ public class Carrier extends Robot {
 
     public Carrier(RobotController r) throws GameActionException {
         super(r);
-        currState = CarrierState.MINING;
         turnStartedMining = 0;
         int assignment = Comms.readOurHqFlag(homeIdx);
         if (assignment == Comms.HQFlag.CARRIER_ADAMANTIUM) {
@@ -70,8 +71,12 @@ public class Carrier extends Robot {
         lastTurnCombatSectorNearby = -1;
         switchedResourceTarget = false;
         needToReportEarlyWell = true;
+        isFirstCycle = true;
 
         Explore.assignExplore3Dir(home.directionTo(rc.getLocation()));
+
+        enterMineState();
+        switchedResourceTarget = false;
     }
 
     public MapLocation findUnconqueredIsland() throws GameActionException {
@@ -699,6 +704,11 @@ public class Carrier extends Robot {
     }
 
     public boolean shouldSwitchToMana() {
+        if (isFirstCycle) {
+            isFirstCycle = false;
+            return true;
+        }
+
         return !switchedResourceTarget &&
                 rc.getRoundNum() - lastTurnCombatSectorNearby < Util.SWITCH_TO_MANA_TIMEOUT;
     }
