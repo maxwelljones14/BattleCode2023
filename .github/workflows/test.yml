@@ -50,24 +50,13 @@ jobs:
       - name: Archive Summary
         uses: actions/upload-artifact@v2
         with:
-          name: matches-summary
-          path: matches-summary.txt
+          name: matches-summary${{ github.run_number }}
+          path: matches-summary${{ github.run_number }}.txt
           retention-days: 90
-      # Post results on github comments - https://github.com/marketplace/actions/create-or-update-comment
-      - name: Generate Comment
-        id: get-comment-body
-        run: |
-          body="$(cat matches-summary.txt)"
-          body="${body//'%'/'%25'}"
-          body="${body//$'\n'/'%0A'}"
-          body="${body//$'\r'/'%0D'}" 
-          echo "::set-output name=body::$body"
-      - name: Create or update comment
-        uses: peter-evans/create-or-update-comment@v2
-        with:
-          issue-number: 33
-          body: |
-            Build Output
-            Workflow Run (#${{ github.run_number }}): ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            ${{ steps.get-comment-body.outputs.body }}
-          edit-mode: replace
+      # send summary to repo
+      - name: Add Match Summary
+        run: git add matches-summary${{ github.run_number }}.txt
+      - name: Commit Match Summary
+        run: git commit -m "Match Summary for Workflow Run (#${{ github.run_number }})"
+      - name: Push Match Summary
+        run: git push origin HEAD:master
