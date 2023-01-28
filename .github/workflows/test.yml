@@ -56,10 +56,12 @@ jobs:
       - name: Rename Summary
         run : mv matches-summary.txt matches-summary${{ github.run_number }}.txt
       # send summary to repo
-      - name: Add Match Summary
-        run: git add matches-summary${{ github.run_number }}.txt
-      - name: Commit Match Summary
-        run: git commit -m "Match Summary for Workflow Run (#${{ github.run_number }})"
+      - name: Add and Commit Match Summary
+        run: |
+          git add matches-summary${{ github.run_number }}.txt
+          git config --local user.email "action@github.com"
+          git config --local user.name "github-actions"
+          git commit -m "Match Summary for Workflow Run (#${{ github.run_number }})"
       - name: Push Match Summary
         uses: ad-m/github-push-action@master
         with:
