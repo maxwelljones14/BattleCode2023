@@ -1,6 +1,7 @@
 # Credit to Producing Perfection (https://github.com/awesomelemonade/Battlecode2022)
 name: Run Matches
 on: [workflow_dispatch, pull_request]
+permissions: write-all
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
