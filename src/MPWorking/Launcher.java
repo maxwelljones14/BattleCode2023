@@ -59,6 +59,10 @@ public class Launcher extends Robot {
 
     static MapLocation closestFriendlyIsland;
 
+    static int turnsSpentAtHQ;
+
+    public static final int MAX_TURNS_SPENT_AT_HQ = 5;
+
     public static final int MAX_LAUNCHERS_PER_ENEMY_HQ = 4;
     public static final int LOW_HEALTH_REPORT_THRESHOLD = 30;
     public static final int LOW_HEALTH_THRESHOLD = 20;
@@ -298,7 +302,10 @@ public class Launcher extends Robot {
                             int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
                             int numTroopsCloser = rc.senseNearbyRobots(closestEnemyLocation, ourDist - 1,
                                     rc.getTeam()).length;
-                            if (HQwaitCounter != 0 || numTroopsCloser >= MAX_LAUNCHERS_PER_ENEMY_HQ) {
+                            turnsSpentAtHQ++;
+                            if (HQwaitCounter != 0 ||
+                                    numTroopsCloser >= MAX_LAUNCHERS_PER_ENEMY_HQ ||
+                                    turnsSpentAtHQ >= MAX_TURNS_SPENT_AT_HQ) {
                                 currState = LauncherState.EXPLORING;
                                 HQwaitCounter = 5;
                                 return;
@@ -307,6 +314,8 @@ public class Launcher extends Robot {
                                 currState = LauncherState.RUNNING;
                                 return;
                             }
+                        } else {
+                            turnsSpentAtHQ = 0;
                         }
                         currState = LauncherState.ATTACKING;
                     }
@@ -975,7 +984,6 @@ public class Launcher extends Robot {
             moveAndAttack(closestFriendlyIsland);
             return;
         }
-
 
         Debug.printString("HEAL LOC");
         moveAndAttack(bestHealLoc);
