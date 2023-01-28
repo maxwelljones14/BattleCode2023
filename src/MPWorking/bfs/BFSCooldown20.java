@@ -288,7 +288,7 @@ public class BFSCooldown20 {
         team = rc.getTeam();
     }
 
-    private static final Direction[] DIRECTIONS = new Direction[] {null, Direction.NORTHEAST, Direction.NORTHWEST, Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.EAST, Direction.NORTH, Direction.WEST, Direction.SOUTH};
+    private static final Direction[] DIRECTIONS = new Direction[] {null, Direction.EAST, Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.NORTHEAST, Direction.NORTHWEST, Direction.SOUTHWEST, Direction.SOUTHEAST};
 
     public final static Direction NORTH = Direction.NORTH;
     public final static Direction NORTHEAST = Direction.NORTHEAST;
@@ -535,7 +535,7 @@ public class BFSCooldown20 {
 
         // check (-1, 0)
         if (rc.canSenseLocation(l111) && rc.sensePassability(l111)) {
-            d111 = 0.4375;
+            d111 = 0.1875;
             mapInfo = rc.senseMapInfo(l111);
             currentDir = mapInfo.getCurrentDirection();
             d111 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
@@ -545,7 +545,7 @@ public class BFSCooldown20 {
 
         // check (0, -1)
         if (rc.canSenseLocation(l97) && rc.sensePassability(l97)) {
-            d97 = Math.min(0.5, d111);
+            d97 = Math.min(0.25, d111);
             mapInfo = rc.senseMapInfo(l97);
             currentDir = mapInfo.getCurrentDirection();
             d97 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
@@ -555,7 +555,7 @@ public class BFSCooldown20 {
 
         // check (0, 1)
         if (rc.canSenseLocation(l127) && rc.sensePassability(l127)) {
-            d127 = Math.min(0.375, d111);
+            d127 = Math.min(0.125, d111);
             mapInfo = rc.senseMapInfo(l127);
             currentDir = mapInfo.getCurrentDirection();
             d127 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
@@ -565,7 +565,7 @@ public class BFSCooldown20 {
 
         // check (1, 0)
         if (rc.canSenseLocation(l113) && rc.sensePassability(l113)) {
-            d113 = Math.min(0.3125, Math.min(d97, d127));
+            d113 = Math.min(0.0625, Math.min(d97, d127));
             mapInfo = rc.senseMapInfo(l113);
             currentDir = mapInfo.getCurrentDirection();
             d113 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
@@ -575,7 +575,7 @@ public class BFSCooldown20 {
 
         // check (-1, -1)
         if (rc.canSenseLocation(l96) && rc.sensePassability(l96)) {
-            d96 = Math.min(0.1875, Math.min(d111, d97));
+            d96 = Math.min(0.4375, Math.min(d111, d97));
             mapInfo = rc.senseMapInfo(l96);
             currentDir = mapInfo.getCurrentDirection();
             d96 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
@@ -585,7 +585,7 @@ public class BFSCooldown20 {
 
         // check (-1, 1)
         if (rc.canSenseLocation(l126) && rc.sensePassability(l126)) {
-            d126 = Math.min(0.125, Math.min(d111, d127));
+            d126 = Math.min(0.375, Math.min(d111, d127));
             mapInfo = rc.senseMapInfo(l126);
             currentDir = mapInfo.getCurrentDirection();
             d126 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
@@ -595,7 +595,7 @@ public class BFSCooldown20 {
 
         // check (1, -1)
         if (rc.canSenseLocation(l98) && rc.sensePassability(l98)) {
-            d98 = Math.min(0.25, Math.min(d97, d113));
+            d98 = Math.min(0.5, Math.min(d97, d113));
             mapInfo = rc.senseMapInfo(l98);
             currentDir = mapInfo.getCurrentDirection();
             d98 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
@@ -605,7 +605,7 @@ public class BFSCooldown20 {
 
         // check (1, 1)
         if (rc.canSenseLocation(l128) && rc.sensePassability(l128)) {
-            d128 = Math.min(0.0625, Math.min(d127, d113));
+            d128 = Math.min(0.3125, Math.min(d127, d113));
             mapInfo = rc.senseMapInfo(l128);
             currentDir = mapInfo.getCurrentDirection();
             d128 += 10 * (mapInfo.getCooldownMultiplier(team)) + 

@@ -131,7 +131,7 @@ def gen_bfs(radius):
                     vals = []
                     for dx, dy in dxdy:
                         if encode(x+dx, y+dy) in visited:
-                            vals.append(str([5/16, 1/16, 6/16, 2/16, 7/16, 3/16, 8/16, 4/16][(round(atan2(-dy,-dx)/pi*4)+8)%8]) if (x+dx,y+dy) == (0, 0) else f'd{encode(x+dx,y+dy)}')
+                            vals.append(str([1/16, 5/16, 2/16, 6/16, 3/16, 7/16, 4/16, 8/16][(round(atan2(-dy,-dx)/pi*4)+8)%8]) if (x+dx,y+dy) == (0, 0) else f'd{encode(x+dx,y+dy)}')
             #                 out += f"""
             # {indent}if (d{encode(x,y)} > d{encode(x+dx,y+dy)}) {{ // from ({x+dx}, {y+dy})
             #     {indent}d{encode(x,y)} = {str([5/16, 1/16, 6/16, 2/16, 7/16, 3/16, 8/16, 4/16][(round(atan2(-dy,-dx)/pi*4)+8)%8]) if (x+dx,y+dy) == (0, 0) else f'd{encode(x+dx,y+dy)}'};
@@ -226,7 +226,7 @@ public class BFSCooldown{rad} {{
         team = rc.getTeam();
     }}
 
-    private static final Direction[] DIRECTIONS = new Direction[] {{null, Direction.NORTHEAST, Direction.NORTHWEST, Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.EAST, Direction.NORTH, Direction.WEST, Direction.SOUTH}};
+    private static final Direction[] DIRECTIONS = new Direction[] {{null, Direction.EAST, Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.NORTHEAST, Direction.NORTHWEST, Direction.SOUTHWEST, Direction.SOUTHEAST}};
 
     public final static Direction NORTH = Direction.NORTH;
     public final static Direction NORTHEAST = Direction.NORTHEAST;
