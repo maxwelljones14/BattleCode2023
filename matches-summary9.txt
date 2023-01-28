@@ -1,0 +1,4 @@
+|  | MPFreeELO |
+| :---: | :---: |
+| maptestsmall | Won (400, 400) |
+
