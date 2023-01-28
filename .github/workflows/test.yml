@@ -54,13 +54,6 @@ jobs:
           path: matches-summary.txt
           retention-days: 90
       # Post results on github comments - https://github.com/marketplace/actions/create-or-update-comment
-      - name: Find Comment
-        uses: peter-evans/find-comment@v2.2.0
-        id: fc
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: Build Output
       - name: Generate Comment
         id: get-comment-body
         run: |
@@ -70,12 +63,11 @@ jobs:
           body="${body//$'\r'/'%0D'}" 
           echo "::set-output name=body::$body"
       - name: Create or update comment
-        uses: peter-evans/create-or-update-comment@v2.1.0
+        uses: peter-evans/create-or-update-comment@v2
         with:
-          # comment-id: ${{ steps.fc.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
+          issue-number: 33
           body: |
-            Build Output (updated for ${{ github.event.pull_request.head.sha }})
+            Build Output
             Workflow Run (#${{ github.run_number }}): ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
             ${{ steps.get-comment-body.outputs.body }}
           edit-mode: replace
