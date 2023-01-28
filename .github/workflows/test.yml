@@ -24,8 +24,8 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'jdkfile'
-          jdkFile: jdk-8u301-linux-x64.tar.gz
-          java-version: '8.0.301'
+          jdkFile: jdk-8u361-linux-x64.tar.gz
+          java-version: '8.0.361'
           architecture: x64
       - name: Java Version
         run: java -version
