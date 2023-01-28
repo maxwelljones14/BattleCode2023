@@ -50,13 +50,17 @@ jobs:
       - name: Archive Summary
         uses: actions/upload-artifact@v2
         with:
-          name: matches-summary${{ github.run_number }}
-          path: matches-summary${{ github.run_number }}.txt
+          name: matches-summary
+          path: matches-summary.txt
           retention-days: 90
+      - name: Rename Summary
+        run : mv matches-summary.txt matches-summary${{ github.run_number }}.txt
       # send summary to repo
       - name: Add Match Summary
         run: git add matches-summary${{ github.run_number }}.txt
       - name: Commit Match Summary
         run: git commit -m "Match Summary for Workflow Run (#${{ github.run_number }})"
       - name: Push Match Summary
-        run: git push origin HEAD:master
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
