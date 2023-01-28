@@ -53,6 +53,21 @@ public class Util {
             Direction.NORTHWEST,
     };
 
+    static final Direction[] X_DIRECTIONS = {
+            Direction.CENTER,
+            Direction.NORTHEAST,
+            Direction.SOUTHEAST,
+            Direction.SOUTHWEST,
+            Direction.NORTHWEST,
+    };
+
+    static final Direction[] CARDINAL_DIRECTIONS = {
+            Direction.NORTH,
+            Direction.EAST,
+            Direction.SOUTH,
+            Direction.WEST,
+    };
+
     /** Array containing all the possible movement directions. */
     static final Direction[] DIRS_CENTER = {
             Direction.NORTH,
@@ -150,7 +165,7 @@ public class Util {
                 };
             default:
                 // This shouldn't happen
-                Debug.println("ERROR: No valid symmetry");
+                Debug.printString("ERROR: No valid symmetry");
                 return new MapLocation[] {
                         verticalFlip,
                         horizontalFlip,
@@ -267,11 +282,12 @@ public class Util {
     // 2. Cooldown multiplier
     // 3. Distance to currLoc
     static MapLocation getBestCollectLoc(MapLocation well) throws GameActionException {
+        boolean isAdjToWell = rc.getLocation().isAdjacentTo(well);
         // If there is only 1 spot left and it is the well, one of the carriers
         // adajcent to the well should move into it.
         int numOpenSpots = getNumOpenCollectSpots(well);
         if (numOpenSpots == 1 &&
-                rc.getLocation().isAdjacentTo(well) &&
+                isAdjToWell &&
                 rc.senseRobotAtLocation(well) == null) {
             return well;
         }
@@ -309,6 +325,101 @@ public class Util {
         }
 
         return bestCollect == null ? well : bestCollect;
+    }
+
+    // @pre We are already adjacent to the well
+    // If there is a spot next to the well that is open and is closer to home.
+    // Return that spot.
+    static MapLocation getBetterCollectLoc(MapLocation wellLoc) throws GameActionException {
+        MapLocation currLoc = rc.getLocation();
+        MapLocation bestCollect = null;
+        double bestMultiplier = Double.MAX_VALUE;
+        double bestDist = Double.MAX_VALUE;
+        MapLocation loc;
+        MapInfo info;
+        double multiplier;
+        double dist;
+        RobotInfo robot;
+
+        if (rc.getWeight() >= 30) {
+            // If your weight is at least 30 (you're almost done collecting),
+            // just choose the location closest to home
+            for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+                loc = wellLoc.add(Direction.DIRECTION_ORDER[i]);
+                if (!rc.canSenseLocation(loc) || !rc.sensePassability(loc))
+                    continue;
+                if (!currLoc.isAdjacentTo(loc))
+                    continue;
+                robot = rc.senseRobotAtLocation(loc);
+                if (robot != null && robot.ID != rc.getID())
+                    continue;
+                info = rc.senseMapInfo(loc);
+                dist = Robot.home.distanceSquaredTo(loc);
+                multiplier = info.getCooldownMultiplier(rc.getTeam()) +
+                        (info.getCurrentDirection() == Direction.CENTER ? 0 : 10);
+                if (multiplier < bestMultiplier || (multiplier == bestMultiplier && dist < bestDist)) {
+                    bestCollect = loc;
+                    bestDist = dist;
+                    bestMultiplier = multiplier;
+                }
+            }
+        } else {
+            bestDist = Double.MIN_VALUE;
+            // Otherwise, pref the furthest X locations first
+            // so that other carriers can filter in
+            for (int i = X_DIRECTIONS.length; --i >= 0;) {
+                loc = wellLoc.add(X_DIRECTIONS[i]);
+                if (!rc.canSenseLocation(loc) || !rc.sensePassability(loc))
+                    continue;
+                if (!currLoc.isAdjacentTo(loc))
+                    continue;
+                robot = rc.senseRobotAtLocation(loc);
+                if (robot != null && robot.ID != rc.getID())
+                    continue;
+                info = rc.senseMapInfo(loc);
+                dist = Robot.home.distanceSquaredTo(loc);
+                multiplier = info.getCooldownMultiplier(rc.getTeam()) +
+                        (info.getCurrentDirection() == Direction.CENTER ? 0 : 10);
+                if (multiplier < bestMultiplier || (multiplier == bestMultiplier && dist > bestDist)) {
+                    bestCollect = loc;
+                    bestDist = dist;
+                    bestMultiplier = multiplier;
+                }
+            }
+
+            MapLocation bestCardinalCollect = null;
+            double bestCardinalMultiplier = Double.MAX_VALUE;
+            double bestCardinalDist = Double.MIN_VALUE;
+            // If none of these are open, then check the cardinal directions
+            for (int i = CARDINAL_DIRECTIONS.length; --i >= 0;) {
+                loc = wellLoc.add(CARDINAL_DIRECTIONS[i]);
+                if (!rc.canSenseLocation(loc) || !rc.sensePassability(loc))
+                    continue;
+                if (!currLoc.isAdjacentTo(loc))
+                    continue;
+                robot = rc.senseRobotAtLocation(loc);
+                if (robot != null && robot.ID != rc.getID())
+                    continue;
+                info = rc.senseMapInfo(loc);
+                dist = Robot.home.distanceSquaredTo(loc);
+                multiplier = info.getCooldownMultiplier(rc.getTeam()) +
+                        (info.getCurrentDirection() == Direction.CENTER ? 0 : 10);
+                if (multiplier < bestCardinalMultiplier
+                        || (multiplier == bestCardinalMultiplier && dist > bestCardinalDist)) {
+                    bestCardinalCollect = loc;
+                    bestCardinalDist = dist;
+                    bestCardinalMultiplier = multiplier;
+                }
+            }
+
+            // If a cardinal direction has a better multiplier, we can choose that.
+            if (bestCardinalCollect != null &&
+                    (bestCollect == null || bestCardinalMultiplier < bestMultiplier)) {
+                bestCollect = bestCardinalCollect;
+            }
+        }
+
+        return bestCollect;
     }
 
     static MapLocation findInitLocation(RobotType type, MapLocation currLoc, Direction dir) throws GameActionException {
@@ -519,13 +630,42 @@ public class Util {
         for (int i = islandLocs.length; --i >= 0;) {
             loc = islandLocs[i];
             robot = rc.senseRobotAtLocation(loc);
-            if (robot != null && robot.ID != rc.getID())
+            if ((loc.x + loc.y) % 2 == 0)
                 continue;
-
             score = 0;
-            if (rc.senseCloud(loc)) {
+            if (robot != null && robot.ID != rc.getID())
+                score -= 1000;
+            if (rc.senseCloud(loc))
                 score += 1000;
+            score -= rc.getLocation().distanceSquaredTo(loc);
+            if (score > bestScore) {
+                bestScore = score;
+                bestLoc = loc;
             }
+        }
+        return bestLoc;
+    }
+
+    // Get the best heal loc within radius 4 of loc
+    static MapLocation getBestHealLoc(MapLocation healLoc) throws GameActionException {
+        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(healLoc, 4);
+        MapLocation bestLoc = null;
+        int bestScore = Integer.MIN_VALUE;
+        int score = 0;
+        MapLocation loc;
+        RobotInfo robot;
+        for (int i = locs.length; --i >= 0;) {
+            loc = locs[i];
+            if (!rc.canSenseLocation(loc))
+                continue;
+            robot = rc.senseRobotAtLocation(loc);
+            if ((loc.x + loc.y) % 2 == 0)
+                continue;
+            score = 0;
+            if (robot != null && robot.ID != rc.getID())
+                score -= 1000;
+            if (rc.senseCloud(loc))
+                score += 1000;
             score -= rc.getLocation().distanceSquaredTo(loc);
             if (score > bestScore) {
                 bestScore = score;
@@ -572,5 +712,17 @@ public class Util {
             }
         }
         return bestLoc;
+    }
+
+    static boolean seesObstacleInWay(MapLocation target) throws GameActionException {
+        MapLocation loc = rc.getLocation();
+        Direction dir = loc.directionTo(target);
+        MapLocation currLoc = loc;
+        while (currLoc.distanceSquaredTo(target) > 2) {
+            currLoc = currLoc.add(dir);
+            if (!rc.canSenseLocation(currLoc) || !rc.sensePassability(currLoc))
+                return true;
+        }
+        return false;
     }
 }

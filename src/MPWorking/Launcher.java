@@ -962,6 +962,21 @@ public class Launcher extends Robot {
             return;
         }
 
+        RobotInfo robot = rc.senseRobotAtLocation(bestHealLoc);
+        if (robot != null && robot.ID != rc.getID()) {
+            // There's a robot in this spot, so pick a spot within radius 4 of it.
+            bestHealLoc = Util.getBestHealLoc(bestHealLoc);
+            Debug.printString("Not on isl");
+        }
+
+        if (bestHealLoc == null) {
+            // No good spots to heal, so just go to the closest one
+            Debug.printString("NO HEAL");
+            moveAndAttack(closestFriendlyIsland);
+            return;
+        }
+
+
         Debug.printString("HEAL LOC");
         moveAndAttack(bestHealLoc);
     }

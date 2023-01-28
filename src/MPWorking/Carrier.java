@@ -350,18 +350,8 @@ public class Carrier extends Robot {
                     // If we are adjacent to a well, collect from it.
                     if (currLoc.isAdjacentTo(wellLoc)) {
                         collect(closestWell);
-                        MapLocation bestCollectLoc = Util.getBestCollectLoc(wellLoc);
-                        // If we aren't at the best collect location, move to it if
-                        // 1. We are adjacent
-                        // 2. The wellLoc is empty
-                        if (!currLoc.equals(bestCollectLoc)) {
-                            RobotInfo robot = rc.senseRobotAtLocation(wellLoc);
-                            if (currLoc.isAdjacentTo(bestCollectLoc) ||
-                                    robot == null ||
-                                    robot.ID == rc.getID()) {
-                                Nav.move(bestCollectLoc);
-                            }
-                        }
+                        MapLocation betterCollectLoc = Util.getBetterCollectLoc(wellLoc);
+                        Nav.move(betterCollectLoc);
                     } else {
                         // If there are too many carriers on this well, move to another well.
                         // If there are 2 available spots, skip this check
@@ -384,7 +374,12 @@ public class Carrier extends Robot {
                         }
 
                         Debug.printString("Moving");
-                        Nav.move(wellLoc);
+                        if (Util.seesObstacleInWay(wellLoc)) {
+                            Nav.move(wellLoc);
+                        } else {
+                            Nav.move(Util.getBestCollectLoc(wellLoc));
+                        }
+
                         collect(closestWell);
                     }
                 }
