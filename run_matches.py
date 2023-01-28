@@ -6,10 +6,10 @@ currentBot = 'MPWorking'
 
 bots = ['MPFreeELO']
 botsSet = set(bots)
-# early_maps = ['AllElements', 'DefaultMap', 'maptestsmall', 'SmallElements']
-# sprint1_maps = ['ArtistRendition', 'BatSignal', 'BowAndArrow', 'Cat', 'Clown', 'Diagonal', 'Eyelands', 'Forest', 'Frog', 'Grievance', 'Hah', 'KingdomRush', 'Minefield', 'Movepls', 'Orbit', 'Pit', 'Pizza', 'Quiet', 'Rectangle', 'Scatter', 'Snowflake', 'Sun', 'Tacocat', 'Turtle']
-# sprint2_maps = ['BattleSuns', 'Checkmate2', 'Cornucopia', 'Crossword', 'Cube', 'Divergence', 'Dreamy', 'FourNations', 'HideAndSeek', 'Lantern', 'Lines', 'Maze', 'PairedProgramming', 'Pakbot', 'Pathfind', 'Piglets', 'Rewind', 'Risk', 'Sine', 'SomethingFishy', 'Spin', 'Spiral', 'Squares', 'Star', 'Sus', 'SweetDreams', 'TicTacToe', 'USA']
-maps = ['maptestsmall']#early_maps + sprint1_maps + sprint2_maps
+early_maps = ['AllElements', 'DefaultMap', 'maptestsmall', 'SmallElements']
+sprint1_maps = ['ArtistRendition', 'BatSignal', 'BowAndArrow', 'Cat', 'Clown', 'Diagonal', 'Eyelands', 'Forest', 'Frog', 'Grievance', 'Hah', 'KingdomRush', 'Minefield', 'Movepls', 'Orbit', 'Pit', 'Pizza', 'Quiet', 'Rectangle', 'Scatter', 'Snowflake', 'Sun', 'Tacocat', 'Turtle']
+sprint2_maps = ['BattleSuns', 'Checkmate2', 'Cornucopia', 'Crossword', 'Cube', 'Divergence', 'Dreamy', 'FourNations', 'HideAndSeek', 'Lantern', 'Lines', 'Maze', 'PairedProgramming', 'Pakbot', 'Pathfind', 'Piglets', 'Rewind', 'Risk', 'Sine', 'SomethingFishy', 'Spin', 'Spiral', 'Squares', 'Star', 'Sus', 'SweetDreams', 'TicTacToe', 'USA']
+maps = early_maps + sprint1_maps + sprint2_maps
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
