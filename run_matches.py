@@ -48,6 +48,10 @@ def run_match(bot, map):
         
         Awon = False
         Bwon = False
+        global Awins
+        global Alosses
+        global Bwins
+        global Blosses
         
         gameLengthA = retrieveGameLength(outputA)
         gameLengthB = retrieveGameLength(outputB)
