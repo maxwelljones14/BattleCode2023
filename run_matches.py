@@ -2,24 +2,26 @@ from itertools import product
 import subprocess
 
 errors = []
+Awins = 0
+Alosses = 0
+Bwins = 0
+Blosses = 0
 currentBot = 'MPWorking'
 
 bots = ['MPFreeELO']
 botsSet = set(bots)
 early_maps = ['AllElements', 'DefaultMap', 'maptestsmall', 'SmallElements']
-sprint1_maps = ['ArtistRendition', 'BatSignal', 'BowAndArrow', 'Cat', 'Clown', 'Diagonal', 'Eyelands', 'Forest', 'Frog', 'Grievance', 'Hah', 'KingdomRush', 'Minefield', 'Movepls', 'Orbit', 'Pit', 'Pizza', 'Quiet', 'Rectangle', 'Scatter', 'Snowflake', 'Sun', 'Tacocat', 'Turtle']
-sprint2_maps = ['BattleSuns', 'Checkmate2', 'Cornucopia', 'Crossword', 'Cube', 'Divergence', 'Dreamy', 'FourNations', 'HideAndSeek', 'Lantern', 'Lines', 'Maze', 'PairedProgramming', 'Pakbot', 'Pathfind', 'Piglets', 'Rewind', 'Risk', 'Sine', 'SomethingFishy', 'Spin', 'Spiral', 'Squares', 'Star', 'Sus', 'SweetDreams', 'TicTacToe', 'USA']
-maps = early_maps + sprint1_maps + sprint2_maps
+# sprint1_maps = ['ArtistRendition', 'BatSignal', 'BowAndArrow', 'Cat', 'Clown', 'Diagonal', 'Eyelands', 'Forest', 'Frog', 'Grievance', 'Hah', 'KingdomRush', 'Minefield', 'Movepls', 'Orbit', 'Pit', 'Pizza', 'Quiet', 'Rectangle', 'Scatter', 'Snowflake', 'Sun', 'Tacocat', 'Turtle']
+# sprint2_maps = ['BattleSuns', 'Checkmate2', 'Cornucopia', 'Crossword', 'Cube', 'Divergence', 'Dreamy', 'FourNations', 'HideAndSeek', 'Lantern', 'Lines', 'Maze', 'PairedProgramming', 'Pakbot', 'Pathfind', 'Piglets', 'Rewind', 'Risk', 'Sine', 'SomethingFishy', 'Spin', 'Spiral', 'Squares', 'Star', 'Sus', 'SweetDreams', 'TicTacToe', 'USA']
+maps = early_maps# + sprint1_maps + sprint2_maps
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
 
-numWinsMapping = {
-    0: 'Lost',
-    1: 'Tied',
-    2: 'Won',
+winMapping = {
+    True: 'W',
+    False: 'L',
 }
-
 
 def retrieveGameLength(output):
     startIndex = output.find('wins (round ')
@@ -44,23 +46,27 @@ def run_match(bot, map):
         loseAString = '{} (B) wins'.format(bot)
         loseBString = '{} (A) wins'.format(bot)
         
-        numWins = 0
+        Awon = False
+        Bwon = False
         
         gameLengthA = retrieveGameLength(outputA)
         gameLengthB = retrieveGameLength(outputB)
         
         if winAString in outputA:
-            numWins += 1
+            Awins += 1
+            Awon = True
         else:
             if not loseAString in outputA:
                 return 'Error'
+            Alosses += 1
         if winBString in outputB:
-            numWins += 1
+            Bwins += 1
+            Bwon = True
         else:
             if not loseBString in outputB:
                 return 'Error'
-        return numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
-
+            Blosses += 1
+        return winMapping[Awon] + gameLengthA + 'Red, ' + winMapping[Bwon] + gameLengthB + 'Blue'
 
 results = {}
 # Run matches
@@ -89,5 +95,6 @@ with open('matches-summary.txt', 'w') as f:
         f.write(' |')
         f.write('\n')
     f.write('\n')
+    f.write('Total ' + Awins + '-' + Alosses + ' Red, ' + Bwins + '-' + Blosses + ' Blue\n')
     for error in errors:
         f.write(error)
