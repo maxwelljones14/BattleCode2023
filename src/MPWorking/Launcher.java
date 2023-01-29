@@ -64,6 +64,10 @@ public class Launcher extends Robot {
 
     static int turnsSpentAtHQ;
 
+    static int turnsFollowedExploreTarget;
+    static int EXPLORE_TARGET_TIMEOUT;
+    static final int EXPLORE_TIMEOUT_MULT = 10;
+
     public static final int MAX_TURNS_SPENT_AT_HQ = 5;
 
     public static final int MAX_LAUNCHERS_PER_ENEMY_HQ = 4;
@@ -77,6 +81,8 @@ public class Launcher extends Robot {
 
     public static final int MAX_SYM_MANA_SECTORS = 2;
 
+    public static final int ID = 11785;
+
     public Launcher(RobotController r) throws GameActionException {
         super(r);
         currState = LauncherState.EXPLORING;
@@ -87,6 +93,8 @@ public class Launcher extends Robot {
         idToHealth = new FastIntIntMap();
         idToTurnInjured = new FastIntIntMap();
         idToLocInjured = new FastIntLocMap();
+        turnsFollowedExploreTarget = 0;
+        EXPLORE_TARGET_TIMEOUT = GameConstants.GAME_MAX_NUMBER_OF_ROUNDS;
     }
 
     public void takeTurn() throws GameActionException {
@@ -790,6 +798,17 @@ public class Launcher extends Robot {
             }
         }
 
+        if (goingToSymLoc) {
+            // Time out sym locs after a while because we are not guaranteed it
+            // is reachable.
+            if (!target.equals(exploreTarget)) {
+                turnsFollowedExploreTarget = 0;
+                EXPLORE_TARGET_TIMEOUT = EXPLORE_TIMEOUT_MULT * Util.distance(currLoc, target);
+            }
+        } else {
+            EXPLORE_TARGET_TIMEOUT = GameConstants.GAME_MAX_NUMBER_OF_ROUNDS;
+        }
+
         exploreTarget = target;
     }
 
@@ -836,6 +855,7 @@ public class Launcher extends Robot {
         if (goingToSymLoc) {
             markSymmetricLocSeen(exploreTarget);
         }
+        turnsFollowedExploreTarget++;
         tryAttackBestEnemy();
     }
 
@@ -849,7 +869,32 @@ public class Launcher extends Robot {
                 }
             } else if (rc.getLocation().distanceSquaredTo(target) <= 8) {
                 seenSymmetricLocs.add(target);
+            } else if (!rc.sensePassability(target)) {
+                // If the target is not passable, it is probably not reachable.
+                // Check for at least 3 other adjacent tiles that are not passable
+                // and mark it as seen if so.
+                // Theoretically we might want to remove the symmetry that this target
+                // is a part of. But that seems a little risky.
+                int numNotPassable = 0;
+                for (Direction dir : Util.directions) {
+                    if (rc.canSenseLocation(target.add(dir)) &&
+                            !rc.sensePassability(target.add(dir))) {
+                        numNotPassable++;
+                    }
+                }
+
+                if (numNotPassable >= 3) {
+                    seenSymmetricLocs.add(target);
+                }
             }
+        }
+
+        if (turnsFollowedExploreTarget > EXPLORE_TARGET_TIMEOUT) {
+            // We have been trying to get to this target for a while and it is not
+            // reachable. Mark it as seen.
+            // Theoretically we might want to remove the symmetry that this target
+            // is a part of. But that seems a little risky.
+            seenSymmetricLocs.add(target);
         }
     }
 
@@ -1015,42 +1060,48 @@ public class Launcher extends Robot {
         if (symmetryChanged) {
             // Symmetry changed, so update
             shouldUpdate = true;
-            manaSymSet.clear();
-            // Debug.println("Symmetry changed, so updating mana sectors");
-        }
-
-        // Check if the closest MAX_SYM_MANA_SECTORS mana sectors have changed
-        for (int i = 0; i < MAX_SYM_MANA_SECTORS; i++) {
-            int manaSectorIdx = getNearestMineSectorIdx(ResourceType.MANA, manaSymSet);
-            if (manaSectorIdx == Comms.UNDEFINED_SECTOR_INDEX)
-                break;
-            if (!manaSymSet.contains(sectorCenters[manaSectorIdx])) {
-                // Found a new mana well, so update
-                shouldUpdate = true;
-                manaSymSet.clear();
-                // Debug.println("New mana sector found, so updating");
-                break;
+            // manaSymSet.clear();
+            // Debug.println("Symmetry changed, so updating mana sectors", ID);
+        } else {
+            // Check if the closest MAX_SYM_MANA_SECTORS mana sectors have changed
+            for (int i = 0; i < MAX_SYM_MANA_SECTORS; i++) {
+                int manaSectorIdx = getNearestMineSectorIdx(ResourceType.MANA, manaSymSet);
+                if (manaSectorIdx == Comms.UNDEFINED_SECTOR_INDEX)
+                    break;
+                if (!manaSymSet.contains(sectorCenters[manaSectorIdx]) &&
+                        !seenSymmetricLocs.contains(sectorCenters[manaSectorIdx])) {
+                    // Found a new mana well, so update
+                    shouldUpdate = true;
+                    // manaSymSet.clear();
+                    // Debug.println("New mana sector found, so updating: " +
+                    // sectorCenters[manaSectorIdx], ID);
+                    break;
+                }
             }
         }
 
         if (!shouldUpdate)
             return;
 
+        manaSymSet.clear();
+
         // Put up to MAX_SYM_MANA_SECTORS mana sectors in symmetry
         MapLocation[] manaSym = new MapLocation[MAX_SYM_MANA_SECTORS * 3];
-        FastLocSet manaSymSet = new FastLocSet();
         MapLocation[] possibleFlips;
         int numManaSym = 0;
         for (int i = 0; i < MAX_SYM_MANA_SECTORS; i++) {
             int manaSectorIdx = getNearestMineSectorIdx(ResourceType.MANA, manaSymSet);
             if (manaSectorIdx == Comms.UNDEFINED_SECTOR_INDEX)
                 break;
+            manaSymSet.add(sectorCenters[manaSectorIdx]);
+            // Debug.println("Checking mana sector " + sectorCenters[manaSectorIdx], ID);
             if (seenSymmetricLocs.contains(sectorCenters[manaSectorIdx]))
                 continue;
-            manaSymSet.add(sectorCenters[manaSectorIdx]);
+            // Debug.println("New mana sector " + sectorCenters[manaSectorIdx], ID);
             possibleFlips = Util.getValidSymmetryLocs(sectorCenters[manaSectorIdx], symmetryAll);
             for (int j = possibleFlips.length; --j >= 0;) {
                 manaSym[numManaSym++] = possibleFlips[j];
+                // Debug.println("Possible flip: " + possibleFlips[j], ID);
             }
         }
 

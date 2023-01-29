@@ -457,7 +457,12 @@ public class Headquarters extends Robot {
             } else {
                 // Build init towards the center
                 if (currentState == State.INIT) {
-                    return findNextExploreInitLoc();
+                    MapLocation exploreLoc = findNextExploreInitLoc();
+                    if (exploreLoc != null) {
+                        return exploreLoc;
+                    } else {
+                        dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
+                    }
                 } else {
                     dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
                 }
@@ -476,7 +481,12 @@ public class Headquarters extends Robot {
             } else {
                 // Build init towards the center
                 if (currentState == State.INIT) {
-                    return findNextExploreInitLoc();
+                    MapLocation exploreLoc = findNextExploreInitLoc();
+                    if (exploreLoc != null) {
+                        return exploreLoc;
+                    } else {
+                        dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
+                    }
                 } else {
                     dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
                 }
