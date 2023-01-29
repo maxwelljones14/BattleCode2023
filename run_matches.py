@@ -8,12 +8,12 @@ Bwins = 0
 Blosses = 0
 currentBot = 'MPWorking'
 
-bots = ['MPFreeELO']
+bots = ['MPGoMana']
 botsSet = set(bots)
 early_maps = ['AllElements', 'DefaultMap', 'maptestsmall', 'SmallElements']
-# sprint1_maps = ['ArtistRendition', 'BatSignal', 'BowAndArrow', 'Cat', 'Clown', 'Diagonal', 'Eyelands', 'Forest', 'Frog', 'Grievance', 'Hah', 'KingdomRush', 'Minefield', 'Movepls', 'Orbit', 'Pit', 'Pizza', 'Quiet', 'Rectangle', 'Scatter', 'Snowflake', 'Sun', 'Tacocat', 'Turtle']
-# sprint2_maps = ['BattleSuns', 'Checkmate2', 'Cornucopia', 'Crossword', 'Cube', 'Divergence', 'Dreamy', 'FourNations', 'HideAndSeek', 'Lantern', 'Lines', 'Maze', 'PairedProgramming', 'Pakbot', 'Pathfind', 'Piglets', 'Rewind', 'Risk', 'Sine', 'SomethingFishy', 'Spin', 'Spiral', 'Squares', 'Star', 'Sus', 'SweetDreams', 'TicTacToe', 'USA']
-maps = early_maps# + sprint1_maps + sprint2_maps
+sprint1_maps = ['ArtistRendition', 'BatSignal', 'BowAndArrow', 'Cat', 'Clown', 'Diagonal', 'Eyelands', 'Forest', 'Frog', 'Grievance', 'Hah', 'KingdomRush', 'Minefield', 'Movepls', 'Orbit', 'Pit', 'Pizza', 'Quiet', 'Rectangle', 'Scatter', 'Snowflake', 'Sun', 'Tacocat', 'Turtle']
+sprint2_maps = ['BattleSuns', 'Checkmate2', 'Cornucopia', 'Crossword', 'Cube', 'Divergence', 'Dreamy', 'FourNations', 'HideAndSeek', 'Lantern', 'Lines', 'Maze', 'PairedProgramming', 'Pakbot', 'Pathfind', 'Piglets', 'Rewind', 'Risk', 'Sine', 'SomethingFishy', 'Spin', 'Spiral', 'Squares', 'Star', 'Sus', 'SweetDreams', 'TicTacToe', 'USA']
+maps = early_maps + sprint1_maps + sprint2_maps
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
@@ -70,7 +70,7 @@ def run_match(bot, map):
             if not loseBString in outputB:
                 return 'Error'
             Blosses += 1
-        return winMapping[Awon] + gameLengthA + 'Red, ' + winMapping[Bwon] + gameLengthB + 'Blue'
+        return winMapping[Awon] + ' ' + gameLengthA + ', ' + winMapping[Bwon] + ' ' + gameLengthB
 
 results = {}
 # Run matches
