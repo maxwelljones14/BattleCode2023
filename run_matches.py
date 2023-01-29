@@ -99,6 +99,6 @@ with open('matches-summary.txt', 'w') as f:
         f.write(' |')
         f.write('\n')
     f.write('\n')
-    f.write('Total ' + Awins + '-' + Alosses + ' Red, ' + Bwins + '-' + Blosses + ' Blue\n')
+    f.write('Total ' + str(Awins) + '-' + str(Alosses) + ' Red, ' + str(Bwins) + '-' + str(Blosses) + ' Blue\n')
     for error in errors:
         f.write(error)
