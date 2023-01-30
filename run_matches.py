@@ -13,7 +13,8 @@ botsSet = set(bots)
 early_maps = ['AllElements', 'DefaultMap', 'maptestsmall', 'SmallElements']
 sprint1_maps = ['ArtistRendition', 'BatSignal', 'BowAndArrow', 'Cat', 'Clown', 'Diagonal', 'Eyelands', 'Forest', 'Frog', 'Grievance', 'Hah', 'KingdomRush', 'Minefield', 'Movepls', 'Orbit', 'Pit', 'Pizza', 'Quiet', 'Rectangle', 'Scatter', 'Snowflake', 'Sun', 'Tacocat', 'Turtle']
 sprint2_maps = ['BattleSuns', 'Checkmate2', 'Cornucopia', 'Crossword', 'Cube', 'Divergence', 'Dreamy', 'FourNations', 'HideAndSeek', 'Lantern', 'Lines', 'Maze', 'PairedProgramming', 'Pakbot', 'Pathfind', 'Piglets', 'Rewind', 'Risk', 'Sine', 'SomethingFishy', 'Spin', 'Spiral', 'Squares', 'Star', 'Sus', 'SweetDreams', 'TicTacToe', 'USA']
-maps = early_maps + sprint1_maps + sprint2_maps
+intl_quals_maps = ['Barcode', 'Contraction', 'Flower', 'Grapes', 'IslandHopping', 'Marsh', 'RaceToTheTop', 'Repetition', 'River', 'RockWall', 'Sakura', 'SoundWave', 'ThirtyFive', 'TimesUp', 'TreasureMap']
+maps = early_maps + sprint1_maps + sprint2_maps + intl_quals_maps
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
@@ -35,8 +36,8 @@ def retrieveGameLength(output):
 def run_match(bot, map):
     print("Running {} vs {} on {}".format(currentBot, bot, map))
     try:
-        outputA = str(subprocess.check_output(['./gradlew', 'run', '-PteamA=' + currentBot, '-PteamB=' + bot, '-Pmaps=' + map]))
-        outputB = str(subprocess.check_output(['./gradlew', 'run', '-PteamA=' + bot, '-PteamB=' + currentBot, '-Pmaps=' + map]))
+        outputA = str(subprocess.check_output(['./gradlew', 'run', '-Pdebug=true', '-PteamA=' + currentBot, '-PteamB=' + bot, '-Pmaps=' + map]))
+        outputB = str(subprocess.check_output(['./gradlew', 'run', '-Pdebug=true', '-PteamA=' + bot, '-PteamB=' + currentBot, '-Pmaps=' + map]))
     except subprocess.CalledProcessError as exc:
         print("Status: FAIL", exc.returncode, exc.output)
         return 'Error'

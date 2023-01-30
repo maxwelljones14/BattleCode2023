@@ -59,8 +59,6 @@ public class Robot {
 
     static FastLocSet emptySymLocs;
 
-    static MapLocation closestFriendlyIsland;
-
     static final int MIN_BC_TO_FLUSH_SECTOR_DB = 1500;
     static final int BC_TO_WRITE_SECTOR = 150;
     static final int MIN_BC_TO_FLUSH = 1200;
@@ -128,8 +126,6 @@ public class Robot {
 
         symmetryChanged = false;
         emptySymLocs = new FastLocSet();
-
-        closestFriendlyIsland = null;
     }
 
     public void loadHQLocations() throws GameActionException {
@@ -432,7 +428,7 @@ public class Robot {
                     Comms.writeBPSectorIslands(sectorToReport, hasIsland);
 
                     int oldControlStatus = Comms.readSectorControlStatus(sectorToReport);
-                    int newControlStatus = Math.max(oldControlStatus, entry.getControlStatus());
+                    int newControlStatus = Comms.pickControlStatus(entry.getControlStatus(), oldControlStatus);
                     Comms.writeBPSectorControlStatus(sectorToReport, newControlStatus);
 
                     entry.reset();
@@ -1614,7 +1610,8 @@ public class Robot {
                 closestDistance = distance;
                 closestSector = sectorIdx;
                 closestStatus = status;
-                // Debug.println("Best sector: " + sectorCenters[closestSector] + " status: " + closestStatus, 11749);
+                // Debug.println("Best sector: " + sectorCenters[closestSector] + " status: " +
+                // closestStatus, 11749);
             }
         }
         return closestSector;
@@ -1659,11 +1656,10 @@ public class Robot {
     }
 
     // TODO: Break this up over several turns if there are lots of sectors?
-    public MapLocation getClosestFriendlyIsland() throws GameActionException {
-        MapLocation bestLoc = null;
+    public int getClosestFriendlyIslandIdx() throws GameActionException {
         int bestDist = Integer.MAX_VALUE;
+        int bestSector = Comms.UNDEFINED_SECTOR_INDEX;
         int dist;
-        MapLocation loc;
 
         for (int i = numSectors; --i >= 0;) {
             int sectorAll = Comms.readSectorAll(i);
@@ -1673,15 +1669,14 @@ public class Robot {
             // Control status
             if ((sectorAll & 0b111) != Comms.ControlStatus.FRIENDLY_ISLAND)
                 continue;
-            loc = sectorCenters[i];
-            dist = currLoc.distanceSquaredTo(loc);
+            dist = currLoc.distanceSquaredTo(sectorCenters[i]);
             if (dist < bestDist) {
                 bestDist = dist;
-                bestLoc = loc;
+                bestSector = i;
             }
         }
 
-        return bestLoc;
+        return bestSector;
     }
 
     // TODO: Break this up over several turns if there are lots of sectors?

@@ -115,9 +115,16 @@ public class Headquarters extends Robot {
             rc.resign();
     }
 
+    // Functions with the prefix "debug_" are only run when the gradle property
+    // "debug" is set to true
+    public void debug_localResign() {
+        localResign();
+    }
+
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         // localResign();
+        debug_localResign();
         adamCarrierTracker.update();
         manaCarrierTracker.update();
         clearOldEnemyInfo();

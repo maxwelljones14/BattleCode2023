@@ -68,6 +68,23 @@ public class Comms {
         writeSymmetryAll(7);
     }
 
+    public static int pickControlStatus(int newStatus, int currStatus) {
+        switch (newStatus) {
+            case Comms.ControlStatus.NEUTRAL_ISLAND:
+                switch (currStatus) {
+                    // If the new status is a neutral island, override enemy and
+                    // friendly islands found in this sector.
+                    case Comms.ControlStatus.ENEMY_ISLAND:
+                    case Comms.ControlStatus.FRIENDLY_ISLAND:
+                        return newStatus;
+                    default:
+                        return Math.max(newStatus, currStatus);
+                }
+            default:
+                return Math.max(newStatus, currStatus);
+        }
+    }
+
     public static void writeToBufferPool(int idx, int value) throws GameActionException {
         bufferPool[idx] = value;
         dirtyFlags[idx] = true;

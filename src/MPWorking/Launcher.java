@@ -60,7 +60,8 @@ public class Launcher extends Robot {
     static MapLocation closestInjured;
     public static final int HEALTH_DECREASED_TIMEOUT = 2;
 
-    static MapLocation closestFriendlyIsland;
+    static int closestFriendlyIslandIdx;
+    static boolean visitedSectorCenter;
 
     static int turnsSpentAtHQ;
 
@@ -104,7 +105,7 @@ public class Launcher extends Robot {
 
         enemyAttackable = getEnemyAttackable();
         numEnemies = enemyAttackable.length;
-        closestFriendlyIsland = null;
+        closestFriendlyIslandIdx = Comms.UNDEFINED_SECTOR_INDEX;
         updateSymManaSectors();
         loadExploreTarget();
 
@@ -286,14 +287,16 @@ public class Launcher extends Robot {
                 } else if (hasReported) {
                     if (shouldHeal()) {
                         currState = LauncherState.HEALING;
+                        visitedSectorCenter = false;
                     } else {
                         currState = LauncherState.EXPLORING;
                     }
                 }
                 break;
             case HEALING:
-                closestFriendlyIsland = getClosestFriendlyIsland();
-                if (closestFriendlyIsland == null || rc.getHealth() == RobotType.LAUNCHER.health) {
+                closestFriendlyIslandIdx = getClosestFriendlyIslandIdx();
+                if (closestFriendlyIslandIdx == Comms.UNDEFINED_SECTOR_INDEX
+                        || rc.getHealth() == RobotType.LAUNCHER.health) {
                     if (shouldRunAway()) {
                         currState = LauncherState.RUNNING;
                     } else if (shouldHelpInjured()) {
@@ -306,6 +309,7 @@ public class Launcher extends Robot {
             default:
                 if (shouldHeal()) {
                     currState = LauncherState.HEALING;
+                    visitedSectorCenter = false;
                 } else if (closestEnemy != null) {
                     if (shouldRunAway()) {
                         currState = LauncherState.RUNNING;
@@ -487,8 +491,8 @@ public class Launcher extends Robot {
     // If this returns true, loads the friendly island
     public boolean shouldHeal() throws GameActionException {
         if (rc.getHealth() <= LOW_HEAL_THRESHOLD) {
-            closestFriendlyIsland = getClosestFriendlyIsland();
-            return closestFriendlyIsland != null;
+            closestFriendlyIslandIdx = getClosestFriendlyIslandIdx();
+            return closestFriendlyIslandIdx != Comms.UNDEFINED_SECTOR_INDEX;
         }
 
         // If a friendly robot is under the low heal treshold and you're under
@@ -500,8 +504,8 @@ public class Launcher extends Robot {
         for (int i = FriendlySensable.length; --i >= 0;) {
             robot = FriendlySensable[i];
             if (robot.getType() == RobotType.LAUNCHER && robot.getHealth() <= LOW_HEAL_THRESHOLD) {
-                closestFriendlyIsland = getClosestFriendlyIsland();
-                return closestFriendlyIsland != null;
+                closestFriendlyIslandIdx = getClosestFriendlyIslandIdx();
+                return closestFriendlyIslandIdx != Comms.UNDEFINED_SECTOR_INDEX;
             }
         }
 
@@ -997,20 +1001,14 @@ public class Launcher extends Robot {
     }
 
     public void goToNearestIsland() throws GameActionException {
-        // closestFriendlyIsland should be non-null
-        if (closestFriendlyIsland == null) {
-            Debug.println("Error: closestFriendlyIsland is null");
+        // closestFriendlyIslandIdx should be a valid sector
+        if (closestFriendlyIslandIdx == Comms.UNDEFINED_SECTOR_INDEX) {
+            Debug.println("Error: closestFriendlyIslandIdx is not a valid sector");
             return;
         }
 
+        MapLocation closestFriendlyIsland = sectorCenters[closestFriendlyIslandIdx];
         int[] islandIdxs = rc.senseNearbyIslands();
-        if (islandIdxs.length == 0) {
-            // No islands nearby, so just go to the closest one
-            Debug.printString("GOTO ISL");
-            moveAndAttack(closestFriendlyIsland);
-            return;
-        }
-
         // Go to the friendly island
         int islandIdx = -1;
         for (int i = islandIdxs.length; --i >= 0;) {
@@ -1024,7 +1022,31 @@ public class Launcher extends Robot {
         if (islandIdx == -1) {
             // No islands nearby, so just go to the closest one
             Debug.printString("GOTO ISL");
-            moveAndAttack(closestFriendlyIsland);
+
+            MapLocation target = closestFriendlyIsland;
+            boolean shouldMarkCorner = false;
+
+            // If we have visited the center of the sector and we can't see the island,
+            // travel the corners of the sector until we find it
+            if (visitedSectorCenter || currLoc.equals(closestFriendlyIsland)) {
+                visitedSectorCenter = true;
+                MapLocation nextCorner = sectorDatabase.at(closestFriendlyIslandIdx).getNextCorner();
+                target = nextCorner;
+                if (target == null) {
+                    // We've visited all the corners and still haven't found the well???
+                    target = sectorCenters[closestFriendlyIslandIdx];
+                    Debug.println("ERROR: Couldn't find island in sector");
+                    sectorDatabase.at(closestFriendlyIslandIdx).resetCorners();
+                } else {
+                    shouldMarkCorner = true;
+                }
+                // Debug.println("Trying corner: " + target);
+            }
+
+            moveAndAttack(target);
+            if (shouldMarkCorner && rc.getLocation().isAdjacentTo(target)) {
+                sectorDatabase.at(closestFriendlyIslandIdx).visitCorner(target);
+            }
             return;
         }
 

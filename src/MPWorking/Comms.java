@@ -9,7 +9,6 @@ public class Comms {
     private static int[] bufferPool;
     private static boolean[] dirtyFlags;
 
-
     public final static int OUR_HQ_SLOTS = 4;
     public final static int SECTOR_SLOTS = 100;
     public final static int COMBAT_SECTOR_SLOTS = 4;
@@ -73,6 +72,23 @@ public class Comms {
 
     public static void initSymmetry() throws GameActionException {
         writeSymmetryAll(7);
+    }
+
+    public static int pickControlStatus(int newStatus, int currStatus) {
+        switch (newStatus) {
+            case Comms.ControlStatus.NEUTRAL_ISLAND:
+                switch (currStatus) {
+                    // If the new status is a neutral island, override enemy and
+                    // friendly islands found in this sector.
+                    case Comms.ControlStatus.ENEMY_ISLAND:
+                    case Comms.ControlStatus.FRIENDLY_ISLAND:
+                        return newStatus;
+                    default:
+                        return Math.max(newStatus, currStatus);
+                }
+            default:
+                return Math.max(newStatus, currStatus);
+        }
     }
 
     public static void writeToBufferPool(int idx, int value) throws GameActionException {
@@ -309,7 +325,6 @@ public class Comms {
         rc.writeSharedArray(54, 65280);
     }
 
-
     public static void resetAllSectorControlStatus() throws GameActionException {
         rc.writeSharedArray(3, rc.readSharedArray(3) & 65080);
         rc.writeSharedArray(4, rc.readSharedArray(4) & 58254);
@@ -325,9 +340,7 @@ public class Comms {
         rc.writeSharedArray(14, rc.readSharedArray(14) & 14563);
         rc.writeSharedArray(15, rc.readSharedArray(15) & 36408);
         rc.writeSharedArray(16, rc.readSharedArray(16) & 58254);
-        rc.writeSharedArray(17, rc.readSharedArray(17) & 14563);
-        rc.writeSharedArray(18, rc.readSharedArray(18) & 36408);
-        rc.writeSharedArray(19, rc.readSharedArray(19) & 58254);
+
         rc.writeSharedArray(20, rc.readSharedArray(20) & 14563);
         rc.writeSharedArray(21, rc.readSharedArray(21) & 36408);
         rc.writeSharedArray(22, rc.readSharedArray(22) & 58254);

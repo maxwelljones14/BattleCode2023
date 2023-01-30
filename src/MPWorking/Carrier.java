@@ -42,6 +42,7 @@ public class Carrier extends Robot {
     static MapLocation closestNeutralIsland;
 
     static int lastTurnCombatSectorNearby;
+    static boolean sawEnemyLastCycle;
 
     static boolean needToReportEarlyWell;
 
@@ -69,6 +70,7 @@ public class Carrier extends Robot {
         wellSectorsVisitedThisCycle = new FastLocSet();
         lastTurnReported = 0;
         lastTurnCombatSectorNearby = -1;
+        sawEnemyLastCycle = false;
         switchedResourceTarget = false;
         needToReportEarlyWell = true;
         isFirstCycle = true;
@@ -177,6 +179,7 @@ public class Carrier extends Robot {
                         (closestNeutralIsland = getClosestNeutralIsland()) != null) {
                     currState = CarrierState.PLACING_ANCHOR;
                 } else if (rc.getResourceAmount(resourceTarget) == 0) {
+                    isFirstCycle = false;
                     enterMineState();
                 }
                 break;
@@ -250,6 +253,8 @@ public class Carrier extends Robot {
             switchedResourceTarget = false;
         }
 
+        sawEnemyLastCycle = false;
+
         // Propagate blacklisted wells for one cycle in case we went to report
         MapLocation[] blacklistedWellLocs = blacklistedWells.getKeys();
         for (int i = blacklistedWellLocs.length; --i >= 0;) {
@@ -268,16 +273,8 @@ public class Carrier extends Robot {
         }
 
         MapLocation wellLoc = closestWell.getMapLocation();
-        int closestEnemyLauncherDist = Integer.MAX_VALUE;
-        int dist;
-        RobotInfo robot;
-        for (int i = enemyAttackable.length; --i >= 0;) {
-            robot = enemyAttackable[i];
-            dist = robot.getLocation().distanceSquaredTo(wellLoc);
-            if (dist < closestEnemyLauncherDist) {
-                closestEnemyLauncherDist = dist;
-            }
-        }
+        int closestEnemyLauncherDist = closestEnemy == null ? Integer.MAX_VALUE
+                : closestEnemy.getLocation().distanceSquaredTo(wellLoc);
 
         if (closestEnemyLauncherDist <= RobotType.LAUNCHER.actionRadiusSquared) {
             wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(wellLoc)]);
@@ -334,163 +331,10 @@ public class Carrier extends Robot {
 
         switch (currState) {
             case MINING:
-                runFromEnemy();
-                // Reset wellsVisitedThisCycle every so often if we haven't found one
-                if (turnStartedMining + RESET_WELLS_VISITED_TIMEOUT < rc.getRoundNum()) {
-                    wellsVisitedThisCycle.clear();
-                    wellSectorsVisitedThisCycle.clear();
-                    turnStartedMining = rc.getRoundNum();
-                }
-
-                loadClosestWell();
-                blacklistWells();
-
-                collect: if (closestWell != null) {
-                    MapLocation wellLoc = closestWell.getMapLocation();
-                    Debug.printString("Well: " + wellLoc);
-                    // Mark this sector's well as visited
-                    wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(wellLoc)]);
-                    wellsVisitedThisCycle.add(wellLoc);
-
-                    // If we are adjacent to a well, collect from it.
-                    if (currLoc.isAdjacentTo(wellLoc)) {
-                        collect(closestWell);
-                        MapLocation betterCollectLoc = Util.getBetterCollectLoc(wellLoc);
-                        Nav.move(betterCollectLoc);
-                    } else {
-                        // If there are too many carriers on this well, move to another well.
-                        // If there are 2 available spots, skip this check
-                        int numOpenSpots = Util.getNumOpenCollectSpots(wellLoc);
-                        if (numOpenSpots <= 2) {
-                            int numCarriers = 0;
-                            RobotInfo robot;
-                            for (int i = FriendlySensable.length; --i >= 0;) {
-                                robot = FriendlySensable[i];
-                                if (robot.type == RobotType.CARRIER)
-                                    numCarriers++;
-                            }
-
-                            int maxOpenSpots = Util.getMaxCollectSpots(wellLoc);
-                            if (numCarriers >= Math.min(maxOpenSpots * 4, CARRIERS_PER_WELL_TO_LEAVE)) {
-                                Debug.printString("Leaving");
-                                closestWell = null;
-                                break collect;
-                            }
-                        }
-
-                        Debug.printString("Moving");
-                        if (Util.seesObstacleInWay(wellLoc)) {
-                            Nav.move(wellLoc);
-                        } else {
-                            Nav.move(Util.getBestCollectLoc(wellLoc));
-                        }
-
-                        collect(closestWell);
-                    }
-                }
-
-                if (closestWell == null) {
-                    boolean shouldMarkCorner = false;
-                    // If we can't see a well, move towards the closest mine sector
-                    int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, wellSectorsVisitedThisCycle);
-                    MapLocation target = null;
-                    if (mineSectorIndex != Comms.UNDEFINED_SECTOR_INDEX) {
-                        target = resourceTarget == ResourceType.ADAMANTIUM
-                                ? sectorDatabase.at(mineSectorIndex).getAdamWell()
-                                : sectorDatabase.at(mineSectorIndex).getManaWell();
-
-                        // If it's too early and the well is far,
-                        // don't look at this well and just explore.
-                        if (shouldIgnoreEarlyWell(target)) {
-                            target = Explore.getExplore3Target();
-                            Debug.printString("Early, exploring");
-                        } else {
-                            Debug.printString("Well in sector: " + target);
-                        }
-
-                        // If we have visited the center of the sector and we can't see the well,
-                        // travel the corners of the sector until we find the well
-                        if (visitedSectorCenter || currLoc.equals(target)) {
-                            visitedSectorCenter = true;
-                            MapLocation nextCorner = sectorDatabase.at(mineSectorIndex).getNextCorner();
-                            target = nextCorner;
-                            if (target == null) {
-                                // We've visited all the corners and still haven't found the well???
-                                target = resourceTarget == ResourceType.ADAMANTIUM
-                                        ? sectorDatabase.at(mineSectorIndex).getAdamWell()
-                                        : sectorDatabase.at(mineSectorIndex).getManaWell();
-                                Debug.println("ERROR: Couldn't find well in sector");
-                                sectorDatabase.at(mineSectorIndex).resetCorners();
-                            } else {
-                                shouldMarkCorner = true;
-                            }
-                            // Debug.println("Trying corner: " + target);
-                        }
-                    } else {
-                        target = Explore.getExplore3Target();
-                        Debug.printString("Exploring");
-                    }
-                    Nav.move(target);
-                    if (shouldMarkCorner && rc.getLocation().isAdjacentTo(target)) {
-                        sectorDatabase.at(mineSectorIndex).visitCorner(target);
-                    }
-                }
+                doMine();
                 break;
             case PLACING_ANCHOR:
-                runFromEnemy();
-                // pick up anchor if home has anchor
-                if (rc.canTakeAnchor(home, Anchor.STANDARD)) {
-                    rc.takeAnchor(home, Anchor.STANDARD);
-                }
-
-                // We only enter PLACING_ANCHOR if we can immediately take an anchor.
-                // We should always have an anchor now.
-                if (rc.getAnchor() == null) {
-                    Debug.println("ERROR: No anchor in PLACING_ANCHOR state");
-                }
-
-                closestNeutralIsland = getClosestNeutralIsland();
-
-                // If no neutral islands, go home
-                if (closestNeutralIsland == null) {
-                    if (!returnAnchor()) {
-                        Nav.move(home);
-                        returnAnchor();
-                    }
-                    return;
-                }
-
-                int[] islandIdxs = rc.senseNearbyIslands();
-                if (islandIdxs.length == 0) {
-                    // No islands nearby yet, so just go to the closest neutral island
-                    Nav.move(closestNeutralIsland);
-                    return;
-                }
-
-                // If we're near a neutral island, go to it
-                int islandIdx = -1;
-                for (int i = islandIdxs.length; --i >= 0;) {
-                    if (rc.senseTeamOccupyingIsland(islandIdxs[i]) == Team.NEUTRAL) {
-                        islandIdx = islandIdxs[i];
-                        break;
-                    }
-                }
-
-                if (islandIdx == -1) {
-                    // No neutral islands nearby, so just go to the closest neutral island
-                    Nav.move(closestNeutralIsland);
-                    return;
-                }
-
-                MapLocation target = Util.getClosestEmptyIslandLoc(islandIdx);
-                if (target == null) {
-                    // If no placement loc, just go to the closest location on the island
-                    // and wait for someone to leave.
-                    target = Util.getClosestIslandLoc(islandIdx);
-                }
-
-                Nav.move(target);
-                placeAnchor();
+                doPlaceAnchor();
                 break;
             case REPORTING:
                 runFromEnemy();
@@ -510,6 +354,180 @@ public class Carrier extends Robot {
                 transfer();
                 break;
         }
+    }
+
+    public void doMine() throws GameActionException {
+        runFromEnemy();
+        // Reset wellsVisitedThisCycle every so often if we haven't found one
+        if (turnStartedMining + RESET_WELLS_VISITED_TIMEOUT < rc.getRoundNum()) {
+            wellsVisitedThisCycle.clear();
+            wellSectorsVisitedThisCycle.clear();
+            turnStartedMining = rc.getRoundNum();
+        }
+
+        if (closestEnemy != null) {
+            sawEnemyLastCycle = true;
+        }
+
+        loadClosestWell();
+        blacklistWells();
+
+        collect: if (closestWell != null) {
+            MapLocation wellLoc = closestWell.getMapLocation();
+            Debug.printString("Well: " + wellLoc);
+            // Mark this sector's well as visited
+            wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(wellLoc)]);
+            wellsVisitedThisCycle.add(wellLoc);
+
+            // If we are adjacent to a well, collect from it.
+            if (currLoc.isAdjacentTo(wellLoc)) {
+                collect(closestWell);
+                MapLocation betterCollectLoc = Util.getBetterCollectLoc(wellLoc);
+                Nav.move(betterCollectLoc);
+            } else {
+                // If there are too many carriers on this well, move to another well.
+                // If there are 2 available spots, skip this check
+                int numOpenSpots = Util.getNumOpenCollectSpots(wellLoc);
+                if (numOpenSpots <= 2) {
+                    int numCarriers = 0;
+                    RobotInfo robot;
+                    for (int i = FriendlySensable.length; --i >= 0;) {
+                        robot = FriendlySensable[i];
+                        if (robot.type == RobotType.CARRIER)
+                            numCarriers++;
+                    }
+
+                    int maxOpenSpots = Util.getMaxCollectSpots(wellLoc);
+                    if (numCarriers >= Math.min(maxOpenSpots * 2, CARRIERS_PER_WELL_TO_LEAVE)) {
+                        Debug.printString("Leaving");
+                        closestWell = null;
+                        break collect;
+                    }
+                }
+
+                Debug.printString("Moving");
+                if (Util.seesObstacleInWay(wellLoc)) {
+                    Nav.move(wellLoc);
+                } else {
+                    Nav.move(Util.getBestCollectLoc(wellLoc));
+                }
+
+                collect(closestWell);
+            }
+        }
+
+        if (closestWell == null) {
+            boolean shouldMarkCorner = false;
+            // If we can't see a well, move towards the closest mine sector
+            int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, wellSectorsVisitedThisCycle);
+            MapLocation target = null;
+            if (mineSectorIndex != Comms.UNDEFINED_SECTOR_INDEX) {
+                target = resourceTarget == ResourceType.ADAMANTIUM
+                        ? sectorDatabase.at(mineSectorIndex).getAdamWell()
+                        : sectorDatabase.at(mineSectorIndex).getManaWell();
+
+                // If it's too early and the well is far,
+                // don't look at this well and just explore.
+                if (shouldIgnoreEarlyWell(target)) {
+                    target = Explore.getExplore3Target();
+                    Debug.printString("Early, exploring");
+                } else {
+                    Debug.printString("Well in sector: " + target);
+                }
+
+                // If we have visited the center of the sector and we can't see the well,
+                // travel the corners of the sector until we find the well
+                if (visitedSectorCenter || currLoc.equals(target)) {
+                    visitedSectorCenter = true;
+                    MapLocation nextCorner = sectorDatabase.at(mineSectorIndex).getNextCorner();
+                    target = nextCorner;
+                    if (target == null) {
+                        // We've visited all the corners and still haven't found the well???
+                        target = resourceTarget == ResourceType.ADAMANTIUM
+                                ? sectorDatabase.at(mineSectorIndex).getAdamWell()
+                                : sectorDatabase.at(mineSectorIndex).getManaWell();
+                        Debug.println("ERROR: Couldn't find well in sector");
+                        sectorDatabase.at(mineSectorIndex).resetCorners();
+                    } else {
+                        shouldMarkCorner = true;
+                    }
+                    // Debug.println("Trying corner: " + target);
+                }
+            } else {
+                target = Explore.getExplore3Target();
+                Debug.printString("Exploring");
+            }
+            Nav.move(target);
+            if (shouldMarkCorner && rc.getLocation().isAdjacentTo(target)) {
+                sectorDatabase.at(mineSectorIndex).visitCorner(target);
+            }
+        }
+    }
+
+    public void doPlaceAnchor() throws GameActionException {
+        runFromEnemy();
+        // pick up anchor if home has anchor
+        if (rc.canTakeAnchor(home, Anchor.STANDARD)) {
+            rc.takeAnchor(home, Anchor.STANDARD);
+        }
+
+        // We only enter PLACING_ANCHOR if we can immediately take an anchor.
+        // We should always have an anchor now.
+        if (rc.getAnchor() == null) {
+            Debug.println("ERROR: No anchor in PLACING_ANCHOR state");
+        }
+
+        closestNeutralIsland = getClosestNeutralIsland();
+
+        int[] islandIdxs = rc.senseNearbyIslands();
+
+        // If we're near a neutral island, go to it
+        int neutralIslandIdx = -1;
+        int enemyIslandIdx = -1;
+        for (int i = islandIdxs.length; --i >= 0;) {
+            if (rc.senseTeamOccupyingIsland(islandIdxs[i]) == Team.NEUTRAL) {
+                neutralIslandIdx = islandIdxs[i];
+                break;
+            } else if (rc.senseTeamOccupyingIsland(islandIdxs[i]) == rc.getTeam().opponent()) {
+                enemyIslandIdx = islandIdxs[i];
+            }
+        }
+
+        if (neutralIslandIdx == -1) {
+            if (enemyIslandIdx != -1 && closestEnemy == null) {
+                // If there's an enemy island nearby and no enemies nearby,
+                // overtake the enemy island.
+                MapLocation target = Util.getClosestEmptyIslandLoc(enemyIslandIdx);
+                if (target == null) {
+                    // If no placement loc, just go to the closest location on the island
+                    // and wait for someone to leave.
+                    target = Util.getClosestIslandLoc(enemyIslandIdx);
+                }
+                Nav.move(target);
+            } else {
+                // If no neutral islands, go home
+                if (closestNeutralIsland == null) {
+                    if (!returnAnchor()) {
+                        Nav.move(home);
+                        returnAnchor();
+                    }
+                } else {
+                    // No islands nearby yet, so just go to the closest neutral island
+                    Nav.move(closestNeutralIsland);
+                }
+            }
+            return;
+        }
+
+        MapLocation target = Util.getClosestEmptyIslandLoc(neutralIslandIdx);
+        if (target == null) {
+            // If no placement loc, just go to the closest location on the island
+            // and wait for someone to leave.
+            target = Util.getClosestIslandLoc(neutralIslandIdx);
+        }
+
+        Nav.move(target);
+        placeAnchor();
     }
 
     public void loadClosestWell() throws GameActionException {
@@ -705,7 +723,10 @@ public class Carrier extends Robot {
 
     public boolean shouldSwitchToMana() {
         if (isFirstCycle) {
-            isFirstCycle = false;
+            return true;
+        }
+
+        if (sawEnemyLastCycle) {
             return true;
         }
 

@@ -328,8 +328,6 @@ public class Util {
     }
 
     // @pre We are already adjacent to the well
-    // If there is a spot next to the well that is open and is closer to home.
-    // Return that spot.
     static MapLocation getBetterCollectLoc(MapLocation wellLoc) throws GameActionException {
         MapLocation currLoc = rc.getLocation();
         MapLocation bestCollect = null;
@@ -346,9 +344,7 @@ public class Util {
             // just choose the location closest to home
             for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
                 loc = wellLoc.add(Direction.DIRECTION_ORDER[i]);
-                if (!rc.canSenseLocation(loc) || !rc.sensePassability(loc))
-                    continue;
-                if (!currLoc.isAdjacentTo(loc))
+                if (!rc.canSenseLocation(loc) || !rc.sensePassability(loc) || !currLoc.isAdjacentTo(loc))
                     continue;
                 robot = rc.senseRobotAtLocation(loc);
                 if (robot != null && robot.ID != rc.getID())
@@ -369,9 +365,7 @@ public class Util {
             // so that other carriers can filter in
             for (int i = X_DIRECTIONS.length; --i >= 0;) {
                 loc = wellLoc.add(X_DIRECTIONS[i]);
-                if (!rc.canSenseLocation(loc) || !rc.sensePassability(loc))
-                    continue;
-                if (!currLoc.isAdjacentTo(loc))
+                if (!rc.canSenseLocation(loc) || !rc.sensePassability(loc) || !currLoc.isAdjacentTo(loc))
                     continue;
                 robot = rc.senseRobotAtLocation(loc);
                 if (robot != null && robot.ID != rc.getID())
@@ -393,9 +387,7 @@ public class Util {
             // If none of these are open, then check the cardinal directions
             for (int i = CARDINAL_DIRECTIONS.length; --i >= 0;) {
                 loc = wellLoc.add(CARDINAL_DIRECTIONS[i]);
-                if (!rc.canSenseLocation(loc) || !rc.sensePassability(loc))
-                    continue;
-                if (!currLoc.isAdjacentTo(loc))
+                if (!rc.canSenseLocation(loc) || !rc.sensePassability(loc) || !currLoc.isAdjacentTo(loc))
                     continue;
                 robot = rc.senseRobotAtLocation(loc);
                 if (robot != null && robot.ID != rc.getID())
