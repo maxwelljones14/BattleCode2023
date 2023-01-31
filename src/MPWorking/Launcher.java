@@ -36,7 +36,6 @@ public class Launcher extends Robot {
     static int enemyAttackingHealth;
     static int lastEnemyAttackingHealth;
     static int friendlyAttackingHealth;
-    static MapLocation closestEnemyLocation;
     static int numEnemyLaunchersAttackingUs;
     public static final int LAST_ATTACKING_ENEMY_TIMEOUT = 2;
 
@@ -60,6 +59,7 @@ public class Launcher extends Robot {
     public static final int HEALTH_DECREASED_TIMEOUT = 2;
 
     static int closestFriendlyIslandIdx;
+    static MapLocation firstFriendlyIslandLoc;
     static boolean visitedSectorCenter;
 
     static int turnsSpentAtHQ;
@@ -93,6 +93,7 @@ public class Launcher extends Robot {
         idToHealth = new FastIntIntMap();
         idToTurnInjured = new FastIntIntMap();
         idToLocInjured = new FastIntLocMap();
+        firstFriendlyIslandLoc = null;
         turnsFollowedExploreTarget = 0;
         EXPLORE_TARGET_TIMEOUT = GameConstants.GAME_MAX_NUMBER_OF_ROUNDS;
     }
@@ -135,12 +136,17 @@ public class Launcher extends Robot {
         int lowestHealth = Integer.MAX_VALUE;
         boolean inActionRadius = false;
         int numAttackingEnemyCount = 0;
+        RobotInfo bot;
+        int botHealth;
+        MapLocation candidateLoc;
+        int candidateDist;
+        RobotType botType;
         for (int i = 0; i < EnemySensable.length; i++) {
-            RobotInfo bot = EnemySensable[i];
-            int botHealth = bot.getHealth();
-            MapLocation candidateLoc = bot.getLocation();
-            int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
-            RobotType botType = bot.getType();
+            bot = EnemySensable[i];
+            botHealth = bot.getHealth();
+            candidateLoc = bot.getLocation();
+            candidateDist = currLoc.distanceSquaredTo(candidateLoc);
+            botType = bot.getType();
             if (botType == RobotType.LAUNCHER || botType == RobotType.DESTABILIZER) {
                 enemyAttackingHealth += botHealth;
                 if (candidateDist <= actionRadiusSquared /* && canAttack */) {
@@ -270,7 +276,7 @@ public class Launcher extends Robot {
                         currState = LauncherState.HELPING;
                     } else {
                         if (closestEnemy.getType() == RobotType.HEADQUARTERS) {
-                            closestEnemyLocation = closestEnemy.getLocation();
+                            MapLocation closestEnemyLocation = closestEnemy.getLocation();
                             int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
                             int numTroopsCloser = rc.senseNearbyRobots(closestEnemyLocation, ourDist - 1,
                                     rc.getTeam()).length;
@@ -292,8 +298,7 @@ public class Launcher extends Robot {
                     }
                 } else if (hasReported) {
                     if (shouldHeal()) {
-                        currState = LauncherState.HEALING;
-                        visitedSectorCenter = false;
+                        enterHealing();
                     } else {
                         currState = LauncherState.EXPLORING;
                     }
@@ -314,8 +319,7 @@ public class Launcher extends Robot {
                 break;
             default:
                 if (shouldHeal()) {
-                    currState = LauncherState.HEALING;
-                    visitedSectorCenter = false;
+                    enterHealing();
                 } else if (closestEnemy != null) {
                     if (shouldRunAway()) {
                         currState = LauncherState.RUNNING;
@@ -323,7 +327,7 @@ public class Launcher extends Robot {
                         currState = LauncherState.HELPING;
                     } else {
                         if (closestEnemy.getType() == RobotType.HEADQUARTERS) {
-                            closestEnemyLocation = closestEnemy.getLocation();
+                            MapLocation closestEnemyLocation = closestEnemy.getLocation();
                             int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
                             int numTroopsCloser = rc.senseNearbyRobots(closestEnemyLocation, ourDist - 1,
                                     rc.getTeam()).length;
@@ -360,6 +364,12 @@ public class Launcher extends Robot {
                 }
                 break;
         }
+    }
+
+    public void enterHealing() {
+        currState = LauncherState.HEALING;
+        firstFriendlyIslandLoc = null;
+        visitedSectorCenter = false;
     }
 
     public void doStateAction() throws GameActionException {
@@ -553,6 +563,7 @@ public class Launcher extends Robot {
             // if (closestEnemyLocation != null) {
             // return false;
             // }
+            MapLocation closestEnemyLocation = closestEnemy.getLocation();
             if (currLoc.add(currLoc.directionTo(closestEnemyLocation))
                     .distanceSquaredTo(closestEnemyLocation) > RobotType.HEADQUARTERS.actionRadiusSquared) {
                 Debug.printString("closing in");

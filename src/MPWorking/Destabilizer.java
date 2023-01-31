@@ -100,6 +100,7 @@ public class Destabilizer extends Robot {
     public void takeTurn() throws GameActionException {
         super.takeTurn();
         closestEnemy = getBestEnemy(EnemySensable);
+        closestEnemyLocation = closestEnemy == null ? null : closestEnemy.getLocation();
         resetLocalEnemyInformation();
 
         enemyAttackable = getEnemyAttackable();
@@ -135,12 +136,17 @@ public class Destabilizer extends Robot {
         int lowestHealth = Integer.MAX_VALUE;
         boolean inActionRadius = false;
         int numAttackingEnemyCount = 0;
+        RobotInfo bot;
+        int botHealth;
+        MapLocation candidateLoc;
+        int candidateDist;
+        RobotType botType;
         for (int i = 0; i < EnemySensable.length; i++) {
-            RobotInfo bot = EnemySensable[i];
-            int botHealth = bot.getHealth();
-            MapLocation candidateLoc = bot.getLocation();
-            int candidateDist = currLoc.distanceSquaredTo(candidateLoc);
-            RobotType botType = bot.getType();
+            bot = EnemySensable[i];
+            botHealth = bot.getHealth();
+            candidateLoc = bot.getLocation();
+            candidateDist = currLoc.distanceSquaredTo(candidateLoc);
+            botType = bot.getType();
             if (botType == RobotType.LAUNCHER || botType == RobotType.DESTABILIZER) {
                 enemyAttackingHealth += botHealth;
                 if (candidateDist <= actionRadiusSquared /* && canAttack */) {
@@ -180,6 +186,7 @@ public class Destabilizer extends Robot {
             overallEnemyLauncherDy = overallEnemyLauncherDy / numAttackingEnemyCount;
         }
 
+        MapLocation closestEnemyLocation = currLoc;
         if (closestAttackingEnemy != null) {
             closestEnemyLocation = closestAttackingEnemy;
             lastClosestAttackingEnemy = closestAttackingEnemy;
@@ -188,8 +195,6 @@ public class Destabilizer extends Robot {
             int enemyHealth = closestEnemyInfo.getHealth();
             healthLow = rc.getHealth() <= enemyHealth - LOW_HEALTH_DIFF;
             healthHigh = rc.getHealth() >= HIGH_HEALTH_DIFF + enemyHealth;
-            // NOTE: subject to chage as I'm not sure what the optimal health parameters are
-            // for this game
         }
 
         if (overallEnemyLauncherDx == 0 && overallEnemyLauncherDy == 0) {

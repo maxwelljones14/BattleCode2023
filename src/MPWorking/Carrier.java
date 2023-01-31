@@ -41,6 +41,7 @@ public class Carrier extends Robot {
     static MapLocation runAwayTarget;
 
     static MapLocation closestNeutralIsland;
+    static MapLocation firstNeutralIslandLoc;
 
     static int lastTurnCombatSectorNearby;
     static boolean sawEnemyLastCycle;
@@ -75,6 +76,7 @@ public class Carrier extends Robot {
         switchedResourceTarget = false;
         needToReportEarlyWell = true;
         isFirstCycle = true;
+        firstNeutralIslandLoc = null;
 
         Explore.assignExplore3Dir(home.directionTo(rc.getLocation()));
 
@@ -146,10 +148,10 @@ public class Carrier extends Robot {
                         currState = CarrierState.DEPOSITING;
                     }
                 } else if (rc.getAnchor() != null) {
-                    currState = CarrierState.PLACING_ANCHOR;
+                    enterPlacingAnchor();
                 } else if (rc.canTakeAnchor(home, Anchor.STANDARD)
                         && (closestNeutralIsland = getClosestNeutralIsland()) != null) {
-                    currState = CarrierState.PLACING_ANCHOR;
+                    enterPlacingAnchor();
                 }
                 break;
             case PLACING_ANCHOR:
@@ -166,7 +168,7 @@ public class Carrier extends Robot {
                 // to risk getting killed.
                 if (sectorToReport == 0) {
                     if (rc.getAnchor() != null) {
-                        currState = CarrierState.PLACING_ANCHOR;
+                        enterPlacingAnchor();
                     } else if (rc.getResourceAmount(resourceTarget) != 0) {
                         currState = CarrierState.DEPOSITING;
                     } else {
@@ -180,10 +182,10 @@ public class Carrier extends Robot {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
                 } else if (rc.getAnchor() != null) {
-                    currState = CarrierState.PLACING_ANCHOR;
+                    enterPlacingAnchor();
                 } else if (rc.canTakeAnchor(home, Anchor.STANDARD) &&
                         (closestNeutralIsland = getClosestNeutralIsland()) != null) {
-                    currState = CarrierState.PLACING_ANCHOR;
+                    enterPlacingAnchor();
                 } else if (rc.getWeight() == 0) {
                     isFirstCycle = false;
                     enterMineState();
@@ -212,7 +214,7 @@ public class Carrier extends Robot {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
                 } else if (rc.getAnchor() != null) {
-                    currState = CarrierState.PLACING_ANCHOR;
+                    enterPlacingAnchor();
                 } else if (rc.getResourceAmount(resourceTarget) == 0) {
                     enterMineState();
                 } else if (Comms.readElixirSectorConverted() == 1) {
@@ -229,6 +231,11 @@ public class Carrier extends Robot {
                 }
                 break;
         }
+    }
+
+    public void enterPlacingAnchor() {
+        currState = CarrierState.PLACING_ANCHOR;
+        firstNeutralIslandLoc = null;
     }
 
     public boolean shouldReport() {
@@ -583,8 +590,12 @@ public class Carrier extends Robot {
             target = Util.getClosestIslandLoc(neutralIslandIdx);
         }
 
+        if (firstNeutralIslandLoc == null) {
+            firstNeutralIslandLoc = target;
+        }
+
         if (Util.seesObstacleInWay(target)) {
-            Nav.move(closestNeutralIsland);
+            Nav.move(firstNeutralIslandLoc);
         } else {
             Nav.move(target);
         }
