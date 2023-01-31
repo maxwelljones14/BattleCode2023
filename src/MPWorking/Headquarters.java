@@ -123,7 +123,7 @@ public class Headquarters extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        localResign();
+        // localResign();
         debug_localResign();
         adamCarrierTracker.update();
         manaCarrierTracker.update();
