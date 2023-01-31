@@ -526,7 +526,12 @@ public class Carrier extends Robot {
             target = Util.getClosestIslandLoc(neutralIslandIdx);
         }
 
-        Nav.move(target);
+        if (Util.seesObstacleInWay(target)) {
+            Nav.move(closestNeutralIsland);
+        } else {
+            Nav.move(target);
+        }
+
         placeAnchor();
     }
 
