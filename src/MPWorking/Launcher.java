@@ -15,6 +15,7 @@ public class Launcher extends Robot {
         REPORTING,
         HELPING, // UNUSED
         HEALING,
+        WAITING,
     }
 
     static LauncherState currState;
@@ -184,6 +185,7 @@ public class Launcher extends Robot {
         if (closestAttackingEnemy != null) {
             closestEnemyLocation = closestAttackingEnemy;
             lastClosestAttackingEnemy = closestAttackingEnemy;
+            turnSawLastClosestAttackingEnemy = rc.getRoundNum();
             lastEnemyAttackingHealth = enemyAttackingHealth;
             int enemyHealth = closestEnemyInfo.getHealth();
             healthLow = rc.getHealth() <= enemyHealth - LOW_HEALTH_DIFF;
@@ -242,6 +244,12 @@ public class Launcher extends Robot {
         }
 
         closestInjured = getClosestInjured();
+    }
+
+    public boolean shouldWait() {
+        boolean tooSoon = turnSawLastClosestAttackingEnemy + LAST_ATTACKING_ENEMY_TIMEOUT >= rc.getRoundNum();
+        // boolean notMod4 = rc.getRoundNum() % 4 != 0;
+        return false; // tooSoon;
     }
 
     public boolean shouldHelpInjured() {
@@ -340,6 +348,9 @@ public class Launcher extends Robot {
                     }
                 } else if (shouldHelpInjured()) {
                     currState = LauncherState.HELPING;
+                } else if (shouldWait()) {
+                    Debug.printString("Waiting");
+                    currState = LauncherState.WAITING;
                 } else if (numAggressiveFriendlies == 0 &&
                         rc.getHealth() <= LOW_HEALTH_REPORT_THRESHOLD &&
                         !hasReported) {
@@ -376,6 +387,9 @@ public class Launcher extends Robot {
                 break;
             case HEALING:
                 goToNearestIsland();
+                break;
+            case WAITING:
+                break;
         }
     }
 
@@ -471,7 +485,7 @@ public class Launcher extends Robot {
         // Consider changing the numFriendlies < numEnemies to <= and retesting
         // Debug.printString("enemyAction: " + numEnemySoldiersAttackingUs + "enemy: " +
         // numEnemies + "friends: " + numFriendlies);
-        boolean tooManyEnemies = numFriendlies + 1 < numEnemies;
+        boolean tooManyEnemies = numFriendlies + 3 < numEnemies;
         boolean healthTooLowForEqualFight = numFriendlies + 1 == numEnemies && healthLow;
         boolean healthReallyLow = rc.getHealth() <= LOW_HEALTH_THRESHOLD;
         return healthReallyLow || (numEnemyLaunchersAttackingUs > 0 && numFriendlies <= numEnemies)
@@ -482,7 +496,7 @@ public class Launcher extends Robot {
     }
 
     public boolean shouldStandGround() {
-        return (numFriendlies + 1 == numEnemies && !healthHigh && !(closestEnemy.getHealth() <= LOW_HEALTH_THRESHOLD))
+        return (numFriendlies + 3 == numEnemies && !healthHigh && !(closestEnemy.getHealth() <= LOW_HEALTH_THRESHOLD))
                 || numEnemyLaunchersAttackingUs > 0;
         // stand ground if its an even match and you don't have an overwhelming health
         // advantage and you can't one shot enemy
@@ -758,8 +772,8 @@ public class Launcher extends Robot {
             combatSector = sectorCenters[combatSectorIdx];
         }
 
-        if (lastClosestAttackingEnemy != null
-                && turnSawLastClosestAttackingEnemy + LAST_ATTACKING_ENEMY_TIMEOUT >= rc.getRoundNum()
+        if (lastClosestAttackingEnemy != null // && turnSawLastClosestAttackingEnemy + LAST_ATTACKING_ENEMY_TIMEOUT >=
+                                              // rc.getRoundNum()
                 && friendlyAttackingHealth >= lastEnemyAttackingHealth) {
             Debug.printString("LastEnemy");
             target = lastClosestAttackingEnemy;
