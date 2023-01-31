@@ -708,7 +708,7 @@ public class Headquarters extends Robot {
                 } else {
                     if (canBuildRobotTypeAndAnchor(RobotType.DESTABILIZER, Anchor.STANDARD)) {
                         buildDestabilizer(getDestabilizerLocation());
-                    } else  if (canBuildRobotTypeAndAnchor(RobotType.LAUNCHER, Anchor.STANDARD)) {
+                    } else if (canBuildRobotTypeAndAnchor(RobotType.LAUNCHER, Anchor.STANDARD)) {
                         buildLauncher(getLauncherLocation());
                     } else if (canBuildRobotTypeAndAnchor(RobotType.CARRIER, Anchor.STANDARD)) {
                         buildCarrier();
@@ -989,6 +989,7 @@ public class Headquarters extends Robot {
 
     // Choose the mana well that is closest to an adamantium well.
     // Break ties by avg adamantium well distance
+    // Break further ties by distance to HQ
     public int getBestElixirWellCandidate() throws GameActionException {
         // Only let the first HQ decide the elixir well
         if (myHqNum != 0)
@@ -1013,24 +1014,44 @@ public class Headquarters extends Robot {
             }
         }
 
-        int bestDistance = Integer.MAX_VALUE;
-        double bestAvgDistance = Double.MAX_VALUE;
+        int bestAdamDistance = Integer.MAX_VALUE;
+        int bestTotalDistance = Integer.MAX_VALUE;
+        int bestDistToHome = Integer.MAX_VALUE;
         MapLocation bestSector = null;
+        MapLocation manaSector;
         int closestAdamDist;
         int totalDistance;
-        double avgDistance;
+        int distToHome;
         for (int i = 0; i < numManaSectors; i++) {
+            manaSector = manaSectors[i];
             totalDistance = 0;
             closestAdamDist = Integer.MAX_VALUE;
+            distToHome = manaSector.distanceSquaredTo(home);
             for (int j = 0; j < numAdamSectors; j++) {
-                totalDistance += manaSectors[i].distanceSquaredTo(adamSectors[j]);
-                closestAdamDist = Math.min(closestAdamDist, manaSectors[i].distanceSquaredTo(adamSectors[j]));
+                totalDistance += manaSector.distanceSquaredTo(adamSectors[j]);
+                closestAdamDist = Math.min(closestAdamDist, manaSector.distanceSquaredTo(adamSectors[j]));
             }
-            avgDistance = (double) totalDistance / numAdamSectors;
-            if (totalDistance < bestDistance || (totalDistance == bestDistance && avgDistance < bestAvgDistance)) {
-                bestDistance = totalDistance;
-                bestAvgDistance = avgDistance;
-                bestSector = manaSectors[i];
+
+            if (closestAdamDist < bestAdamDistance) {
+                bestAdamDistance = closestAdamDist;
+                bestTotalDistance = totalDistance;
+                bestDistToHome = manaSector.distanceSquaredTo(home);
+                bestSector = manaSector;
+            } else if (closestAdamDist > bestAdamDistance) {
+                continue;
+            }
+
+            if (totalDistance < bestTotalDistance) {
+                bestTotalDistance = totalDistance;
+                bestDistToHome = manaSector.distanceSquaredTo(home);
+                bestSector = manaSector;
+            } else if (totalDistance > bestTotalDistance) {
+                continue;
+            }
+
+            if (distToHome < bestDistToHome) {
+                bestDistToHome = distToHome;
+                bestSector = manaSector;
             }
         }
 
