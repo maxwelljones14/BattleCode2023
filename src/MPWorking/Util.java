@@ -230,20 +230,6 @@ public class Util {
         }
     }
 
-    static MapLocation[] findInitLocationPossibilities(MapLocation loc, Direction dir) {
-        MapLocation mainLoc1 = loc.add(dir);
-        MapLocation mainLoc2 = mainLoc1.add(dir);
-        if (dir == Direction.NORTH || dir == Direction.EAST || dir == Direction.SOUTH || dir == Direction.WEST) {
-            MapLocation mainLoc3 = mainLoc2.add(dir);
-            return new MapLocation[] { mainLoc3, mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()),
-                    mainLoc2,
-                    loc.add(dir.rotateLeft()), loc.add(dir.rotateRight()), mainLoc1 };
-        } else {
-            return new MapLocation[] { mainLoc2,
-                    mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()), mainLoc1 };
-        }
-    }
-
     static int getNumOpenCollectSpots(MapLocation wellLoc) throws GameActionException {
         MapLocation loc;
         int count = 0;
@@ -414,29 +400,25 @@ public class Util {
         return bestCollect;
     }
 
-    static MapLocation findInitLocation(RobotType type, MapLocation currLoc, Direction dir) throws GameActionException {
-        int count = 0;
-        MapLocation buildLocation = null;
-        while (count < 8 && buildLocation == null) {
-            MapLocation[] possibleLocations = Util.findInitLocationPossibilities(currLoc, dir);
+    static MapLocation findInitLocation(RobotType type, Direction dir) throws GameActionException {
+        MapLocation[] possibleLocations;
+        MapLocation newLoc;
+        for (int i = 8; --i >= 0;) {
+            possibleLocations = getInitLocs(dir);
             for (int x = 0; x < possibleLocations.length; x++) {
-                MapLocation newLoc = possibleLocations[x];
+                newLoc = possibleLocations[x];
                 if (rc.canBuildRobot(type, newLoc) &&
                 // Don't mix up carriers reading the wrong HQ's flag
                         (type == RobotType.LAUNCHER ||
                                 !Headquarters.nearFriendlyHQ ||
                                 Headquarters.friendlyHQLoc.distanceSquaredTo(newLoc) > Robot.home
                                         .distanceSquaredTo(newLoc))) {
-                    buildLocation = newLoc;
-                    // Debug.println("Found build location: " + buildLocation + " with dir: " + dir
-                    // + "");
-                    break;
+                    return newLoc;
                 }
             }
-            count++;
             dir = dir.rotateRight();
         }
-        return buildLocation;
+        return null;
     }
 
     static MapLocation moveTowardsMe(MapLocation loc) {

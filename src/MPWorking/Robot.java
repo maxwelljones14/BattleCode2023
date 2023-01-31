@@ -103,6 +103,9 @@ public class Robot {
             }
         }
 
+        symmetryAll = -1;
+        enemyHQs = new MapLocation[0];
+
         setupSectors();
         precomputeSectorCenters();
         sectorResources = new int[numSectors];

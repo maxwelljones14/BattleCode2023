@@ -123,7 +123,7 @@ public class Headquarters extends Robot {
 
     public void takeTurn() throws GameActionException {
         super.takeTurn();
-        // localResign();
+        localResign();
         debug_localResign();
         adamCarrierTracker.update();
         manaCarrierTracker.update();
@@ -148,8 +148,12 @@ public class Headquarters extends Robot {
                 if (numHqs != 1) {
                     setInitialExploreSectors();
                 }
+                if (headquarterLocations == null)
+                    loadHQLocations();
                 break;
             default:
+                if (headquarterLocations == null)
+                    loadHQLocations();
                 break;
         }
 
@@ -499,7 +503,7 @@ public class Headquarters extends Robot {
                 }
             }
         }
-        return Util.findInitLocation(RobotType.CARRIER, currLoc, dirToBuild);
+        return Util.findInitLocation(RobotType.CARRIER, dirToBuild);
     }
 
     public void toggleState() throws GameActionException {
@@ -531,7 +535,7 @@ public class Headquarters extends Robot {
         currentState = newState;
     }
 
-    public void buildCarrier(int carrierType) throws GameActionException {
+    public boolean buildCarrier(int carrierType) throws GameActionException {
         Debug.printString("BC " + carrierType);
         if (carrierType == -1) {
             Debug.println("INVALID CARRIER TYPE. Sending mana carrier instead");
@@ -547,7 +551,7 @@ public class Headquarters extends Robot {
             RobotInfo newCarrier = rc.senseRobotAtLocation(newLoc);
             if (newCarrier == null) {
                 Debug.printString("ERROR: built carrier but can't sense it");
-                return;
+                return false;
             }
 
             nextFlag = carrierType;
@@ -557,13 +561,16 @@ public class Headquarters extends Robot {
             } else {
                 adamCarrierTracker.add(newCarrier.ID);
             }
+            return true;
         }
+
+        return false;
     }
 
-    public void buildCarrier() throws GameActionException {
+    public boolean buildCarrier() throws GameActionException {
         // get predetermined next carrier type and location
         int carrierType = getNextCarrierType();
-        buildCarrier(carrierType);
+        return buildCarrier(carrierType);
     }
 
     public MapLocation getLauncherLocation() throws GameActionException {
@@ -577,7 +584,7 @@ public class Headquarters extends Robot {
             if (closestEnemyHQGuess != null) {
                 dir = closestEnemyHQGuessDir;
                 // Debug.printString("HQ " + target + " Dir " + dir);
-                return Util.findInitLocation(RobotType.LAUNCHER, currLoc, dir);
+                return Util.findInitLocation(RobotType.LAUNCHER, dir);
             }
         }
 
@@ -588,15 +595,17 @@ public class Headquarters extends Robot {
             dir = getBestDirTo(target);
         }
 
-        return Util.findInitLocation(RobotType.LAUNCHER, currLoc, dir);
+        return Util.findInitLocation(RobotType.LAUNCHER, dir);
     }
 
-    public void buildLauncher(MapLocation newLoc) throws GameActionException {
-        Debug.printString("BL");
+    public boolean buildLauncher(MapLocation newLoc) throws GameActionException {
         if (newLoc != null && rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) {
+            Debug.printString("BL");
             rc.buildRobot(RobotType.LAUNCHER, newLoc);
             launcherCount++;
+            return true;
         }
+        return false;
     }
 
     // WARNING: If the cost of initCarriersWanted or initLaunchersWanted exceed
@@ -604,7 +613,7 @@ public class Headquarters extends Robot {
     // gain enough resources to build the troops.
     // TODO: Restructure?
     public void firstRounds() throws GameActionException {
-        while (rc.isActionReady()) {
+        while (rc.isActionReady() && Clock.getBytecodesLeft() > 3000) {
             // We wait until turn 3 to build launchers because
             // symmetry isn't guessed until then.
             buildLauncher: if (launcherCount < initLaunchersWanted) {
@@ -618,16 +627,17 @@ public class Headquarters extends Robot {
                     break buildLauncher;
                 }
 
-                buildLauncher(locToBuild);
-                continue;
+                boolean built = buildLauncher(locToBuild);
+                if (built)
+                    continue;
             }
 
             // build carriers
             if (carrierCount < initCarriersWanted) {
-                buildCarrier();
+                boolean built = buildCarrier();
                 // If the next carrier is the same time, build another.
                 int nextCarrierType = getNextCarrierType();
-                if (nextFlag == nextCarrierType)
+                if (built && nextFlag == nextCarrierType)
                     continue;
             }
             break;
