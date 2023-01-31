@@ -58,6 +58,13 @@ SCHEMA = {
         'bits': {
             'do_not_call': 2,
         }
+    },
+    'elixir_sector': {
+        'slots': 1,
+        'bits': {
+            'converted': 1,
+            'index': 7,
+        }
     }
 }
 

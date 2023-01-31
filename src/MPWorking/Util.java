@@ -41,6 +41,9 @@ public class Util {
 
     public static final int MAX_BLACKLIST_DIST = 15;
 
+    public static final int MIN_MAP_AREA_FOR_ELIXIR = 1500;
+    public static final int MIN_ROUND_NUM_FOR_ELIXIR = 500;
+
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
             Direction.NORTH,
@@ -409,7 +412,7 @@ public class Util {
                 newLoc = possibleLocations[x];
                 if (rc.canBuildRobot(type, newLoc) &&
                 // Don't mix up carriers reading the wrong HQ's flag
-                        (type == RobotType.LAUNCHER ||
+                        (type != RobotType.CARRIER ||
                                 !Headquarters.nearFriendlyHQ ||
                                 Headquarters.friendlyHQLoc.distanceSquaredTo(newLoc) > Robot.home
                                         .distanceSquaredTo(newLoc))) {
@@ -698,5 +701,15 @@ public class Util {
                 return true;
         }
         return false;
+    }
+
+    static MapLocation getDestabilizeLocToward(MapLocation loc) throws GameActionException {
+        MapLocation currLoc = rc.getLocation();
+        MapLocation target = loc;
+        while (!rc.canDestabilize(target)
+                && !target.isWithinDistanceSquared(currLoc, RobotType.DESTABILIZER.actionRadiusSquared)) {
+            target = target.add(target.directionTo(currLoc));
+        }
+        return target;
     }
 }

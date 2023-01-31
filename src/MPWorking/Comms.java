@@ -9,6 +9,7 @@ public class Comms {
     private static int[] bufferPool;
     private static boolean[] dirtyFlags;
 
+
     public final static int OUR_HQ_SLOTS = 4;
     public final static int SECTOR_SLOTS = 100;
     public final static int COMBAT_SECTOR_SLOTS = 4;
@@ -16,6 +17,7 @@ public class Comms {
     public final static int MINE_SECTOR_SLOTS = 12;
     public final static int SYMMETRY_SLOTS = 1;
     public final static int NUM_HQS_SLOTS = 1;
+    public final static int ELIXIR_SECTOR_SLOTS = 1;
 
     // ControlStatus priorities are in increasing priority.
     public class ControlStatus {
@@ -322,8 +324,10 @@ public class Comms {
         rc.writeSharedArray(51, 65535);
         rc.writeSharedArray(52, 65535);
         rc.writeSharedArray(53, 65535);
-        rc.writeSharedArray(54, 65280);
+        rc.writeSharedArray(54, 65283);
+        rc.writeSharedArray(55, 63488);
     }
+
 
     public static void resetAllSectorControlStatus() throws GameActionException {
         rc.writeSharedArray(3, rc.readSharedArray(3) & 65080);
@@ -340,7 +344,9 @@ public class Comms {
         rc.writeSharedArray(14, rc.readSharedArray(14) & 14563);
         rc.writeSharedArray(15, rc.readSharedArray(15) & 36408);
         rc.writeSharedArray(16, rc.readSharedArray(16) & 58254);
-
+        rc.writeSharedArray(17, rc.readSharedArray(17) & 14563);
+        rc.writeSharedArray(18, rc.readSharedArray(18) & 36408);
+        rc.writeSharedArray(19, rc.readSharedArray(19) & 58254);
         rc.writeSharedArray(20, rc.readSharedArray(20) & 14563);
         rc.writeSharedArray(21, rc.readSharedArray(21) & 36408);
         rc.writeSharedArray(22, rc.readSharedArray(22) & 58254);
@@ -5587,6 +5593,46 @@ public class Comms {
 
     public static void writeBPNumHqsAll(int value) throws GameActionException {
         writeToBufferPool(54, (bufferPool[54] & 65511) | (value << 3));
+    }
+
+    public static int readElixirSectorConverted() throws GameActionException {
+        return (rc.readSharedArray(54) & 4) >>> 2;
+    }
+
+    public static void writeElixirSectorConverted(int value) throws GameActionException {
+        rc.writeSharedArray(54, (rc.readSharedArray(54) & 65531) | (value << 2));
+    }
+
+    public static void writeBPElixirSectorConverted(int value) throws GameActionException {
+        writeToBufferPool(54, (bufferPool[54] & 65531) | (value << 2));
+    }
+
+    public static int readElixirSectorIndex() throws GameActionException {
+        return ((rc.readSharedArray(54) & 3) << 5) + ((rc.readSharedArray(55) & 63488) >>> 11);
+    }
+
+    public static void writeElixirSectorIndex(int value) throws GameActionException {
+        rc.writeSharedArray(54, (rc.readSharedArray(54) & 65532) | ((value & 96) >>> 5));
+        rc.writeSharedArray(55, (rc.readSharedArray(55) & 2047) | ((value & 31) << 11));
+    }
+
+    public static void writeBPElixirSectorIndex(int value) throws GameActionException {
+        writeToBufferPool(54, (bufferPool[54] & 65532) | ((value & 96) >>> 5));
+        writeToBufferPool(55, (bufferPool[55] & 2047) | ((value & 31) << 11));
+    }
+
+    public static int readElixirSectorAll() throws GameActionException {
+        return ((rc.readSharedArray(54) & 7) << 5) + ((rc.readSharedArray(55) & 63488) >>> 11);
+    }
+
+    public static void writeElixirSectorAll(int value) throws GameActionException {
+        rc.writeSharedArray(54, (rc.readSharedArray(54) & 65528) | ((value & 224) >>> 5));
+        rc.writeSharedArray(55, (rc.readSharedArray(55) & 2047) | ((value & 31) << 11));
+    }
+
+    public static void writeBPElixirSectorAll(int value) throws GameActionException {
+        writeToBufferPool(54, (bufferPool[54] & 65528) | ((value & 224) >>> 5));
+        writeToBufferPool(55, (bufferPool[55] & 2047) | ((value & 31) << 11));
     }
 
     // BUFFER POOL READ AND WRITE METHODS

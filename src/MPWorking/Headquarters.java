@@ -162,6 +162,7 @@ public class Headquarters extends Robot {
         }
 
         loadClosestMiningSector();
+        writeElixirWellCandidate();
 
         setPrioritySectors();
         toggleState();
@@ -598,11 +599,45 @@ public class Headquarters extends Robot {
         return Util.findInitLocation(RobotType.LAUNCHER, dir);
     }
 
+    public MapLocation getDestabilizerLocation() throws GameActionException {
+        return getDestabilizerLocation(getCombatSector());
+    }
+
+    public MapLocation getDestabilizerLocation(MapLocation target) throws GameActionException {
+        Direction dir = null;
+        if (target == null) {
+            target = closestEnemyHQGuess;
+            if (closestEnemyHQGuess != null) {
+                dir = closestEnemyHQGuessDir;
+                // Debug.printString("HQ " + target + " Dir " + dir);
+                return Util.findInitLocation(RobotType.DESTABILIZER, dir);
+            }
+        }
+
+        if (target == null) {
+            // Debug.printString("No HQ");
+            dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
+        } else {
+            dir = getBestDirTo(target);
+        }
+
+        return Util.findInitLocation(RobotType.DESTABILIZER, dir);
+    }
+
     public boolean buildLauncher(MapLocation newLoc) throws GameActionException {
         if (newLoc != null && rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) {
             Debug.printString("BL");
             rc.buildRobot(RobotType.LAUNCHER, newLoc);
             launcherCount++;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean buildDestabilizer(MapLocation newLoc) throws GameActionException {
+        if (newLoc != null && rc.canBuildRobot(RobotType.DESTABILIZER, newLoc)) {
+            Debug.printString("BD");
+            rc.buildRobot(RobotType.DESTABILIZER, newLoc);
             return true;
         }
         return false;
@@ -650,6 +685,9 @@ public class Headquarters extends Robot {
                 firstRounds();
                 break;
             case CHILLING:
+                if (canBuildRobotType(RobotType.DESTABILIZER)) {
+                    buildDestabilizer(getDestabilizerLocation());
+                }
                 if (canBuildRobotType(RobotType.LAUNCHER)) {
                     buildLauncher(getLauncherLocation());
                 }
@@ -668,7 +706,9 @@ public class Headquarters extends Robot {
                     // on the same turn does not make us build another anchor.
                     changeState(stateStack.pop());
                 } else {
-                    if (canBuildRobotTypeAndAnchor(RobotType.LAUNCHER, Anchor.STANDARD)) {
+                    if (canBuildRobotTypeAndAnchor(RobotType.DESTABILIZER, Anchor.STANDARD)) {
+                        buildDestabilizer(getDestabilizerLocation());
+                    } else  if (canBuildRobotTypeAndAnchor(RobotType.LAUNCHER, Anchor.STANDARD)) {
                         buildLauncher(getLauncherLocation());
                     } else if (canBuildRobotTypeAndAnchor(RobotType.CARRIER, Anchor.STANDARD)) {
                         buildCarrier();
@@ -940,5 +980,74 @@ public class Headquarters extends Robot {
         }
 
         return null;
+    }
+
+    public boolean shouldMakeElixir() {
+        return Util.MAP_AREA >= Util.MIN_MAP_AREA_FOR_ELIXIR &&
+                rc.getRoundNum() >= Util.MIN_ROUND_NUM_FOR_ELIXIR;
+    }
+
+    // Choose the mana well that is closest to an adamantium well.
+    // Break ties by avg adamantium well distance
+    public int getBestElixirWellCandidate() throws GameActionException {
+        // Only let the first HQ decide the elixir well
+        if (myHqNum != 0)
+            return Comms.UNDEFINED_SECTOR_INDEX;
+
+        int numManaSectors = 0;
+        MapLocation[] manaSectors = new MapLocation[Comms.MINE_SECTOR_SLOTS];
+        int numAdamSectors = 0;
+        MapLocation[] adamSectors = new MapLocation[Comms.MINE_SECTOR_SLOTS];
+
+        for (int i = 0; i < Comms.MINE_SECTOR_SLOTS; i++) {
+            int sector = Comms.readMineSectorIndex(i);
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX)
+                continue;
+
+            if (Comms.readSectorManaFlag(sector) == 1) {
+                manaSectors[numManaSectors] = sectorCenters[sector];
+                numManaSectors++;
+            } else if (Comms.readSectorAdamantiumFlag(sector) == 1) {
+                adamSectors[numAdamSectors] = sectorCenters[sector];
+                numAdamSectors++;
+            }
+        }
+
+        int bestDistance = Integer.MAX_VALUE;
+        double bestAvgDistance = Double.MAX_VALUE;
+        MapLocation bestSector = null;
+        int closestAdamDist;
+        int totalDistance;
+        double avgDistance;
+        for (int i = 0; i < numManaSectors; i++) {
+            totalDistance = 0;
+            closestAdamDist = Integer.MAX_VALUE;
+            for (int j = 0; j < numAdamSectors; j++) {
+                totalDistance += manaSectors[i].distanceSquaredTo(adamSectors[j]);
+                closestAdamDist = Math.min(closestAdamDist, manaSectors[i].distanceSquaredTo(adamSectors[j]));
+            }
+            avgDistance = (double) totalDistance / numAdamSectors;
+            if (totalDistance < bestDistance || (totalDistance == bestDistance && avgDistance < bestAvgDistance)) {
+                bestDistance = totalDistance;
+                bestAvgDistance = avgDistance;
+                bestSector = manaSectors[i];
+            }
+        }
+
+        if (bestSector == null)
+            return Comms.UNDEFINED_SECTOR_INDEX;
+
+        return whichSector(bestSector);
+    }
+
+    public void writeElixirWellCandidate() throws GameActionException {
+        if (!shouldMakeElixir())
+            return;
+        if (Comms.readElixirSectorIndex() != Comms.UNDEFINED_SECTOR_INDEX)
+            return;
+        int bestElixirWellCandidate = getBestElixirWellCandidate();
+        if (bestElixirWellCandidate != Comms.UNDEFINED_SECTOR_INDEX) {
+            Comms.writeElixirSectorIndex(bestElixirWellCandidate);
+        }
     }
 }

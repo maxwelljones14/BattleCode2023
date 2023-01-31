@@ -13,6 +13,8 @@ public class Carrier extends Robot {
         REPORTING,
         DEPOSITING,
         REPORTING_EARLY_WELL,
+        CONVERTING,
+        REPORTING_ELIXIR_CONVERTED,
     }
 
     static CarrierState currState;
@@ -23,7 +25,6 @@ public class Carrier extends Robot {
 
     static int turnStartedMining;
 
-    static RobotInfo[] enemyAttackable;
     static RobotInfo[] friendlyAttackable;
     static RobotInfo closestEnemy;
     static RobotInfo closestFriendly;
@@ -137,8 +138,13 @@ public class Carrier extends Robot {
                 } else if (shouldReport()) {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
-                } else if (rc.getResourceAmount(resourceTarget) == GameConstants.CARRIER_CAPACITY) {
-                    currState = CarrierState.DEPOSITING;
+                } else if (rc.getWeight() == GameConstants.CARRIER_CAPACITY) {
+                    if (resourceTarget == ResourceType.ADAMANTIUM &&
+                            Comms.readElixirSectorIndex() != Comms.UNDEFINED_SECTOR_INDEX) {
+                        enterConvertingState();
+                    } else {
+                        currState = CarrierState.DEPOSITING;
+                    }
                 } else if (rc.getAnchor() != null) {
                     currState = CarrierState.PLACING_ANCHOR;
                 } else if (rc.canTakeAnchor(home, Anchor.STANDARD)
@@ -178,7 +184,7 @@ public class Carrier extends Robot {
                 } else if (rc.canTakeAnchor(home, Anchor.STANDARD) &&
                         (closestNeutralIsland = getClosestNeutralIsland()) != null) {
                     currState = CarrierState.PLACING_ANCHOR;
-                } else if (rc.getResourceAmount(resourceTarget) == 0) {
+                } else if (rc.getWeight() == 0) {
                     isFirstCycle = false;
                     enterMineState();
                 }
@@ -198,6 +204,27 @@ public class Carrier extends Robot {
                         currState = CarrierState.DEPOSITING;
                     } else {
                         enterMineState();
+                    }
+                }
+                break;
+            case CONVERTING:
+                if (shouldReport()) {
+                    currState = CarrierState.REPORTING;
+                    sectorToReport = 1;
+                } else if (rc.getAnchor() != null) {
+                    currState = CarrierState.PLACING_ANCHOR;
+                } else if (rc.getResourceAmount(resourceTarget) == 0) {
+                    enterMineState();
+                } else if (Comms.readElixirSectorConverted() == 1) {
+                    currState = CarrierState.DEPOSITING;
+                }
+                break;
+            case REPORTING_ELIXIR_CONVERTED:
+                if (Comms.readElixirSectorConverted() == 1) {
+                    if (rc.getResourceAmount(resourceTarget) == 0) {
+                        enterMineState();
+                    } else {
+                        currState = CarrierState.DEPOSITING;
                     }
                 }
                 break;
@@ -262,6 +289,18 @@ public class Carrier extends Robot {
             wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(blacklistedWellLocs[i])]);
         }
 
+        blacklistedWells.clear();
+    }
+
+    public void enterConvertingState() {
+        currState = CarrierState.CONVERTING;
+        wellsVisitedThisCycle.clear();
+        wellSectorsVisitedThisCycle.clear();
+        turnStartedMining = rc.getRoundNum();
+        closestWell = null;
+        visitedSectorCenter = false;
+        resourceTarget = originalResourceTarget;
+        sawEnemyLastCycle = false;
         blacklistedWells.clear();
     }
 
@@ -343,6 +382,13 @@ public class Carrier extends Robot {
                 break;
             case DEPOSITING:
                 runFromEnemy();
+                if (rc.getResourceAmount(ResourceType.ELIXIR) > 0) {
+                    resourceTarget = ResourceType.ELIXIR;
+                } else if (rc.getResourceAmount(ResourceType.MANA) > 0) {
+                    resourceTarget = ResourceType.MANA;
+                } else {
+                    resourceTarget = ResourceType.ADAMANTIUM;
+                }
                 if (!transfer()) {
                     Nav.move(closestHQ);
                     transfer();
@@ -352,6 +398,17 @@ public class Carrier extends Robot {
                 runFromEnemy();
                 Nav.move(home);
                 transfer();
+                break;
+            case CONVERTING:
+                doConvert();
+                break;
+            case REPORTING_ELIXIR_CONVERTED:
+                runFromEnemy();
+                Nav.move(closestHQ);
+                transfer();
+                if (rc.canWriteSharedArray(0, 0)) {
+                    Comms.writeElixirSectorConverted(1);
+                }
                 break;
         }
     }
@@ -535,7 +592,86 @@ public class Carrier extends Robot {
         placeAnchor();
     }
 
+    public void doConvert() throws GameActionException {
+        runFromEnemy();
+
+        MapLocation elixirSector = sectorCenters[Comms.readElixirSectorIndex()];
+        // Once we're near the sector, start loading mana wells.
+        if (Util.distance(rc.getLocation(), elixirSector) <= 3) {
+            loadFullestManaWell();
+        }
+
+        if (rc.senseNearbyWells(ResourceType.ELIXIR).length > 0) {
+            currState = CarrierState.REPORTING_ELIXIR_CONVERTED;
+        }
+
+        if (closestWell != null) {
+            MapLocation wellLoc = closestWell.getMapLocation();
+            Debug.printString("Well: " + wellLoc);
+            // If we are adjacent to a well, transfer to it.
+            if (currLoc.isAdjacentTo(wellLoc)) {
+                transfer(wellLoc);
+            } else {
+                Debug.printString("Moving");
+                if (Util.seesObstacleInWay(wellLoc)) {
+                    Nav.move(wellLoc);
+                } else {
+                    Nav.move(Util.getBestCollectLoc(wellLoc));
+                }
+                transfer(wellLoc);
+            }
+        } else {
+            // Continue going towards the mana sector.
+            boolean shouldMarkCorner = false;
+            int elixirSectorIndex = Comms.readElixirSectorIndex();
+            MapLocation target = sectorDatabase.at(elixirSectorIndex).getManaWell();
+
+            // If we have visited the center of the sector and we can't see the well,
+            // travel the corners of the sector until we find the well
+            if (visitedSectorCenter || currLoc.equals(target)) {
+                visitedSectorCenter = true;
+                MapLocation nextCorner = sectorDatabase.at(elixirSectorIndex).getNextCorner();
+                target = nextCorner;
+                if (target == null) {
+                    // We've visited all the corners and still haven't found the well???
+                    target = sectorDatabase.at(elixirSectorIndex).getManaWell();
+                    Debug.println("ERROR: Couldn't find well in sector");
+                    sectorDatabase.at(elixirSectorIndex).resetCorners();
+                } else {
+                    shouldMarkCorner = true;
+                }
+            }
+
+            Nav.move(target);
+            if (shouldMarkCorner && rc.getLocation().isAdjacentTo(target)) {
+                sectorDatabase.at(elixirSectorIndex).visitCorner(target);
+            }
+        }
+    }
+
+    public void loadFullestManaWell() throws GameActionException {
+        WellInfo[] wells = rc.senseNearbyWells(ResourceType.MANA);
+        int maxInventory = Integer.MIN_VALUE;
+        for (WellInfo well : wells) {
+            if (maxInventory < well.getResource(ResourceType.ADAMANTIUM)) {
+                maxInventory = well.getResource(ResourceType.ADAMANTIUM);
+                closestWell = well;
+            }
+        }
+    }
+
     public void loadClosestWell() throws GameActionException {
+        // Mana carriers should pref elixir if they see an elixir well.
+        if (resourceTarget == ResourceType.MANA &&
+                Comms.readElixirSectorIndex() != Comms.UNDEFINED_SECTOR_INDEX) {
+            WellInfo[] elixirWells = rc.senseNearbyWells(ResourceType.ELIXIR);
+            if (elixirWells.length > 0) {
+                resourceTarget = ResourceType.ELIXIR;
+                closestWell = elixirWells[0];
+                return;
+            }
+        }
+
         // If we can see a well, move towards it
         WellInfo[] wells = rc.senseNearbyWells(resourceTarget);
         int closestDist = Integer.MAX_VALUE;
@@ -569,9 +705,13 @@ public class Carrier extends Robot {
      * successful.
      */
     public boolean transfer() throws GameActionException {
-        if (rc.canTransferResource(closestHQ, resourceTarget, rc.getResourceAmount(resourceTarget))) {
+        return transfer(closestHQ);
+    }
+
+    public boolean transfer(MapLocation loc) throws GameActionException {
+        if (rc.canTransferResource(loc, resourceTarget, rc.getResourceAmount(resourceTarget))) {
             Debug.printString("Transfering");
-            rc.transferResource(closestHQ, resourceTarget, rc.getResourceAmount(resourceTarget));
+            rc.transferResource(loc, resourceTarget, rc.getResourceAmount(resourceTarget));
             return true;
         }
         return false;

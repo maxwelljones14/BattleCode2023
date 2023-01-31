@@ -43,8 +43,6 @@ public class Launcher extends Robot {
     static boolean healthLow;
     static boolean healthHigh;
 
-    static RobotInfo[] enemyAttackable;
-
     static FastLocSet seenSymmetricLocs;
     static int HQwaitCounter;
     static boolean goingToSymLoc;
@@ -304,7 +302,7 @@ public class Launcher extends Robot {
             case HEALING:
                 closestFriendlyIslandIdx = getClosestFriendlyIslandIdx();
                 if (closestFriendlyIslandIdx == Comms.UNDEFINED_SECTOR_INDEX
-                        || rc.getHealth() == RobotType.LAUNCHER.health) {
+                        || rc.getHealth() == rc.getType().health) {
                     if (shouldRunAway()) {
                         currState = LauncherState.RUNNING;
                     } else if (shouldHelpInjured()) {
@@ -591,174 +589,6 @@ public class Launcher extends Robot {
                 tryAttackBestEnemy();
             }
         }
-    }
-
-    // Keep loc in action radius if possible, then choose direction
-    public Direction chooseForwardDirection(MapLocation loc) throws GameActionException {
-        Direction Dir = currLoc.directionTo(loc);
-        Direction[] dirsToConsider = Util.getInOrderDirections(Dir);
-        int numDirs = 0;
-        MapLocation newLoc;
-        for (int i = dirsToConsider.length; --i >= 0;) {
-            newLoc = currLoc.add(dirsToConsider[i]);
-            if (newLoc.distanceSquaredTo(loc) <= actionRadiusSquared) {
-                dirsToConsider[numDirs++] = dirsToConsider[i];
-            }
-        }
-
-        // If no directions in action radius, just do normal chooseDirection
-        if (numDirs == 0) {
-            return chooseDirection(Util.getInOrderDirections(Dir));
-        } else {
-            Direction[] newDirs = new Direction[numDirs];
-            System.arraycopy(dirsToConsider, 0, newDirs, 0, numDirs);
-            return chooseDirection(newDirs);
-        }
-    }
-
-    public Direction chooseBackupDirection(Direction Dir) throws GameActionException {
-        Direction[] dirsToConsider = Util.getInOrderDirections(Dir);
-        return chooseDirection(dirsToConsider);
-    }
-
-    // Direction priority breaks ties through
-    // 1. Least number of enemies seen
-    // 2. Least number of enemies in action radius
-    // 3. Maximum average distance from enemies
-    // 4. Minimum average distance to friends
-    public Direction chooseDirection(Direction[] dirsToConsider) throws GameActionException {
-        Direction bestDirSoFar = null;
-        int bestEnemiesInVision = Integer.MAX_VALUE;
-        int bestEnemiesInAction = Integer.MAX_VALUE;
-        double bestAvgEnemyDist = Double.MAX_VALUE;
-        double bestAvgFriendDist = Double.MAX_VALUE;
-        RobotInfo enemy;
-        MapLocation enemyLoc;
-
-        Direction newDir;
-        Direction extraDir;
-        MapLocation targetLoc;
-        boolean isPassible;
-        boolean hasCloud;
-        boolean currLocHasCloud = rc.senseMapInfo(currLoc).hasCloud();
-        int enemiesInAction;
-        int enemiesInVision;
-        double avgEnemyDist;
-        double avgFriendDist;
-
-        boolean allHaveClouds = true;
-        for (int x = 0; x < dirsToConsider.length; x++) {
-            newDir = dirsToConsider[x];
-            if (rc.canMove(newDir)) {
-                extraDir = Direction.CENTER;
-                if (rc.onTheMap(currLoc.add(newDir))) {
-                    extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
-                }
-                targetLoc = currLoc.add(newDir).add(extraDir);
-                hasCloud = rc.senseMapInfo(currLoc.add(newDir)).hasCloud();
-                if (!hasCloud) {
-                    allHaveClouds = false;
-                }
-            }
-        }
-
-        for (int x = 0; x < dirsToConsider.length; x++) {
-            newDir = dirsToConsider[x];
-            if (rc.canMove(newDir)) {
-                extraDir = Direction.CENTER;
-                if (rc.onTheMap(currLoc.add(newDir))) {
-                    extraDir = rc.senseMapInfo(currLoc.add(newDir)).getCurrentDirection();
-                }
-                targetLoc = currLoc.add(newDir).add(extraDir);
-                // Debug.printString("best dir " + newDir);
-                if (rc.canSenseLocation(targetLoc)) {
-                    isPassible = rc.sensePassability(targetLoc);
-                    hasCloud = rc.senseMapInfo(targetLoc).hasCloud();
-                } else {
-                    // If you can't sense the location, it's a cloud
-                    // that we got moved into by a current
-                    isPassible = true;
-                    hasCloud = true;
-                }
-                enemiesInAction = 0;
-                enemiesInVision = 0;
-                avgEnemyDist = 0;
-                for (int i = enemyAttackable.length; --i >= 0;) {
-                    enemy = enemyAttackable[i];
-                    enemyLoc = enemy.getLocation();
-                    if (enemyLoc.distanceSquaredTo(targetLoc) <= enemy.getType().actionRadiusSquared) {
-                        enemiesInAction++;
-                        enemiesInVision++;
-                    } else if (enemyLoc.distanceSquaredTo(targetLoc) <= visionRadiusSquared) {
-                        enemiesInVision++;
-                    }
-                    avgEnemyDist += enemyLoc.distanceSquaredTo(targetLoc);
-                }
-                avgEnemyDist /= enemyAttackable.length;
-                if (!isPassible || (hasCloud && !currLocHasCloud && !allHaveClouds)) {
-                    continue;
-                }
-
-                // Vision first
-                if (enemiesInVision < bestEnemiesInVision) {
-                    bestDirSoFar = newDir;
-                    bestEnemiesInVision = enemiesInVision;
-                    bestEnemiesInAction = enemiesInAction;
-                    bestAvgEnemyDist = avgEnemyDist;
-                    bestAvgFriendDist = Double.MAX_VALUE;
-                    continue;
-                } else if (enemiesInVision > bestEnemiesInVision) {
-                    continue;
-                }
-
-                // Action radius second
-                if (enemiesInAction < bestEnemiesInAction) {
-                    bestDirSoFar = newDir;
-                    bestEnemiesInAction = enemiesInAction;
-                    bestAvgEnemyDist = avgEnemyDist;
-                    bestAvgFriendDist = Double.MAX_VALUE;
-                    continue;
-                } else if (enemiesInAction > bestEnemiesInAction) {
-                    continue;
-                }
-
-                // Distance third
-                if (avgEnemyDist > bestAvgEnemyDist) {
-                    bestDirSoFar = newDir;
-                    bestAvgEnemyDist = avgEnemyDist;
-                    bestAvgFriendDist = Double.MAX_VALUE;
-                    continue;
-                } else if (avgEnemyDist < bestAvgEnemyDist) {
-                    continue;
-                }
-
-                // Min dist to friends fourth
-                // Avg friend dist is only calced if we need this tiebreaker
-                // Calc it for the bestLoc first if we haven't already,
-                // and then calc it for the targetLoc
-                if (bestAvgFriendDist == Double.MAX_VALUE) {
-                    avgFriendDist = 0;
-                    MapLocation bestLoc = currLoc.add(bestDirSoFar);
-                    for (int i = FriendlySensable.length; --i >= 0;) {
-                        avgFriendDist += FriendlySensable[i].getLocation().distanceSquaredTo(bestLoc);
-                    }
-                    avgFriendDist /= FriendlySensable.length;
-                    bestAvgFriendDist = avgFriendDist;
-                }
-
-                avgFriendDist = 0;
-                for (int i = FriendlySensable.length; --i >= 0;) {
-                    avgFriendDist += FriendlySensable[i].getLocation().distanceSquaredTo(targetLoc);
-                }
-                avgFriendDist /= FriendlySensable.length;
-                if (avgFriendDist < bestAvgFriendDist) {
-                    bestDirSoFar = newDir;
-                    bestAvgFriendDist = avgFriendDist;
-                }
-            }
-        }
-
-        return bestDirSoFar;
     }
 
     public void loadExploreTarget() throws GameActionException {
