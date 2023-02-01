@@ -323,7 +323,7 @@ public class Util {
         return bestCollect == null ? well : bestCollect;
     }
 
-    // @pre We are already adjacent to the well
+    // @pre We are already adjacent to the well. Only Carriers should call this
     static MapLocation getBetterCollectLoc(MapLocation wellLoc) throws GameActionException {
         MapLocation currLoc = rc.getLocation();
         MapLocation bestCollect = null;
@@ -346,7 +346,7 @@ public class Util {
                 if (robot != null && robot.ID != rc.getID())
                     continue;
                 info = rc.senseMapInfo(loc);
-                dist = Robot.home.distanceSquaredTo(loc);
+                dist = Carrier.closestHQ.distanceSquaredTo(loc);
                 multiplier = info.getCooldownMultiplier(rc.getTeam()) +
                         (info.getCurrentDirection() == Direction.CENTER ? 0 : 10);
                 if (multiplier < bestMultiplier || (multiplier == bestMultiplier && dist < bestDist)) {
@@ -367,7 +367,7 @@ public class Util {
                 if (robot != null && robot.ID != rc.getID())
                     continue;
                 info = rc.senseMapInfo(loc);
-                dist = Robot.home.distanceSquaredTo(loc);
+                dist = Carrier.closestHQ.distanceSquaredTo(loc);
                 multiplier = info.getCooldownMultiplier(rc.getTeam()) +
                         (info.getCurrentDirection() == Direction.CENTER ? 0 : 10);
                 if (multiplier < bestMultiplier || (multiplier == bestMultiplier && dist > bestDist)) {
@@ -389,7 +389,7 @@ public class Util {
                 if (robot != null && robot.ID != rc.getID())
                     continue;
                 info = rc.senseMapInfo(loc);
-                dist = Robot.home.distanceSquaredTo(loc);
+                dist = Carrier.closestHQ.distanceSquaredTo(loc);
                 multiplier = info.getCooldownMultiplier(rc.getTeam()) +
                         (info.getCurrentDirection() == Direction.CENTER ? 0 : 10);
                 if (multiplier < bestCardinalMultiplier
