@@ -712,4 +712,8 @@ public class Util {
         }
         return target;
     }
+
+    static int getValidSymmetries() throws GameActionException {
+        return Comms.readSymmetryAll() & MapTracker.validSymmetries;
+    }
 }

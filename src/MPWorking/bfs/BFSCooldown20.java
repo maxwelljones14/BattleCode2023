@@ -315,6 +315,7 @@ public class BFSCooldown20 {
     public static String SOUTHWEST_ADJ = "\04\05\06";
     public static String WEST_ADJ = "\05\06\07";
     public static String NORTHWEST_ADJ = "\06\07\00";
+    public static String TARGET_DIR_ADJ = "";
 
     public static Direction direction(double dist) {
         if (dist==Double.POSITIVE_INFINITY) {
@@ -324,6 +325,17 @@ public class BFSCooldown20 {
     }
 
     public static Direction bestDir(MapLocation target) throws GameActionException {
+        switch (rc.getLocation().directionTo(target)) {
+            case NORTH: TARGET_DIR_ADJ = NORTH_ADJ; break;
+            case NORTHEAST: TARGET_DIR_ADJ = NORTHEAST_ADJ; break;
+            case EAST: TARGET_DIR_ADJ = EAST_ADJ; break;
+            case SOUTHEAST: TARGET_DIR_ADJ = SOUTHEAST_ADJ; break;
+            case SOUTH: TARGET_DIR_ADJ = SOUTH_ADJ; break;
+            case SOUTHWEST: TARGET_DIR_ADJ = SOUTHWEST_ADJ; break;
+            case WEST: TARGET_DIR_ADJ = WEST_ADJ; break;
+            case NORTHWEST: TARGET_DIR_ADJ = NORTHWEST_ADJ; break;
+            default: TARGET_DIR_ADJ = ""; break;
+        }
 
         l112 = rc.getLocation();
         d112 = 0;
@@ -540,7 +552,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d111 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, -1)
@@ -550,7 +562,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d97 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, 1)
@@ -560,7 +572,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d127 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, 0)
@@ -570,7 +582,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d113 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, -1)
@@ -580,7 +592,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d96 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, 1)
@@ -590,7 +602,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d126 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, -1)
@@ -600,7 +612,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d98 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, 1)
@@ -610,7 +622,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d128 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, 0)
@@ -620,7 +632,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d110 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, -2)
@@ -630,7 +642,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d82 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, 2)
@@ -640,7 +652,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d142 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, 0)
@@ -650,7 +662,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d114 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, -1)
@@ -660,7 +672,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d95 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, 1)
@@ -670,7 +682,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d125 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, -2)
@@ -680,7 +692,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d81 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, 2)
@@ -690,7 +702,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d141 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, -2)
@@ -700,7 +712,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d83 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, 2)
@@ -710,7 +722,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d143 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, -1)
@@ -720,7 +732,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d99 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, 1)
@@ -730,7 +742,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d129 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, -2)
@@ -740,7 +752,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d80 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, 2)
@@ -750,7 +762,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d140 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, -2)
@@ -760,7 +772,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d84 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, 2)
@@ -770,7 +782,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d144 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, 0)
@@ -780,7 +792,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d109 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, -3)
@@ -790,7 +802,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d67 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, 3)
@@ -800,7 +812,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d157 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, 0)
@@ -810,7 +822,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d115 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, -1)
@@ -820,7 +832,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d94 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, 1)
@@ -830,7 +842,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d124 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, -3)
@@ -840,7 +852,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d66 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, 3)
@@ -850,7 +862,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d156 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, -3)
@@ -860,7 +872,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d68 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, 3)
@@ -870,7 +882,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d158 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, -1)
@@ -880,7 +892,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d100 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, 1)
@@ -890,7 +902,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d130 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, -2)
@@ -900,7 +912,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d79 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, 2)
@@ -910,7 +922,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d139 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, -3)
@@ -920,7 +932,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d65 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, 3)
@@ -930,7 +942,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d155 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, -3)
@@ -940,7 +952,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d69 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, 3)
@@ -950,7 +962,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d159 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, -2)
@@ -960,7 +972,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d85 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, 2)
@@ -970,7 +982,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d145 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-4, 0)
@@ -980,7 +992,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d108 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, -4)
@@ -990,7 +1002,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d52 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (0, 4)
@@ -1000,7 +1012,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d172 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (4, 0)
@@ -1010,7 +1022,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d116 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-4, -1)
@@ -1020,7 +1032,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d93 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-4, 1)
@@ -1030,7 +1042,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d123 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (WEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, -4)
@@ -1040,7 +1052,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d51 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-1, 4)
@@ -1050,7 +1062,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d171 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, -4)
@@ -1060,7 +1072,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d53 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (1, 4)
@@ -1070,7 +1082,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d173 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTH_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (4, -1)
@@ -1080,7 +1092,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d101 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (4, 1)
@@ -1090,7 +1102,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d131 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (EAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, -3)
@@ -1100,7 +1112,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d64 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-3, 3)
@@ -1110,7 +1122,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d154 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, -3)
@@ -1120,7 +1132,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d70 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (3, 3)
@@ -1130,7 +1142,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d160 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-4, -2)
@@ -1140,7 +1152,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d78 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-4, 2)
@@ -1150,7 +1162,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d138 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, -4)
@@ -1160,7 +1172,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d50 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (-2, 4)
@@ -1170,7 +1182,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d170 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHWEST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, -4)
@@ -1180,7 +1192,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d54 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (2, 4)
@@ -1190,7 +1202,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d174 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (4, -2)
@@ -1200,7 +1212,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d86 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (SOUTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
         // check (4, 2)
@@ -1210,7 +1222,7 @@ public class BFSCooldown20 {
             currentDir = mapInfo.getCurrentDirection();
             d146 += 10 * (mapInfo.getCooldownMultiplier(team)) + 
                  (currentDir == CENTER ? 0 :
-                 (NORTHEAST_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
+                 (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));
         }
 
 

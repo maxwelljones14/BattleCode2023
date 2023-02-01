@@ -9,10 +9,23 @@ public class MapTracker {
 
     static Direction[] dirPath;
 
+    static class TileType {
+        public static final int UNKNOWN = 0;
+        public static final int EMPTY = 1;
+        public static final int WALL = 2;
+        // We don't distinguish wells because they can transform into elixir
+        public static final int WELL = 3;
+        public static final int CLOUD = 4;
+        public static final int FRIENDLY_HQ = 5;
+        public static final int ENEMY_HQ = 6;
+    }
+
+    public static int validSymmetries = Util.SymmetryType.ALL;
+
     static final int MAX_MAP_SIZE = 60;
     static final int MAX_MAP_SIZE_SQ = MAX_MAP_SIZE * MAX_MAP_SIZE;
     static final int MAX_MAP_SIZE2 = 2 * MAX_MAP_SIZE;
-    static boolean[][] visited = new boolean[MAX_MAP_SIZE][];
+    static int[][] tileType = new int[MAX_MAP_SIZE][];
 
     static int visionRadius;
     static boolean initialized = false;
@@ -452,6 +465,126 @@ public class MapTracker {
         return obstacles[idx].inferRotation(obstacle, myLoc, target);
     }
 
+    // @pre canSenseLocation(loc)
+    public static void fillTileType(MapLocation loc) throws GameActionException {
+        if (rc.senseCloud(loc)) {
+            tileType[loc.x][loc.y] = TileType.CLOUD;
+        } else if (!rc.sensePassability(loc)) {
+            tileType[loc.x][loc.y] = TileType.WALL;
+        } else if (rc.senseWell(loc) != null) {
+            tileType[loc.x][loc.y] = TileType.WELL;
+        } else {
+            RobotInfo robot = rc.senseRobotAtLocation(loc);
+            if (robot != null && robot.type == RobotType.HEADQUARTERS) {
+                tileType[loc.x][loc.y] = robot.team == Robot.team ? TileType.FRIENDLY_HQ : TileType.ENEMY_HQ;
+            } else {
+                tileType[loc.x][loc.y] = TileType.EMPTY;
+            }
+        }
+    }
+
+    public static void invalidateSymmetries(MapLocation loc) throws GameActionException {
+        validSymmetries = Util.getValidSymmetries();
+
+        // Don't invalidate if there is only one left.
+        switch (validSymmetries) {
+            case Util.SymmetryType.HORIZONTAL:
+            case Util.SymmetryType.VERTICAL:
+            case Util.SymmetryType.ROTATIONAL:
+                return;
+            default:
+                break;
+        }
+
+        int otherTileType;
+        if ((validSymmetries & Util.SymmetryType.HORIZONTAL) != 0) {
+            otherTileType = tileType[Util.MAP_WIDTH - loc.x - 1][loc.y];
+            switch (otherTileType) {
+                case TileType.UNKNOWN:
+                    break;
+                case TileType.WALL:
+                case TileType.CLOUD:
+                case TileType.WELL:
+                case TileType.EMPTY:
+                    if (otherTileType != tileType[loc.x][loc.y]) {
+                        validSymmetries &= ~Util.SymmetryType.HORIZONTAL;
+                    }
+                    break;
+                case TileType.FRIENDLY_HQ:
+                    if (tileType[loc.x][loc.y] != TileType.ENEMY_HQ) {
+                        validSymmetries &= ~Util.SymmetryType.HORIZONTAL;
+                    }
+                    break;
+                case TileType.ENEMY_HQ:
+                    if (tileType[loc.x][loc.y] != TileType.FRIENDLY_HQ) {
+                        validSymmetries &= ~Util.SymmetryType.HORIZONTAL;
+                    }
+                    break;
+                default:
+                    Debug.println("Invalid tile type: " + otherTileType, id);
+                    break;
+            }
+        }
+
+        if ((validSymmetries & Util.SymmetryType.VERTICAL) != 0) {
+            otherTileType = tileType[loc.x][Util.MAP_HEIGHT - loc.y - 1];
+            switch (otherTileType) {
+                case TileType.UNKNOWN:
+                    break;
+                case TileType.WALL:
+                case TileType.CLOUD:
+                case TileType.WELL:
+                case TileType.EMPTY:
+                    if (otherTileType != tileType[loc.x][loc.y]) {
+                        validSymmetries &= ~Util.SymmetryType.VERTICAL;
+                    }
+                    break;
+                case TileType.FRIENDLY_HQ:
+                    if (tileType[loc.x][loc.y] != TileType.ENEMY_HQ) {
+                        validSymmetries &= ~Util.SymmetryType.VERTICAL;
+                    }
+                    break;
+                case TileType.ENEMY_HQ:
+                    if (tileType[loc.x][loc.y] != TileType.FRIENDLY_HQ) {
+                        validSymmetries &= ~Util.SymmetryType.VERTICAL;
+                    }
+                    break;
+                default:
+                    Debug.println("Invalid tile type: " + otherTileType, id);
+                    break;
+            }
+        }
+
+        if ((validSymmetries & Util.SymmetryType.ROTATIONAL) != 0) {
+            otherTileType = tileType[Util.MAP_WIDTH - loc.x - 1][Util.MAP_HEIGHT - loc.y - 1];
+            switch (otherTileType) {
+                case TileType.UNKNOWN:
+                    break;
+                case TileType.WALL:
+                case TileType.CLOUD:
+                case TileType.WELL:
+                case TileType.EMPTY:
+                    if (otherTileType != tileType[loc.x][loc.y]) {
+                        validSymmetries &= ~Util.SymmetryType.ROTATIONAL;
+                    }
+                    break;
+                case TileType.FRIENDLY_HQ:
+                    if (tileType[loc.x][loc.y] != TileType.ENEMY_HQ) {
+                        validSymmetries &= ~Util.SymmetryType.ROTATIONAL;
+                    }
+                    break;
+                case TileType.ENEMY_HQ:
+                    if (tileType[loc.x][loc.y] != TileType.FRIENDLY_HQ) {
+                        validSymmetries &= ~Util.SymmetryType.ROTATIONAL;
+                    }
+                    break;
+                default:
+                    Debug.println("Invalid tile type: " + otherTileType, id);
+                    break;
+            }
+        }
+    }
+
     static void markSeen() throws GameActionException {
         if (!initialized)
             return;
@@ -472,10 +605,11 @@ public class MapTracker {
             if (Clock.getBytecodesLeft() < VISITED_BC_LEFT)
                 break;
             loc = loc.add(dirPath[i]);
-            if (rc.canSenseLocation(loc) && !visited[loc.x][loc.y]) {
+            if (rc.canSenseLocation(loc) && tileType[loc.x][loc.y] == TileType.UNKNOWN) {
                 addObstacle(loc);
                 markObstacleLocSeen(loc);
-                visited[loc.x][loc.y] = true;
+                fillTileType(loc);
+                invalidateSymmetries(loc);
             }
         }
     }
@@ -483,7 +617,7 @@ public class MapTracker {
     static boolean hasVisited(MapLocation loc) {
         if (!initialized)
             return false;
-        return visited[loc.x][loc.y];
+        return tileType[loc.x][loc.y] != TileType.UNKNOWN;
     }
 
     static void initialize() {
@@ -493,7 +627,7 @@ public class MapTracker {
         while (initRow < MAX_MAP_SIZE) {
             if (Clock.getBytecodesLeft() < INIT_BC_LEFT)
                 return;
-            visited[initRow] = new boolean[MAX_MAP_SIZE];
+            tileType[initRow] = new int[MAX_MAP_SIZE];
             obstacleIdx[initRow] = new int[MAX_MAP_SIZE];
             initRow++;
         }

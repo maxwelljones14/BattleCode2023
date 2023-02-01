@@ -171,14 +171,13 @@ public class Robot {
 
         if (robotType != RobotType.HEADQUARTERS) {
             // Must recalculate
-            int currSymmetryAll = Comms.readSymmetryAll();
+            int currSymmetryAll = Util.getValidSymmetries();
             if (currSymmetryAll != symmetryAll) {
                 symmetryChanged = true;
                 updateSymmetryLocs();
             } else {
                 symmetryChanged = false;
             }
-            invalidateSymmetries();
         }
     }
 
@@ -186,6 +185,7 @@ public class Robot {
         MapTracker.initialize();
         flushSectorDatabase();
         MapTracker.markSeen();
+        updateSymmetry();
     }
 
     /*
@@ -1450,7 +1450,7 @@ public class Robot {
     public void updateSymmetryLocs() throws GameActionException {
         if (headquarterLocations == null)
             return;
-        symmetryAll = Comms.readSymmetryAll();
+        symmetryAll = Util.getValidSymmetries();
         MapLocation[] symLocs = new MapLocation[12];
         int numSymLocs = 0;
         for (int i = 0; i < headquarterLocations.length; i++) {
@@ -1580,6 +1580,15 @@ public class Robot {
             }
         }
         return -1;
+    }
+
+    public void updateSymmetry() throws GameActionException {
+        int commsSymmetry = Comms.readSymmetryAll();
+        int localSymmetry = Util.getValidSymmetries();
+        if (commsSymmetry != localSymmetry && rc.canWriteSharedArray(0, 0)) {
+            Comms.writeSymmetryAll(localSymmetry);
+            Debug.println("Updating symmetry: " + localSymmetry);
+        }
     }
 
     public MapLocation getCombatSector() throws GameActionException {

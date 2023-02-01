@@ -144,7 +144,7 @@ def gen_bfs(radius):
         {indent}currentDir = mapInfo.getCurrentDirection();
         {indent}d{encode(x,y)} += 10 * (mapInfo.getCooldownMultiplier(team)) + 
         {indent}{indent} (currentDir == CENTER ? 0 :
-        {indent}{indent} ({direction_to(x,y)}_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));"""
+        {indent}{indent} (TARGET_DIR_ADJ.indexOf(currentDir.ordinal()) >= 0 ? -5 : 5));"""
                     out += f"""
         }}"""
                     visited.add(encode(x,y))
@@ -253,6 +253,7 @@ public class BFSCooldown{rad} {{
     public static String SOUTHWEST_ADJ = "\\04\\05\\06";
     public static String WEST_ADJ = "\\05\\06\\07";
     public static String NORTHWEST_ADJ = "\\06\\07\\00";
+    public static String TARGET_DIR_ADJ = "";
 
     public static Direction direction(double dist) {{
         if (dist==Double.POSITIVE_INFINITY) {{
@@ -262,6 +263,17 @@ public class BFSCooldown{rad} {{
     }}
 
     public static Direction bestDir(MapLocation target) throws GameActionException {{
+        switch (rc.getLocation().directionTo(target)) {{
+            case NORTH: TARGET_DIR_ADJ = NORTH_ADJ; break;
+            case NORTHEAST: TARGET_DIR_ADJ = NORTHEAST_ADJ; break;
+            case EAST: TARGET_DIR_ADJ = EAST_ADJ; break;
+            case SOUTHEAST: TARGET_DIR_ADJ = SOUTHEAST_ADJ; break;
+            case SOUTH: TARGET_DIR_ADJ = SOUTH_ADJ; break;
+            case SOUTHWEST: TARGET_DIR_ADJ = SOUTHWEST_ADJ; break;
+            case WEST: TARGET_DIR_ADJ = WEST_ADJ; break;
+            case NORTHWEST: TARGET_DIR_ADJ = NORTHWEST_ADJ; break;
+            default: TARGET_DIR_ADJ = ""; break;
+        }}
 {gen_init(radius)}
 {gen_bfs(radius)}
 {gen_print(radius)}
