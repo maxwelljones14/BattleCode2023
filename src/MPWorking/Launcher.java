@@ -19,7 +19,6 @@ public class Launcher extends Robot {
     }
 
     static LauncherState currState;
-    static LauncherState prevState;
 
     static int numEnemyLaunchers;
     static double overallEnemyLauncherDx;
@@ -255,7 +254,7 @@ public class Launcher extends Robot {
     public boolean shouldWait() {
         boolean tooSoon = turnSawLastClosestAttackingEnemy + LAST_ATTACKING_ENEMY_TIMEOUT >= rc.getRoundNum();
         // boolean notMod4 = rc.getRoundNum() % 4 != 0;
-        return tooSoon && Util.MAP_AREA >= Util.MAX_AREA_FOR_SEMI_FAST_INIT;
+        return false; // tooSoon;
     }
 
     public boolean shouldHelpInjured() {
@@ -354,9 +353,7 @@ public class Launcher extends Robot {
                     currState = LauncherState.HELPING;
                 } else if (shouldWait()) {
                     Debug.printString("Waiting");
-                    prevState = currState;
                     currState = LauncherState.WAITING;
-
                 } else if (numAggressiveFriendlies == 0 &&
                         rc.getHealth() <= LOW_HEALTH_REPORT_THRESHOLD &&
                         !hasReported) {
@@ -401,12 +398,6 @@ public class Launcher extends Robot {
                 goToNearestIsland();
                 break;
             case WAITING:
-                if (prevState == LauncherState.ATTACKING) {
-                    Debug.printString("attackwait");
-                    Nav.move(lastClosestAttackingEnemy);
-                } else {
-                    Debug.printString("wait");
-                }
                 break;
         }
     }
@@ -599,7 +590,7 @@ public class Launcher extends Robot {
             if (!shouldStandGround()) {
                 dir = chooseForwardDirection(dest);
                 if (dir == null) {
-                    Debug.printString("Fw bad, dest: " + dest);
+                    Debug.printString("Fw bad; ");
                     tryAttackBestEnemy();
                     return;
                 }
