@@ -97,6 +97,7 @@ public class Launcher extends Robot {
         firstFriendlyIslandLoc = null;
         turnsFollowedExploreTarget = 0;
         EXPLORE_TARGET_TIMEOUT = GameConstants.GAME_MAX_NUMBER_OF_ROUNDS;
+        turnSawLastClosestAttackingEnemy = -50;
     }
 
     public void takeTurn() throws GameActionException {
