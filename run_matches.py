@@ -14,7 +14,8 @@ early_maps = ['AllElements', 'DefaultMap', 'maptestsmall', 'SmallElements']
 sprint1_maps = ['ArtistRendition', 'BatSignal', 'BowAndArrow', 'Cat', 'Clown', 'Diagonal', 'Eyelands', 'Forest', 'Frog', 'Grievance', 'Hah', 'KingdomRush', 'Minefield', 'Movepls', 'Orbit', 'Pit', 'Pizza', 'Quiet', 'Rectangle', 'Scatter', 'Snowflake', 'Sun', 'Tacocat', 'Turtle']
 sprint2_maps = ['BattleSuns', 'Checkmate2', 'Cornucopia', 'Crossword', 'Cube', 'Divergence', 'Dreamy', 'FourNations', 'HideAndSeek', 'Lantern', 'Lines', 'Maze', 'PairedProgramming', 'Pakbot', 'Pathfind', 'Piglets', 'Rewind', 'Risk', 'Sine', 'SomethingFishy', 'Spin', 'Spiral', 'Squares', 'Star', 'Sus', 'SweetDreams', 'TicTacToe', 'USA']
 intl_quals_maps = ['Barcode', 'Contraction', 'Flower', 'Grapes', 'IslandHopping', 'Marsh', 'RaceToTheTop', 'Repetition', 'River', 'RockWall', 'Sakura', 'SoundWave', 'ThirtyFive', 'TimesUp', 'TreasureMap']
-maps = early_maps + sprint1_maps + sprint2_maps + intl_quals_maps
+us_quals_maps = ['AbsoluteW', 'Buggy', 'Cave', 'Cee', 'Heart', 'HotAirBalloon', 'IslandHoppingTwo', 'LightWork', 'MassiveL', 'Potions', 'Rainbow', 'Resign', 'Sneaky', 'Target', 'Tightrope']
+maps = early_maps + sprint1_maps + sprint2_maps + intl_quals_maps + us_quals_maps
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
