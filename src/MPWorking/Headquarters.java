@@ -1100,10 +1100,10 @@ public class Headquarters extends Robot {
     }
 
     public boolean shouldBuildAmplifier() {
-        // return rc.getRoundNum() >= Util.MIN_ROUNDS_FOR_AMPLIFIER &&
-        // !isSemiSmallMap() &&
-        // roundsSinceLastAmplifier >= Util.AMPLIFIER_COOLDOWN &&
-        // amplifierCount < Util.MAX_AMPLIFIER_COUNT;
-        return false;
+        return rc.getRoundNum() >= Util.MIN_ROUNDS_FOR_AMPLIFIER &&
+                !isSemiSmallMap() &&
+                roundsSinceLastAmplifier >= Util.AMPLIFIER_COOLDOWN &&
+                amplifierCount < Util.MAX_AMPLIFIER_COUNT;
+        // return false;
     }
 }
