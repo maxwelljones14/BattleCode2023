@@ -879,6 +879,22 @@ public class Launcher extends Robot {
             // No islands nearby, so just go to the closest one
             Debug.printString("GOTO ISL");
 
+            // Nav to the first friendly island seen, but reset it if it isn't ours
+            if (firstFriendlyIslandLoc != null) {
+                if (rc.canSenseLocation(firstFriendlyIslandLoc)) {
+                    if (rc.senseTeamOccupyingIsland(rc.senseIsland(firstFriendlyIslandLoc)) != team) {
+                        Nav.move(firstFriendlyIslandLoc);
+                        moveAndAttack(firstFriendlyIslandLoc);
+                        return;
+                    } else {
+                        firstFriendlyIslandLoc = null;
+                    }
+                } else {
+                    moveAndAttack(firstFriendlyIslandLoc);
+                    return;
+                }
+            }
+
             MapLocation target = closestFriendlyIsland;
             boolean shouldMarkCorner = false;
 
@@ -889,7 +905,7 @@ public class Launcher extends Robot {
                 MapLocation nextCorner = sectorDatabase.at(closestFriendlyIslandIdx).getNextCorner();
                 target = nextCorner;
                 if (target == null) {
-                    // We've visited all the corners and still haven't found the well???
+                    // We've visited all the corners and still haven't found the island???
                     target = sectorCenters[closestFriendlyIslandIdx];
                     Debug.println("ERROR: Couldn't find island in sector");
                     sectorDatabase.at(closestFriendlyIslandIdx).resetCorners();
@@ -929,8 +945,16 @@ public class Launcher extends Robot {
             return;
         }
 
+        if (firstFriendlyIslandLoc == null) {
+            firstFriendlyIslandLoc = bestHealLoc;
+        }
+
         Debug.printString("HEAL LOC");
-        moveAndAttack(bestHealLoc);
+        if (Util.seesObstacleInWay(bestHealLoc)) {
+            moveAndAttack(firstFriendlyIslandLoc);
+        } else {
+            moveAndAttack(bestHealLoc);
+        }
     }
 
     public void updateSymManaSectors() throws GameActionException {
@@ -943,7 +967,7 @@ public class Launcher extends Robot {
         } else {
             // Check if the closest MAX_SYM_MANA_SECTORS mana sectors have changed
             for (int i = 0; i < MAX_SYM_MANA_SECTORS; i++) {
-                int manaSectorIdx = getNearestMineSectorIdx(ResourceType.MANA, manaSymSet);
+                int manaSectorIdx = getNearestMineSectorIdx(ResourceType.MANA, null);
                 if (manaSectorIdx == Comms.UNDEFINED_SECTOR_INDEX)
                     break;
                 if (!manaSymSet.contains(sectorCenters[manaSectorIdx]) &&

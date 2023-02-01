@@ -10,6 +10,7 @@ SCHEMA = {
     'our_HQ': {
         'slots': 4,
         'bits': {
+            'num_amps': 2,
             'flag': 1,
             'x_coord': 6,
             'y_coord': 6,
@@ -21,7 +22,6 @@ SCHEMA = {
             'islands': 1,
             'adamantium_flag': 1,
             'mana_flag': 1,
-            # 'elixir_flag': 1,
             'control_status': 3,
         }
     },

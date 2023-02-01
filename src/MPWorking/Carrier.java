@@ -236,6 +236,7 @@ public class Carrier extends Robot {
     public void enterPlacingAnchor() {
         currState = CarrierState.PLACING_ANCHOR;
         firstNeutralIslandLoc = null;
+        visitedSectorCenter = false;
     }
 
     public boolean shouldReport() {
@@ -558,27 +559,69 @@ public class Carrier extends Robot {
         }
 
         if (neutralIslandIdx == -1) {
+            // Nav to the first neutral island seen, but reset it if it was captured.
+            if (firstNeutralIslandLoc != null) {
+                if (rc.canSenseLocation(firstNeutralIslandLoc)) {
+                    if (rc.senseTeamOccupyingIsland(rc.senseIsland(firstNeutralIslandLoc)) == Team.NEUTRAL) {
+                        Nav.move(firstNeutralIslandLoc);
+                        return;
+                    } else {
+                        firstNeutralIslandLoc = null;
+                    }
+                } else {
+                    Nav.move(firstNeutralIslandLoc);
+                    return;
+                }
+            }
+
+            // Sit on an enemy island if there are no enemies nearby.
             if (enemyIslandIdx != -1 && closestEnemy == null) {
                 // If there's an enemy island nearby and no enemies nearby,
                 // overtake the enemy island.
                 MapLocation target = Util.getClosestEmptyIslandLoc(enemyIslandIdx);
                 if (target == null) {
-                    // If no placement loc, just go to the closest location on the island
+                    // If no loc, just go to the closest location on the island
                     // and wait for someone to leave.
                     target = Util.getClosestIslandLoc(enemyIslandIdx);
                 }
                 Nav.move(target);
-            } else {
-                // If no neutral islands, go home
-                if (closestNeutralIsland == null) {
-                    if (!returnAnchor()) {
-                        Nav.move(home);
-                        returnAnchor();
-                    }
-                } else {
-                    // No islands nearby yet, so just go to the closest neutral island
-                    Nav.move(closestNeutralIsland);
+                return;
+            }
+
+            // If no neutral islands, go home
+            if (closestNeutralIsland == null) {
+                if (!returnAnchor()) {
+                    Nav.move(home);
+                    returnAnchor();
                 }
+                return;
+            }
+
+            // No islands nearby yet, so just go to the closest neutral island
+            MapLocation target = closestNeutralIsland;
+            boolean shouldMarkCorner = false;
+
+            // If we have visited the center of the sector and we can't see the island,
+            // travel the corners of the sector until we find it
+            int sectorIdx = whichSector(closestNeutralIsland);
+            if (visitedSectorCenter || currLoc.equals(closestNeutralIsland)) {
+                visitedSectorCenter = true;
+                MapLocation nextCorner = sectorDatabase.at(sectorIdx).getNextCorner();
+                target = nextCorner;
+                if (target == null) {
+                    // We've visited all the corners and still haven't found the island???
+                    target = sectorCenters[sectorIdx];
+                    Debug.println("ERROR: Couldn't find island in sector");
+                    sectorDatabase.at(sectorIdx).resetCorners();
+                } else {
+                    shouldMarkCorner = true;
+                }
+                // Debug.println("Trying corner: " + target);
+            }
+
+            Nav.move(target);
+            if (shouldMarkCorner && rc.getLocation().isAdjacentTo(target)) {
+                sectorDatabase.at(sectorIdx).visitCorner(target);
             }
             return;
         }

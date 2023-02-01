@@ -26,6 +26,9 @@ public class Headquarters extends Robot {
     static int carrierCount;
     static int launcherCount;
     static int anchorCount;
+    static int amplifierCount;
+
+    static int roundsSinceLastAmplifier;
 
     static final int initCarriersWanted = 4;
     static final int initLaunchersWanted = 4;
@@ -96,6 +99,8 @@ public class Headquarters extends Robot {
         carrierCount = 0;
         launcherCount = 0;
         anchorCount = 0;
+        amplifierCount = 0;
+        roundsSinceLastAmplifier = 0;
         nextFlag = 0;
 
         adamCarrierTracker = new FastUnitTracker(rc, ROUNDS_TO_STALE_UNIT);
@@ -125,8 +130,7 @@ public class Headquarters extends Robot {
         super.takeTurn();
         // localResign();
         debug_localResign();
-        adamCarrierTracker.update();
-        manaCarrierTracker.update();
+        updateUnitCount();
         clearOldEnemyInfo();
 
         switch (rc.getRoundNum()) {
@@ -175,6 +179,15 @@ public class Headquarters extends Robot {
         // displayExploreSectors();
         // displayMineSectors();
         // displayCombatSectors();
+    }
+
+    public void updateUnitCount() throws GameActionException {
+        adamCarrierTracker.update();
+        manaCarrierTracker.update();
+
+        roundsSinceLastAmplifier++;
+        amplifierCount = Comms.readOurHqNumAmps(myHqNum);
+        Comms.writeOurHqNumAmps(myHqNum, 0);
     }
 
     // The symmetry guess is the one that gives the furthest average distance to HQs
@@ -574,18 +587,18 @@ public class Headquarters extends Robot {
         return buildCarrier(carrierType);
     }
 
-    public MapLocation getLauncherLocation() throws GameActionException {
-        return getLauncherLocation(getCombatSector());
+    public MapLocation getSpawnLocation(RobotType type) throws GameActionException {
+        return getSpawnLocation(type, getCombatSector());
     }
 
-    public MapLocation getLauncherLocation(MapLocation target) throws GameActionException {
+    public MapLocation getSpawnLocation(RobotType type, MapLocation target) throws GameActionException {
         Direction dir = null;
         if (target == null) {
             target = closestEnemyHQGuess;
             if (closestEnemyHQGuess != null) {
                 dir = closestEnemyHQGuessDir;
                 // Debug.printString("HQ " + target + " Dir " + dir);
-                return Util.findInitLocation(RobotType.LAUNCHER, dir);
+                return Util.findInitLocation(type, dir);
             }
         }
 
@@ -596,7 +609,15 @@ public class Headquarters extends Robot {
             dir = getBestDirTo(target);
         }
 
-        return Util.findInitLocation(RobotType.LAUNCHER, dir);
+        return Util.findInitLocation(type, dir);
+    }
+
+    public MapLocation getLauncherLocation() throws GameActionException {
+        return getLauncherLocation(getCombatSector());
+    }
+
+    public MapLocation getLauncherLocation(MapLocation target) throws GameActionException {
+        return getSpawnLocation(RobotType.LAUNCHER, target);
     }
 
     public MapLocation getDestabilizerLocation() throws GameActionException {
@@ -604,24 +625,15 @@ public class Headquarters extends Robot {
     }
 
     public MapLocation getDestabilizerLocation(MapLocation target) throws GameActionException {
-        Direction dir = null;
-        if (target == null) {
-            target = closestEnemyHQGuess;
-            if (closestEnemyHQGuess != null) {
-                dir = closestEnemyHQGuessDir;
-                // Debug.printString("HQ " + target + " Dir " + dir);
-                return Util.findInitLocation(RobotType.DESTABILIZER, dir);
-            }
-        }
+        return getSpawnLocation(RobotType.DESTABILIZER, target);
+    }
 
-        if (target == null) {
-            // Debug.printString("No HQ");
-            dir = Util.directions[Util.rng.nextInt(Util.directions.length)];
-        } else {
-            dir = getBestDirTo(target);
-        }
+    public MapLocation getAmplifierLocation() throws GameActionException {
+        return getAmplifierLocation(getCombatSector());
+    }
 
-        return Util.findInitLocation(RobotType.DESTABILIZER, dir);
+    public MapLocation getAmplifierLocation(MapLocation target) throws GameActionException {
+        return getSpawnLocation(RobotType.AMPLIFIER, target);
     }
 
     public boolean buildLauncher(MapLocation newLoc) throws GameActionException {
@@ -641,6 +653,14 @@ public class Headquarters extends Robot {
             return true;
         }
         return false;
+    }
+
+    public void buildAmplifier(MapLocation newLoc) throws GameActionException {
+        Debug.printString("Trying to build an amplifier");
+        if (newLoc != null && rc.canBuildRobot(RobotType.AMPLIFIER, newLoc)) {
+            rc.buildRobot(RobotType.AMPLIFIER, newLoc);
+            roundsSinceLastAmplifier = 0;
+        }
     }
 
     // WARNING: If the cost of initCarriersWanted or initLaunchersWanted exceed
@@ -690,6 +710,9 @@ public class Headquarters extends Robot {
                 }
                 if (canBuildRobotType(RobotType.LAUNCHER)) {
                     buildLauncher(getLauncherLocation());
+                }
+                if (shouldBuildAmplifier() && canBuildRobotType(RobotType.AMPLIFIER)) {
+                    buildAmplifier(getAmplifierLocation());
                 }
                 if (canBuildRobotType(RobotType.CARRIER)) {
                     buildCarrier();
@@ -1008,7 +1031,8 @@ public class Headquarters extends Robot {
             if (Comms.readSectorManaFlag(sector) == 1) {
                 manaSectors[numManaSectors] = sectorCenters[sector];
                 numManaSectors++;
-            } else if (Comms.readSectorAdamantiumFlag(sector) == 1) {
+            }
+            if (Comms.readSectorAdamantiumFlag(sector) == 1) {
                 adamSectors[numAdamSectors] = sectorCenters[sector];
                 numAdamSectors++;
             }
@@ -1016,26 +1040,29 @@ public class Headquarters extends Robot {
 
         int bestAdamDistance = Integer.MAX_VALUE;
         int bestTotalDistance = Integer.MAX_VALUE;
-        int bestDistToHome = Integer.MAX_VALUE;
+        int bestDistToHQ = Integer.MAX_VALUE;
         MapLocation bestSector = null;
         MapLocation manaSector;
         int closestAdamDist;
         int totalDistance;
-        int distToHome;
+        int distToHQ;
         for (int i = 0; i < numManaSectors; i++) {
             manaSector = manaSectors[i];
             totalDistance = 0;
             closestAdamDist = Integer.MAX_VALUE;
-            distToHome = manaSector.distanceSquaredTo(home);
+            distToHQ = Integer.MAX_VALUE;
             for (int j = 0; j < numAdamSectors; j++) {
                 totalDistance += manaSector.distanceSquaredTo(adamSectors[j]);
                 closestAdamDist = Math.min(closestAdamDist, manaSector.distanceSquaredTo(adamSectors[j]));
+            }
+            for (int j = 0; j < headquarterLocations.length; j++) {
+                distToHQ = Math.min(distToHQ, manaSector.distanceSquaredTo(headquarterLocations[j]));
             }
 
             if (closestAdamDist < bestAdamDistance) {
                 bestAdamDistance = closestAdamDist;
                 bestTotalDistance = totalDistance;
-                bestDistToHome = manaSector.distanceSquaredTo(home);
+                bestDistToHQ = distToHQ;
                 bestSector = manaSector;
             } else if (closestAdamDist > bestAdamDistance) {
                 continue;
@@ -1043,14 +1070,14 @@ public class Headquarters extends Robot {
 
             if (totalDistance < bestTotalDistance) {
                 bestTotalDistance = totalDistance;
-                bestDistToHome = manaSector.distanceSquaredTo(home);
+                bestDistToHQ = distToHQ;
                 bestSector = manaSector;
             } else if (totalDistance > bestTotalDistance) {
                 continue;
             }
 
-            if (distToHome < bestDistToHome) {
-                bestDistToHome = distToHome;
+            if (distToHQ < bestDistToHQ) {
+                bestDistToHQ = distToHQ;
                 bestSector = manaSector;
             }
         }
@@ -1070,5 +1097,13 @@ public class Headquarters extends Robot {
         if (bestElixirWellCandidate != Comms.UNDEFINED_SECTOR_INDEX) {
             Comms.writeElixirSectorIndex(bestElixirWellCandidate);
         }
+    }
+
+    public boolean shouldBuildAmplifier() {
+        // return rc.getRoundNum() >= Util.MIN_ROUNDS_FOR_AMPLIFIER &&
+        // !isSemiSmallMap() &&
+        // roundsSinceLastAmplifier >= Util.AMPLIFIER_COOLDOWN &&
+        // amplifierCount < Util.MAX_AMPLIFIER_COUNT;
+        return false;
     }
 }

@@ -44,6 +44,13 @@ public class Util {
     public static final int MIN_MAP_AREA_FOR_ELIXIR = 1500;
     public static final int MIN_ROUND_NUM_FOR_ELIXIR = 500;
 
+    public static final int MIN_ROUNDS_FOR_AMPLIFIER = 200;
+    public static final int AMPLIFIER_COOLDOWN = 50;
+    public static final int MAX_AMPLIFIER_COUNT = 2;
+
+    public static final int AMP_JUST_INSIDE_VISION_RADIUS = RobotType.AMPLIFIER.visionRadiusSquared - 7;
+    public static final int AMP_ROUNDS_TO_EXPLORE = 15;
+
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
             Direction.NORTH,
