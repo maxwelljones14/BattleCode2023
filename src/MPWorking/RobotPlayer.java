@@ -15,6 +15,7 @@ import MPWorking.Debug.*;
 public strictfp class RobotPlayer {
 
     static Robot bot;
+    static RobotType type;
 
     /**
      * run() is the method that is called when a robot is instantiated in the
@@ -40,7 +41,8 @@ public strictfp class RobotPlayer {
         FastSort.init(rc);
 
         // You can also use indicators to save debug notes in replays.
-        switch (rc.getType()) {
+        type = rc.getType();
+        switch (type) {
             case AMPLIFIER:
                 bot = new Amplifier(rc);
                 break;
@@ -64,6 +66,11 @@ public strictfp class RobotPlayer {
             try {
                 bot.initTurn();
                 bot.takeTurn();
+
+                if (type == RobotType.CARRIER && rc.isMovementReady()) {
+                    bot.takeTurn();
+                }
+
                 bot.endTurn();
                 Debug.flush();
                 Clock.yield();

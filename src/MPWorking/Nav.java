@@ -242,14 +242,19 @@ public class Nav {
     }
 
     static void move(MapLocation target) throws GameActionException {
-        move(target, false, true);
+        move(target, false, true, BYTECODE_REMAINING);
+    }
+
+    static void move(MapLocation target, int bytecodeCushion) throws GameActionException {
+        move(target, false, true, bytecodeCushion);
     }
 
     static void move(MapLocation target, boolean greedy) throws GameActionException {
-        move(target, greedy, true);
+        move(target, greedy, true, BYTECODE_REMAINING);
     }
 
-    static void move(MapLocation target, boolean greedy, boolean avoidHQ) throws GameActionException {
+    static void move(MapLocation target, boolean greedy, boolean avoidHQ, int bytecodeCushion)
+            throws GameActionException {
         if (target == null)
             return;
         Debug.setIndicatorLine(rc.getLocation(), target, 255, 0, 200);
@@ -298,21 +303,7 @@ public class Nav {
 
         boolean canBFS = turnsSinceClosestDistanceDecreased < 2 && turnsGreedy <= 0;
         if (!greedy && canBFS) {
-            Direction dir = getBestDir(target, BYTECODE_REMAINING);
-            if (dir != null && rc.canMove(dir)) {
-                if (!VisitedTracker.check(rc.adjacentLocation(dir))) {
-                    rc.move(dir);
-                } else {
-                    activateGreedy();
-                }
-            }
-
-            if (!rc.isMovementReady())
-                return;
-
-            VisitedTracker.add(rc.getLocation());
-            // Don't do BFS twice in a turn.
-            dir = getBestDir(target, 9999);
+            Direction dir = getBestDir(target, bytecodeCushion);
             if (dir != null && rc.canMove(dir)) {
                 if (!VisitedTracker.check(rc.adjacentLocation(dir))) {
                     rc.move(dir);

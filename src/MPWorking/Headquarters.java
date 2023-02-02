@@ -468,55 +468,31 @@ public class Headquarters extends Robot {
     public MapLocation getNextCarrierLocation(int carrierType) throws GameActionException {
         Direction dirToBuild = null;
 
-        if (carrierType == Comms.HQFlag.CARRIER_ADAMANTIUM) {
-            if (nearestVisibleAdWell != null) {
-                if (nearestVisibleAdWellDir == null) {
-                    nearestVisibleAdWellDir = getBestDirTo(nearestVisibleAdWell);
-                }
-                dirToBuild = nearestVisibleAdWellDir;
-            } else if (nearestAdWellSector != null && !shouldIgnoreMiningSector(nearestAdWellSector)) {
-                if (nearestAdWellSectorDir == null) {
-                    nearestAdWellSectorDir = getBestDirTo(nearestAdWellSector);
-                }
-                dirToBuild = nearestAdWellSectorDir;
-            } else {
-                // Build init towards the center
-                if (currentState == State.INIT) {
-                    MapLocation exploreLoc = findNextExploreInitLoc();
-                    if (exploreLoc != null) {
-                        return exploreLoc;
-                    } else {
-                        dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
-                    }
-                } else {
-                    dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
-                }
+        // Adam carriers do mana on first pass.
+        if (nearestVisibleMnWell != null) {
+            if (nearestVisibleMnWellDir == null) {
+                nearestVisibleMnWellDir = getBestDirTo(nearestVisibleMnWell);
             }
+            dirToBuild = nearestVisibleMnWellDir;
+        } else if (nearestMnWellSector != null && !shouldIgnoreMiningSector(nearestMnWellSector)) {
+            if (nearestMnWellSectorDir == null) {
+                nearestMnWellSectorDir = getBestDirTo(nearestMnWellSector);
+            }
+            dirToBuild = nearestMnWellSectorDir;
         } else {
-            if (nearestVisibleMnWell != null) {
-                if (nearestVisibleMnWellDir == null) {
-                    nearestVisibleMnWellDir = getBestDirTo(nearestVisibleMnWell);
-                }
-                dirToBuild = nearestVisibleMnWellDir;
-            } else if (nearestMnWellSector != null && !shouldIgnoreMiningSector(nearestMnWellSector)) {
-                if (nearestMnWellSectorDir == null) {
-                    nearestMnWellSectorDir = getBestDirTo(nearestMnWellSector);
-                }
-                dirToBuild = nearestMnWellSectorDir;
-            } else {
-                // Build init towards the center
-                if (currentState == State.INIT) {
-                    MapLocation exploreLoc = findNextExploreInitLoc();
-                    if (exploreLoc != null) {
-                        return exploreLoc;
-                    } else {
-                        dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
-                    }
+            // Build init towards the center
+            if (currentState == State.INIT) {
+                MapLocation exploreLoc = findNextExploreInitLoc();
+                if (exploreLoc != null) {
+                    return exploreLoc;
                 } else {
-                    dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
+                    dirToBuild = home.directionTo(new MapLocation(Util.MAP_WIDTH / 2, Util.MAP_HEIGHT / 2));
                 }
+            } else {
+                dirToBuild = Util.directions[Util.rng.nextInt(Util.directions.length)];
             }
         }
+
         return Util.findInitLocation(RobotType.CARRIER, dirToBuild);
     }
 
@@ -669,8 +645,6 @@ public class Headquarters extends Robot {
     // TODO: Restructure?
     public void firstRounds() throws GameActionException {
         while (rc.isActionReady() && Clock.getBytecodesLeft() > 3000) {
-            // We wait until turn 3 to build launchers because
-            // symmetry isn't guessed until then.
             buildLauncher: if (launcherCount < initLaunchersWanted) {
                 MapLocation locToBuild = getLauncherLocation();
                 if (nearEnemyHQ) {

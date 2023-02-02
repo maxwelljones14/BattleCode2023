@@ -50,6 +50,9 @@ public class Carrier extends Robot {
 
     static boolean isFirstCycle;
 
+    static boolean isFirstPass;
+    static MapLocation lastTarget;
+
     public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
 
@@ -77,6 +80,7 @@ public class Carrier extends Robot {
         needToReportEarlyWell = true;
         isFirstCycle = true;
         firstNeutralIslandLoc = null;
+        isFirstPass = true;
 
         Explore.assignExplore3Dir(home.directionTo(rc.getLocation()));
 
@@ -97,7 +101,19 @@ public class Carrier extends Robot {
         return null;
     }
 
+    public void initTurn() throws GameActionException {
+        super.initTurn();
+        isFirstPass = true;
+    }
+
     public void takeTurn() throws GameActionException {
+        if (!isFirstPass && Clock.getBytecodesLeft() <= 1000) {
+            if (lastTarget != null) {
+                move(lastTarget);
+            }
+            return;
+        }
+
         super.takeTurn();
 
         closestHQ = getClosestFriendlyHQ(currLoc);
@@ -109,6 +125,7 @@ public class Carrier extends Robot {
         trySwitchState();
         Debug.printString(currState.toString());
         doStateAction();
+        isFirstPass = false;
     }
 
     public void resetLocalEnemyInformation() throws GameActionException {
@@ -385,7 +402,7 @@ public class Carrier extends Robot {
                 break;
             case REPORTING:
                 runFromEnemy();
-                Nav.move(home);
+                move(home);
                 transfer();
                 break;
             case DEPOSITING:
@@ -398,13 +415,13 @@ public class Carrier extends Robot {
                     resourceTarget = ResourceType.ADAMANTIUM;
                 }
                 if (!transfer()) {
-                    Nav.move(closestHQ);
+                    move(closestHQ);
                     transfer();
                 }
                 break;
             case REPORTING_EARLY_WELL:
                 runFromEnemy();
-                Nav.move(home);
+                move(home);
                 transfer();
                 break;
             case CONVERTING:
@@ -412,7 +429,7 @@ public class Carrier extends Robot {
                 break;
             case REPORTING_ELIXIR_CONVERTED:
                 runFromEnemy();
-                Nav.move(closestHQ);
+                move(closestHQ);
                 transfer();
                 if (rc.canWriteSharedArray(0, 0)) {
                     Comms.writeElixirSectorConverted(1);
@@ -448,7 +465,7 @@ public class Carrier extends Robot {
             if (currLoc.isAdjacentTo(wellLoc)) {
                 collect(closestWell);
                 MapLocation betterCollectLoc = Util.getBetterCollectLoc(wellLoc);
-                Nav.move(betterCollectLoc);
+                move(betterCollectLoc);
             } else {
                 // If there are too many carriers on this well, move to another well.
                 // If there are 2 available spots, skip this check
@@ -472,9 +489,9 @@ public class Carrier extends Robot {
 
                 Debug.printString("Moving");
                 if (Util.seesObstacleInWay(wellLoc)) {
-                    Nav.move(wellLoc);
+                    move(wellLoc);
                 } else {
-                    Nav.move(Util.getBestCollectLoc(wellLoc));
+                    move(Util.getBestCollectLoc(wellLoc));
                 }
 
                 collect(closestWell);
@@ -522,7 +539,7 @@ public class Carrier extends Robot {
                 target = Explore.getExplore3Target();
                 Debug.printString("Exploring");
             }
-            Nav.move(target);
+            move(target);
             if (shouldMarkCorner && rc.getLocation().isAdjacentTo(target)) {
                 sectorDatabase.at(mineSectorIndex).visitCorner(target);
             }
@@ -563,13 +580,13 @@ public class Carrier extends Robot {
             if (firstNeutralIslandLoc != null) {
                 if (rc.canSenseLocation(firstNeutralIslandLoc)) {
                     if (rc.senseTeamOccupyingIsland(rc.senseIsland(firstNeutralIslandLoc)) == Team.NEUTRAL) {
-                        Nav.move(firstNeutralIslandLoc);
+                        move(firstNeutralIslandLoc);
                         return;
                     } else {
                         firstNeutralIslandLoc = null;
                     }
                 } else {
-                    Nav.move(firstNeutralIslandLoc);
+                    move(firstNeutralIslandLoc);
                     return;
                 }
             }
@@ -584,14 +601,14 @@ public class Carrier extends Robot {
                     // and wait for someone to leave.
                     target = Util.getClosestIslandLoc(enemyIslandIdx);
                 }
-                Nav.move(target);
+                move(target);
                 return;
             }
 
             // If no neutral islands, go home
             if (closestNeutralIsland == null) {
                 if (!returnAnchor()) {
-                    Nav.move(home);
+                    move(home);
                     returnAnchor();
                 }
                 return;
@@ -619,7 +636,7 @@ public class Carrier extends Robot {
                 // Debug.println("Trying corner: " + target);
             }
 
-            Nav.move(target);
+            move(target);
             if (shouldMarkCorner && rc.getLocation().isAdjacentTo(target)) {
                 sectorDatabase.at(sectorIdx).visitCorner(target);
             }
@@ -638,9 +655,9 @@ public class Carrier extends Robot {
         }
 
         if (Util.seesObstacleInWay(target)) {
-            Nav.move(firstNeutralIslandLoc);
+            move(firstNeutralIslandLoc);
         } else {
-            Nav.move(target);
+            move(target);
         }
 
         placeAnchor();
@@ -668,9 +685,9 @@ public class Carrier extends Robot {
             } else {
                 Debug.printString("Moving");
                 if (Util.seesObstacleInWay(wellLoc)) {
-                    Nav.move(wellLoc);
+                    move(wellLoc);
                 } else {
-                    Nav.move(Util.getBestCollectLoc(wellLoc));
+                    move(Util.getBestCollectLoc(wellLoc));
                 }
                 transfer(wellLoc);
             }
@@ -696,7 +713,7 @@ public class Carrier extends Robot {
                 }
             }
 
-            Nav.move(target);
+            move(target);
             if (shouldMarkCorner && rc.getLocation().isAdjacentTo(target)) {
                 sectorDatabase.at(elixirSectorIndex).visitCorner(target);
             }
@@ -749,7 +766,7 @@ public class Carrier extends Robot {
     public void runFromEnemy() throws GameActionException {
         if (runAwayTarget != null) {
             Debug.printString("RA: " + runAwayTarget);
-            Nav.move(runAwayTarget);
+            move(runAwayTarget);
             currLoc = rc.getLocation();
         }
     }
@@ -861,7 +878,7 @@ public class Carrier extends Robot {
                     + Util.distance(currLoc, closestHQ) * Pathfinding.getBaseMovementCooldown())
                     / GameConstants.COOLDOWNS_PER_TURN;
             if (turnsDead > turnsToHome) {
-                Nav.move(closestHQ);
+                move(closestHQ);
                 currLoc = rc.getLocation();
                 return;
             }
@@ -931,5 +948,11 @@ public class Carrier extends Robot {
 
         return !switchedResourceTarget &&
                 rc.getRoundNum() - lastTurnCombatSectorNearby < Util.SWITCH_TO_MANA_TIMEOUT;
+    }
+
+    // On first takeTurn pass, we allow nav to do BFS. On second pass, we don't.
+    public void move(MapLocation target) throws GameActionException {
+        Nav.move(target, isFirstPass ? Nav.BYTECODE_REMAINING : 9999);
+        lastTarget = target;
     }
 }

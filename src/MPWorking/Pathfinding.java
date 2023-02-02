@@ -57,9 +57,6 @@ public class Pathfinding {
         target = loc;
         if (!BugNav.move())
             greedyPath();
-        if (!rc.isMovementReady())
-            return;
-        BugNav.move();
     }
 
     static MapLocation getGreedyTargetAway(MapLocation loc) throws GameActionException {
@@ -175,7 +172,8 @@ public class Pathfinding {
                 }
                 MapLocation nextLoc = myLoc.add(dir);
                 boolean avoidingCurrent = false;
-                if (rc.onTheMap(nextLoc) && Util.isDirAdj(rc.senseMapInfo(nextLoc).getCurrentDirection(), dir.opposite())) {
+                if (rc.onTheMap(nextLoc)
+                        && Util.isDirAdj(rc.senseMapInfo(nextLoc).getCurrentDirection(), dir.opposite())) {
                     // Debug.println("Dir sends into opposite current", id);
                     impassable[dir.ordinal()] = true;
                     avoidingCurrent = true;
