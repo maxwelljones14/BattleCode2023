@@ -220,7 +220,28 @@ public class Util {
     }
 
     // Get init locs such that taking direction from currLoc will give dir.
-    static MapLocation[] getInitLocs(Direction dir) {
+    static MapLocation[] getDirInitLocs(Direction dir) {
+        MapLocation currLoc = rc.getLocation();
+        MapLocation mainLoc1 = currLoc.add(dir);
+        MapLocation mainLoc2 = mainLoc1.add(dir);
+        switch (dir) {
+            case NORTH:
+            case SOUTH:
+            case EAST:
+            case WEST:
+                return new MapLocation[] { mainLoc2.add(dir), mainLoc2, mainLoc1, };
+            case NORTHEAST:
+            case SOUTHEAST:
+            case SOUTHWEST:
+            case NORTHWEST:
+                return new MapLocation[] { mainLoc2, mainLoc1,
+                        mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()) };
+            default:
+                return new MapLocation[] { currLoc };
+        }
+    }
+
+    static MapLocation[] getGroupedInitLocs(Direction dir) {
         MapLocation currLoc = rc.getLocation();
         MapLocation mainLoc1 = currLoc.add(dir);
         MapLocation mainLoc2 = mainLoc1.add(dir);
@@ -235,7 +256,34 @@ public class Util {
             case SOUTHEAST:
             case SOUTHWEST:
             case NORTHWEST:
-                return new MapLocation[] { mainLoc2, mainLoc1 };
+                return new MapLocation[] { mainLoc2, mainLoc1,
+                        mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()) };
+            default:
+                return new MapLocation[] { currLoc };
+        }
+    }
+
+    // Get launcher init locs such that not all directions will be blocked for
+    // carrier exploration
+    static MapLocation[] getLauncherInitLocs(Direction dir) {
+        MapLocation currLoc = rc.getLocation();
+        MapLocation mainLoc1 = currLoc.add(dir);
+        MapLocation mainLoc2 = mainLoc1.add(dir);
+
+        // Skip mainLoc1
+        switch (dir) {
+            case NORTH:
+            case SOUTH:
+            case EAST:
+            case WEST:
+                return new MapLocation[] { mainLoc2.add(dir), mainLoc2,
+                        mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()) };
+            case NORTHEAST:
+            case SOUTHEAST:
+            case SOUTHWEST:
+            case NORTHWEST:
+                return new MapLocation[] { mainLoc2,
+                        mainLoc1.add(dir.rotateLeft()), mainLoc1.add(dir.rotateRight()) };
             default:
                 return new MapLocation[] { currLoc };
         }
@@ -415,7 +463,11 @@ public class Util {
         MapLocation[] possibleLocations;
         MapLocation newLoc;
         for (int i = 8; --i >= 0;) {
-            possibleLocations = getInitLocs(dir);
+            if (Headquarters.currentState == Headquarters.State.INIT && type == RobotType.LAUNCHER) {
+                possibleLocations = getLauncherInitLocs(dir);
+            } else {
+                possibleLocations = getGroupedInitLocs(dir);
+            }
             for (int x = 0; x < possibleLocations.length; x++) {
                 newLoc = possibleLocations[x];
                 if (rc.canBuildRobot(type, newLoc) &&

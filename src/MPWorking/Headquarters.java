@@ -967,7 +967,7 @@ public class Headquarters extends Robot {
             if (exploreDirections[i] == null)
                 continue;
 
-            MapLocation[] exploreLocs = Util.getInitLocs(exploreDirections[i]);
+            MapLocation[] exploreLocs = Util.getDirInitLocs(exploreDirections[i]);
             for (int j = 0; j < exploreLocs.length; j++) {
                 if (rc.canBuildRobot(RobotType.CARRIER, exploreLocs[j])) {
                     exploreDirections[i] = null;
