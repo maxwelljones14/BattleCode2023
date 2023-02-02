@@ -463,7 +463,9 @@ public class Util {
         MapLocation[] possibleLocations;
         MapLocation newLoc;
         for (int i = 8; --i >= 0;) {
-            if (Headquarters.currentState == Headquarters.State.INIT && type == RobotType.LAUNCHER) {
+            if (Headquarters.currentState == Headquarters.State.INIT &&
+                    type == RobotType.LAUNCHER &&
+                    Headquarters.isOptimalExploreDir(dir)) {
                 possibleLocations = getLauncherInitLocs(dir);
             } else {
                 possibleLocations = getGroupedInitLocs(dir);
@@ -482,6 +484,7 @@ public class Util {
             dir = dir.rotateRight();
         }
         return null;
+
     }
 
     static MapLocation moveTowardsMe(MapLocation loc) {

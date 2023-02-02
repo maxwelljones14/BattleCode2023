@@ -1080,4 +1080,20 @@ public class Headquarters extends Robot {
         // amplifierCount < Util.MAX_AMPLIFIER_COUNT;
         return false;
     }
+
+    public static boolean isOptimalExploreDir(Direction dir) {
+        // Only look at the top 4 explore dirs
+        int NUM_EXPLORE_DIRS = 4;
+        int j = 0;
+        for (int i = 0; i < exploreDirections.length; i++) {
+            if (exploreDirections[i] == null)
+                continue;
+            if (exploreDirections[i] == dir)
+                return true;
+            j++;
+            if (j >= NUM_EXPLORE_DIRS)
+                break;
+        }
+        return false;
+    }
 }
