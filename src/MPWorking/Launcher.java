@@ -419,11 +419,30 @@ public class Launcher extends Robot {
         RobotInfo afterMoveEnemy = getBestEnemy(rc.senseNearbyRobots(nextLoc, actionRadiusSquared, team.opponent()));
 
         if (isEnemyBetter(beforeMoveEnemy, afterMoveEnemy)) {
-            tryAttackBestEnemy(beforeMoveEnemy);
-            rc.move(dir);
+            if (nextLoc.isWithinDistanceSquared(beforeMoveEnemy.location, actionRadiusSquared)) {
+                // If we can still attack the "before" move enemy after movement
+                // Reload enemies and choose the better one.
+                rc.move(dir);
+                afterMoveEnemy = getBestEnemy();
+                if (isEnemyBetter(beforeMoveEnemy, afterMoveEnemy)) {
+                    tryAttackBestEnemy(beforeMoveEnemy);
+                } else {
+                    tryAttackBestEnemy(afterMoveEnemy);
+                }
+            } else {
+                tryAttackBestEnemy(beforeMoveEnemy);
+                rc.move(dir);
+            }
         } else {
             rc.move(dir);
-            tryAttackBestEnemy();
+
+            // Reload enemies, but remember the last one we saw before movement.
+            beforeMoveEnemy = getBestEnemy();
+            if (isEnemyBetter(beforeMoveEnemy, afterMoveEnemy)) {
+                tryAttackBestEnemy(beforeMoveEnemy);
+            } else {
+                tryAttackBestEnemy(afterMoveEnemy);
+            }
         }
     }
 
