@@ -267,61 +267,61 @@ public class Robot {
         return res;
     }
 
-    public RobotInfo getBetterEnemy(RobotInfo robot1, RobotInfo robot2) throws GameActionException {
+    public boolean isEnemyBetter(RobotInfo robot1, RobotInfo robot2) throws GameActionException {
         if (robot1 == null)
-            return robot2;
+            return false;
         if (robot2 == null)
-            return robot1;
+            return true;
 
         switch (robot1.type) {
             case LAUNCHER:
                 if (robot2.type == RobotType.LAUNCHER) {
-                    return robot1.health < robot2.health ? robot1 : robot2;
+                    return robot1.health < robot2.health;
                 }
-                return robot1;
+                return true;
             case DESTABILIZER:
                 if (robot2.type == RobotType.LAUNCHER) {
-                    return robot2;
+                    return false;
                 }
                 if (robot2.type == RobotType.DESTABILIZER) {
-                    return robot1.health < robot2.health ? robot1 : robot2;
+                    return robot1.health < robot2.health;
                 }
-                return robot1;
+                return true;
             case BOOSTER:
                 if (robot2.type == RobotType.LAUNCHER || robot2.type == RobotType.DESTABILIZER) {
-                    return robot2;
+                    return false;
                 }
                 if (robot2.type == RobotType.BOOSTER) {
-                    return robot1.health < robot2.health ? robot1 : robot2;
+                    return robot1.health < robot2.health;
                 }
-                return robot1;
+                return true;
             case CARRIER:
                 if (robot2.type == RobotType.LAUNCHER || robot2.type == RobotType.DESTABILIZER
                         || robot2.type == RobotType.BOOSTER) {
-                    return robot2;
+                    return false;
                 }
                 if (robot2.type == RobotType.CARRIER) {
-                    return robot1.health < robot2.health ? robot1 : robot2;
+                    return robot1.health < robot2.health;
                 }
-                return robot1;
+                return true;
             case AMPLIFIER:
                 if (robot2.type == RobotType.LAUNCHER || robot2.type == RobotType.DESTABILIZER
                         || robot2.type == RobotType.BOOSTER || robot2.type == RobotType.CARRIER) {
-                    return robot2;
+                    return false;
                 }
                 if (robot2.type == RobotType.AMPLIFIER) {
-                    return robot1.health < robot2.health ? robot1 : robot2;
+                    return robot1.health < robot2.health;
                 }
-                return robot1;
+                return true;
             case HEADQUARTERS:
                 if (robot2.type == RobotType.LAUNCHER || robot2.type == RobotType.DESTABILIZER
                         || robot2.type == RobotType.BOOSTER || robot2.type == RobotType.CARRIER
                         || robot2.type == RobotType.AMPLIFIER) {
-                    return robot2;
+                    return false;
                 }
-                return robot1;
+                return true;
             default:
-                return robot1;
+                return true;
         }
     }
 

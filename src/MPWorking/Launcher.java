@@ -38,6 +38,7 @@ public class Launcher extends Robot {
     static int friendlyAttackingHealth;
     static int numEnemyLaunchersAttackingUs;
     public static final int LAST_ATTACKING_ENEMY_TIMEOUT = 2;
+    public static final int WAITING_TIMEOUT = 4;
 
     static boolean healthLow;
     static boolean healthHigh;
@@ -252,9 +253,8 @@ public class Launcher extends Robot {
     }
 
     public boolean shouldWait() {
-        boolean tooSoon = turnSawLastClosestAttackingEnemy + LAST_ATTACKING_ENEMY_TIMEOUT >= rc.getRoundNum();
-        // boolean notMod4 = rc.getRoundNum() % 4 != 0;
-        return false; // tooSoon;
+        boolean tooSoon = turnSawLastClosestAttackingEnemy + WAITING_TIMEOUT >= rc.getRoundNum();
+        return tooSoon || !rc.isActionReady();
     }
 
     public boolean shouldHelpInjured() {
@@ -352,7 +352,6 @@ public class Launcher extends Robot {
                 } else if (shouldHelpInjured()) {
                     currState = LauncherState.HELPING;
                 } else if (shouldWait()) {
-                    Debug.printString("Waiting");
                     currState = LauncherState.WAITING;
                 } else if (numAggressiveFriendlies == 0 &&
                         rc.getHealth() <= LOW_HEALTH_REPORT_THRESHOLD &&
@@ -398,6 +397,7 @@ public class Launcher extends Robot {
                 goToNearestIsland();
                 break;
             case WAITING:
+                formHull();
                 break;
         }
     }
@@ -405,6 +405,7 @@ public class Launcher extends Robot {
     public void moveAndAttack(Direction dir) throws GameActionException {
         // Sync launcher movement
         if (rc.getRoundNum() % 2 == 0) {
+            tryAttackBestEnemy();
             return;
         }
 
@@ -417,10 +418,13 @@ public class Launcher extends Robot {
         MapLocation nextLoc = rc.getLocation().add(dir);
         RobotInfo afterMoveEnemy = getBestEnemy(rc.senseNearbyRobots(nextLoc, actionRadiusSquared, team.opponent()));
 
-        RobotInfo bestEnemy = getBetterEnemy(beforeMoveEnemy, afterMoveEnemy);
-        tryAttackBestEnemy(bestEnemy);
-        rc.move(dir);
-        tryAttackBestEnemy(bestEnemy);
+        if (isEnemyBetter(beforeMoveEnemy, afterMoveEnemy)) {
+            tryAttackBestEnemy(beforeMoveEnemy);
+            rc.move(dir);
+        } else {
+            rc.move(dir);
+            tryAttackBestEnemy();
+        }
     }
 
     public void moveAndAttack(MapLocation loc) throws GameActionException {
@@ -955,6 +959,31 @@ public class Launcher extends Robot {
         } else {
             moveAndAttack(bestHealLoc);
         }
+    }
+
+    public void formHull() throws GameActionException {
+        if (lastClosestAttackingEnemy == null)
+            return;
+
+        // We want to form a hull around the last closest attacking enemy
+        // To do this, we pref to move to the location closest to the loc which
+        // is NOT in vision radius of the location
+        int bestDist = Integer.MAX_VALUE;
+        Direction bestDir = Direction.CENTER;
+        MapLocation loc;
+        int dist;
+        for (Direction dir : Util.directions) {
+            loc = lastClosestAttackingEnemy.add(dir);
+            dist = currLoc.distanceSquaredTo(loc);
+            if (loc.isWithinDistanceSquared(lastClosestAttackingEnemy, RobotType.LAUNCHER.visionRadiusSquared))
+                continue;
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestDir = dir;
+            }
+        }
+
+        moveAndAttack(bestDir);
     }
 
     public void updateSymManaSectors() throws GameActionException {
