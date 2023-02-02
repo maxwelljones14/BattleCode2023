@@ -39,7 +39,7 @@ public class Util {
     // Max number of turns a combat sector near home before we decide to NOT switch
     public static final int SWITCH_TO_MANA_TIMEOUT = 10;
 
-    public static final int MAX_BLACKLIST_DIST = 15;
+    public static int MAX_BLACKLIST_DIST = 15;
 
     public static final int MIN_MAP_AREA_FOR_ELIXIR = 1500;
     public static final int MIN_ROUND_NUM_FOR_ELIXIR = 500;
@@ -109,6 +109,7 @@ public class Util {
         MAP_WIDTH = rc.getMapWidth();
         MAP_AREA = MAP_HEIGHT * MAP_WIDTH;
         MAP_MAX_DIST_SQUARED = MAP_HEIGHT * MAP_HEIGHT + MAP_WIDTH * MAP_WIDTH;
+        MAX_BLACKLIST_DIST = Math.max(MAX_BLACKLIST_DIST, Math.max(MAP_HEIGHT, MAP_WIDTH) / 2);
     }
 
     static int distance(MapLocation A, MapLocation B) {

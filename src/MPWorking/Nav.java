@@ -87,6 +87,9 @@ public class Nav {
         }
 
         if (dir == null) {
+            if (bytecodeCushion == 9999) {
+                bytecodeCushion = BYTECODE_REMAINING;
+            }
             if (bcLeft >= bytecodeCushion) {
                 boolean avoidClouds = false;
                 boolean avoidCurrents = rc.getLocation().isWithinDistanceSquared(dest, DIST_TO_AVOID_CURRENTS);
@@ -148,7 +151,6 @@ public class Nav {
             allCooldowns[numToInsert - 1] = (int) (rightCDMult * 100);
         }
 
-        // Hard coded 3 length array sort lol
         Direction[] dirs = new Direction[numToInsert];
         System.arraycopy(allDirs, 0, dirs, 0, numToInsert);
         int[] cooldowns = new int[numToInsert];

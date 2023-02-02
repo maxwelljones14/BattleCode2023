@@ -88,12 +88,11 @@ public class Robot {
                     }
                 }
             }
-            home = closestHQ;
-            loadHQLocations();
-        }
 
-        if (home == null) {
-            home = rc.getLocation();
+            // If we can't find an HQ, we have just crashed and we shouldn't reset.
+            if (closestHQ != null)
+                home = closestHQ;
+            loadHQLocations();
         }
 
         homeIdx = 0;
