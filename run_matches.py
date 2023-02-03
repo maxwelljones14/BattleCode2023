@@ -8,7 +8,7 @@ Bwins = 0
 Blosses = 0
 currentBot = 'MPWorking'
 
-bots = ['MPHiElixir']
+bots = ['MPIgneous']
 botsSet = set(bots)
 early_maps = ['AllElements', 'DefaultMap', 'maptestsmall', 'SmallElements']
 sprint1_maps = ['ArtistRendition', 'BatSignal', 'BowAndArrow', 'Cat', 'Clown', 'Diagonal', 'Eyelands', 'Forest', 'Frog', 'Grievance', 'Hah', 'KingdomRush', 'Minefield', 'Movepls', 'Orbit', 'Pit', 'Pizza', 'Quiet', 'Rectangle', 'Scatter', 'Snowflake', 'Sun', 'Tacocat', 'Turtle']
