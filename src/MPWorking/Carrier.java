@@ -65,7 +65,7 @@ public class Carrier extends Robot {
     public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
     public static final int NO_WELLS_RESET_TIMEOUT = 20;
-    public static final int WELL_TIMEOUT = 30;
+    public static final int WELL_TIMEOUT = 40;
     public static final int WELL_DIST_TO_START_TIMER = 20;
 
     public static final int REPORTING_COOLDOWN = 10;
