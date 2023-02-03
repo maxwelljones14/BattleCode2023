@@ -27,6 +27,8 @@ public class Carrier extends Robot {
     static int turnStartedMining;
 
     static RobotInfo[] friendlyAttackable;
+    static RobotInfo lastClosestEnemy;
+    static int turnSawLastClosestEnemy;
     static RobotInfo closestEnemy;
     static RobotInfo closestFriendly;
     static RobotInfo closestEnemyCarrier;
@@ -62,10 +64,13 @@ public class Carrier extends Robot {
 
     public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
+    public static final int NO_WELLS_RESET_TIMEOUT = 20;
     public static final int WELL_TIMEOUT = 40;
     public static final int WELL_DIST_TO_START_TIMER = 20;
 
     public static final int REPORTING_COOLDOWN = 10;
+
+    public static final int BLOCK_LAST_ENEMY_DIR_TIMEOUT = 2;
 
     public Carrier(RobotController r) throws GameActionException {
         super(r);
@@ -90,6 +95,9 @@ public class Carrier extends Robot {
         isFirstCycle = true;
         firstNeutralIslandLoc = null;
         isFirstPass = true;
+
+        lastClosestEnemy = null;
+        turnSawLastClosestEnemy = -50;
 
         Explore.assignExplore3Dir(home.directionTo(rc.getLocation()));
 
@@ -128,12 +136,14 @@ public class Carrier extends Robot {
         closestHQ = getClosestFriendlyHQ(currLoc);
         resetLocalEnemyInformation();
         checkCombatSectorNearby();
+        blockLastClosestEnemyDirs();
 
         Debug.printString(resourceTarget.toString());
 
         trySwitchState();
         Debug.printString(currState.toString());
         doStateAction();
+        collectAny();
         isFirstPass = false;
     }
 
@@ -155,6 +165,11 @@ public class Carrier extends Robot {
 
         runAwayTarget = shouldRunAwayTarget();
         updateHomeifCurrHomeAttacked();
+
+        if (closestEnemy != null) {
+            lastClosestEnemy = closestEnemy;
+            turnSawLastClosestEnemy = rc.getRoundNum();
+        }
     }
 
     public void trySwitchState() throws GameActionException {
@@ -358,16 +373,12 @@ public class Carrier extends Robot {
                 : closestEnemy.getLocation().distanceSquaredTo(wellLoc);
 
         if (closestEnemyLauncherDist <= RobotType.LAUNCHER.actionRadiusSquared) {
+            // Blacklist this well for this cycle and the next.
             wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(wellLoc)]);
-            int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, wellSectorsVisitedThisCycle);
-            if (mineSectorIndex != Comms.UNDEFINED_SECTOR_INDEX &&
-                    Util.distance(sectorCenters[mineSectorIndex], wellLoc) <= Util.MAX_BLACKLIST_DIST) {
-                // We found another well. Blacklist this one for this cycle and the next.
-                blacklistedWells.add(wellLoc);
-                wellsVisitedThisCycle.add(wellLoc);
-                closestWell = null;
-                turnsNearWell = 0;
-            }
+            blacklistedWells.add(wellLoc);
+            wellsVisitedThisCycle.add(wellLoc);
+            closestWell = null;
+            turnsNearWell = 0;
         }
     }
 
@@ -572,6 +583,13 @@ public class Carrier extends Robot {
                     // Debug.println("Trying corner: " + target);
                 }
             } else {
+                // No wells. Reset visited if needed
+                if (turnStartedMining + NO_WELLS_RESET_TIMEOUT < rc.getRoundNum()) {
+                    wellsVisitedThisCycle.clear();
+                    wellSectorsVisitedThisCycle.clear();
+                    turnStartedMining = rc.getRoundNum();
+                }
+
                 target = Explore.getExplore3Target();
                 Debug.printString("Exploring");
             }
@@ -756,6 +774,13 @@ public class Carrier extends Robot {
         }
     }
 
+    public void collectAny() throws GameActionException {
+        WellInfo[] adjWells = rc.senseNearbyWells(2);
+        if (adjWells.length > 0) {
+            collect(adjWells[0]);
+        }
+    }
+
     public void loadFullestManaWell() throws GameActionException {
         WellInfo[] wells = rc.senseNearbyWells(ResourceType.MANA);
         int maxInventory = Integer.MIN_VALUE;
@@ -889,7 +914,6 @@ public class Carrier extends Robot {
         if (rc.canCollectResource(well.getMapLocation(), amount)) {
             Debug.printString("C");
             rc.collectResource(well.getMapLocation(), amount);
-            collect(well);
             return true;
         }
         return false;
@@ -1014,6 +1038,12 @@ public class Carrier extends Robot {
                 str = "Enemy";
             }
 
+            if (closestEnemy.location.isWithinDistanceSquared(currLoc, RobotType.LAUNCHER.visionRadiusSquared) &&
+                    rc.getHealth() <= RobotType.LAUNCHER.damage * 2) {
+                target = Util.invertLocation(closestEnemy.getLocation());
+                str = "Low health";
+            }
+
             Debug.printString(str);
         }
         return target;
@@ -1068,5 +1098,23 @@ public class Carrier extends Robot {
     public void move(MapLocation target) throws GameActionException {
         Nav.move(target, isFirstPass ? Nav.BYTECODE_REMAINING : 9999);
         lastTarget = target;
+    }
+
+    public void blockLastClosestEnemyDirs() {
+        // Info old, don't block dirs
+        if (turnSawLastClosestEnemy + BLOCK_LAST_ENEMY_DIR_TIMEOUT < rc.getRoundNum())
+            return;
+
+        // Block dirs
+        Direction dir = currLoc.directionTo(lastClosestEnemy.location);
+        boolean[] imp = new boolean[Util.DIRS_CENTER.length];
+        for (int i = Util.DIRS_CENTER.length; i-- > 0;) {
+            if (Util.DIRS_CENTER[i] == dir ||
+                    Util.DIRS_CENTER[i] == dir.rotateLeft() ||
+                    Util.DIRS_CENTER[i] == dir.rotateRight())
+                imp[i] = true;
+        }
+
+        Pathfinding.setImpassable(imp);
     }
 }
