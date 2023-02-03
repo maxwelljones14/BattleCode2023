@@ -186,7 +186,7 @@ public class Carrier extends Robot {
                 if (sectorToReport == 0) {
                     if (rc.getAnchor() != null) {
                         enterPlacingAnchor();
-                    } else if (rc.getResourceAmount(resourceTarget) != 0) {
+                    } else if (rc.getWeight() != 0) {
                         currState = CarrierState.DEPOSITING;
                     } else {
                         enterMineState();
@@ -219,7 +219,7 @@ public class Carrier extends Robot {
                 int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, null);
                 boolean isSameSector = whichSector(closestWell.getMapLocation()) == mineSectorIndex;
                 if (isSameSector || sectorToReport == 0) {
-                    if (rc.getResourceAmount(resourceTarget) != 0) {
+                    if (rc.getWeight() != 0) {
                         currState = CarrierState.DEPOSITING;
                     } else {
                         enterMineState();
@@ -232,7 +232,7 @@ public class Carrier extends Robot {
                     sectorToReport = 1;
                 } else if (rc.getAnchor() != null) {
                     enterPlacingAnchor();
-                } else if (rc.getResourceAmount(resourceTarget) == 0) {
+                } else if (rc.getWeight() == 0) {
                     enterMineState();
                 } else if (Comms.readElixirSectorConverted() == 1) {
                     currState = CarrierState.DEPOSITING;
@@ -240,7 +240,7 @@ public class Carrier extends Robot {
                 break;
             case REPORTING_ELIXIR_CONVERTED:
                 if (Comms.readElixirSectorConverted() == 1) {
-                    if (rc.getResourceAmount(resourceTarget) == 0) {
+                    if (rc.getWeight() == 0) {
                         enterMineState();
                     } else {
                         currState = CarrierState.DEPOSITING;
@@ -740,6 +740,14 @@ public class Carrier extends Robot {
                 resourceTarget = ResourceType.ELIXIR;
                 closestWell = elixirWells[0];
                 return;
+            }
+        }
+
+        if (resourceTarget == ResourceType.ELIXIR) {
+            // Reset resourceTarget if there are no elixir wells nearby.
+            WellInfo[] elixirWells = rc.senseNearbyWells(ResourceType.ELIXIR);
+            if (elixirWells.length == 0) {
+                resourceTarget = ResourceType.MANA;
             }
         }
 

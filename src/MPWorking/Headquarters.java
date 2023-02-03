@@ -504,9 +504,7 @@ public class Headquarters extends Robot {
                 }
                 break;
             case CHILLING:
-                if (carrierCount >= minCarriersBeforeAnchor &&
-                        rc.getNumAnchors(Anchor.STANDARD) == 0 &&
-                        rc.getRoundNum() >= turnBuiltAnchor + BUILD_ANCHOR_COOLDOWN) {
+                if (shouldBuildAnchor()) {
                     // start saving for anchor if you have minCarriersBeforeAnchor carriers already
                     stateStack.push(currentState);
                     changeState(State.BUILDING_ANCHOR);
@@ -979,9 +977,27 @@ public class Headquarters extends Robot {
         return null;
     }
 
-    public boolean shouldMakeElixir() {
-        return Util.MAP_AREA >= Util.MIN_MAP_AREA_FOR_ELIXIR &&
-                rc.getRoundNum() >= Util.MIN_ROUND_NUM_FOR_ELIXIR;
+    public boolean shouldMakeElixir() throws GameActionException {
+        if (!(Util.MAP_AREA >= Util.MIN_MAP_AREA_FOR_ELIXIR &&
+                rc.getRoundNum() >= Util.MIN_ROUND_NUM_FOR_ELIXIR)) {
+            return false;
+        }
+
+        // Also check that there are more than 2 known mana sectors.
+        // This is to prevent the case where we start converting our only mana source.
+        int numManaSectors = 0;
+        for (int i = 0; i < Comms.MINE_SECTOR_SLOTS; i++) {
+            int sector = Comms.readMineSectorIndex(i);
+            if (sector == Comms.UNDEFINED_SECTOR_INDEX)
+                continue;
+            if (Comms.readSectorManaFlag(sector) == 0)
+                continue;
+            numManaSectors++;
+            if (numManaSectors >= Util.MIN_MANA_SECTORS_FOR_ELIXIR)
+                break;
+        }
+
+        return numManaSectors >= Util.MIN_MANA_SECTORS_FOR_ELIXIR;
     }
 
     // Choose the mana well that is closest to an adamantium well.
@@ -1095,5 +1111,11 @@ public class Headquarters extends Robot {
                 break;
         }
         return false;
+    }
+
+    public boolean shouldBuildAnchor() throws GameActionException {
+        return carrierCount >= minCarriersBeforeAnchor &&
+                rc.getNumAnchors(Anchor.STANDARD) == 0 &&
+                rc.getRoundNum() >= turnBuiltAnchor + BUILD_ANCHOR_COOLDOWN;
     }
 }

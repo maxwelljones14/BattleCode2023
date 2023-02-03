@@ -43,6 +43,7 @@ public class Util {
 
     public static final int MIN_MAP_AREA_FOR_ELIXIR = 1500;
     public static final int MIN_ROUND_NUM_FOR_ELIXIR = 500;
+    public static final int MIN_MANA_SECTORS_FOR_ELIXIR = 3;
 
     public static final int MIN_ROUNDS_FOR_AMPLIFIER = 200;
     public static final int AMPLIFIER_COOLDOWN = 50;

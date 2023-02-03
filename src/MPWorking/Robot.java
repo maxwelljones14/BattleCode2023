@@ -1259,13 +1259,10 @@ public class Robot {
                     if (Comms.readSectorAdamantiumFlag(nearestSector) == 0)
                         continue;
                     break;
+                case ELIXIR:
                 case MANA:
                     if (Comms.readSectorManaFlag(nearestSector) == 0)
                         continue;
-                    break;
-                case ELIXIR:
-                    // if (Comms.readSectorElixirFlag(nearestSector) == 0)
-                    // continue;
                     break;
                 default:
                     break;
