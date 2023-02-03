@@ -366,6 +366,7 @@ public class Carrier extends Robot {
                 blacklistedWells.add(wellLoc);
                 wellsVisitedThisCycle.add(wellLoc);
                 closestWell = null;
+                turnsNearWell = 0;
             }
         }
     }
@@ -513,6 +514,7 @@ public class Carrier extends Robot {
                     if (numCarriers >= Math.min(maxOpenSpots * 2, CARRIERS_PER_WELL_TO_LEAVE)) {
                         Debug.printString("Leaving");
                         closestWell = null;
+                        turnsNearWell = 0;
                         break collect;
                     }
                 }
@@ -773,6 +775,7 @@ public class Carrier extends Robot {
             if (elixirWells.length > 0) {
                 resourceTarget = ResourceType.ELIXIR;
                 closestWell = elixirWells[0];
+                turnsNearWell = 0;
                 return;
             }
         }
@@ -801,6 +804,7 @@ public class Carrier extends Robot {
                     (!blacklistedWells.contains(wellLocation))) {
                 closestDist = dist;
                 closestWell = well;
+                turnsNearWell = 0;
             }
         }
     }
