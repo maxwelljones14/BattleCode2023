@@ -481,10 +481,6 @@ public class Carrier extends Robot {
             wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(wellLoc)]);
             wellsVisitedThisCycle.add(wellLoc);
 
-            if (currLoc.isWithinDistanceSquared(wellLoc, WELL_DIST_TO_START_TIMER)) {
-                turnsNearWell++;
-            }
-
             // If we are adjacent to a well, collect from it.
             if (currLoc.isAdjacentTo(wellLoc)) {
                 turnsNearWell = 0;
@@ -526,6 +522,10 @@ public class Carrier extends Robot {
                     move(wellLoc);
                 } else {
                     move(Util.getBestCollectLoc(wellLoc));
+
+                    if (currLoc.isWithinDistanceSquared(wellLoc, WELL_DIST_TO_START_TIMER)) {
+                        turnsNearWell++;
+                    }
                 }
 
                 collect(closestWell);
