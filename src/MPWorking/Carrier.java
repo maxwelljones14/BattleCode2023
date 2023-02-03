@@ -56,8 +56,12 @@ public class Carrier extends Robot {
 
     static int enemyIslandIdx;
 
+    static int turnsNearWell;
+
     public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
+    public static final int WELL_TIMEOUT = 40;
+    public static final int WELL_DIST_TO_START_TIMER = 20;
 
     public static final int REPORTING_COOLDOWN = 10;
 
@@ -307,6 +311,7 @@ public class Carrier extends Robot {
         closestWell = null;
         visitedSectorCenter = false;
         resourceTarget = originalResourceTarget;
+        turnsNearWell = 0;
 
         if (resourceTarget == ResourceType.ADAMANTIUM && shouldSwitchToMana()) {
             resourceTarget = ResourceType.MANA;
@@ -445,6 +450,9 @@ public class Carrier extends Robot {
                     Comms.writeElixirSectorConverted(1);
                 }
                 break;
+            case KILLING_ISLAND:
+                waitOnEnemyIsland();
+                break;
         }
     }
 
@@ -471,8 +479,13 @@ public class Carrier extends Robot {
             wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(wellLoc)]);
             wellsVisitedThisCycle.add(wellLoc);
 
+            if (currLoc.isWithinDistanceSquared(wellLoc, WELL_DIST_TO_START_TIMER)) {
+                turnsNearWell++;
+            }
+
             // If we are adjacent to a well, collect from it.
             if (currLoc.isAdjacentTo(wellLoc)) {
+                turnsNearWell = 0;
                 collect(closestWell);
                 MapLocation betterCollectLoc = Util.getBetterCollectLoc(wellLoc);
                 move(betterCollectLoc);
@@ -759,6 +772,11 @@ public class Carrier extends Robot {
             if (elixirWells.length == 0) {
                 resourceTarget = ResourceType.MANA;
             }
+        }
+
+        if (turnsNearWell > WELL_TIMEOUT && closestWell != null) {
+            closestWell = null;
+            turnsNearWell = 0;
         }
 
         // If we can see a well, move towards it
