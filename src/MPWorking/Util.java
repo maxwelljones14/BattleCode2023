@@ -52,6 +52,8 @@ public class Util {
     public static final int AMP_JUST_INSIDE_VISION_RADIUS = RobotType.AMPLIFIER.visionRadiusSquared - 7;
     public static final int AMP_ROUNDS_TO_EXPLORE = 15;
 
+    public static final int ROUND_MUST_BUILD_ANCHOR = 250;
+
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
             Direction.NORTH,

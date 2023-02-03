@@ -1114,7 +1114,7 @@ public class Headquarters extends Robot {
     }
 
     public boolean shouldBuildAnchor() throws GameActionException {
-        return carrierCount >= minCarriersBeforeAnchor &&
+        return (carrierCount >= minCarriersBeforeAnchor || rc.getRoundNum() >= Util.ROUND_MUST_BUILD_ANCHOR) &&
                 rc.getNumAnchors(Anchor.STANDARD) == 0 &&
                 rc.getRoundNum() >= turnBuiltAnchor + BUILD_ANCHOR_COOLDOWN;
     }
