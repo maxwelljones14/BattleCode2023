@@ -64,6 +64,24 @@ public class Comms {
         writeOurHqYCoord(idx, loc.y);
     }
 
+    public static MapLocation readEnemyTargetEven(int idx) throws GameActionException {
+        return new MapLocation(readEnemyTargetEvenXCoord(idx), readEnemyTargetEvenYCoord(idx));
+    }
+
+    public static MapLocation readEnemyTargetOdd(int idx) throws GameActionException {
+        return new MapLocation(readEnemyTargetOddXCoord(idx), readEnemyTargetOddYCoord(idx));
+    }
+
+    public static void writeEnemyTargetEven(int idx, MapLocation loc) throws GameActionException {
+        writeEnemyTargetEvenXCoord(idx, loc.x);
+        writeEnemyTargetEvenYCoord(idx, loc.y);
+    }
+
+    public static void writeEnemyTargetOdd(int idx, MapLocation loc) throws GameActionException {
+        writeEnemyTargetOddXCoord(idx, loc.x);
+        writeEnemyTargetOddYCoord(idx, loc.y);
+    }
+
     public static void initSymmetry() throws GameActionException {
         writeSymmetryAll(7);
     }

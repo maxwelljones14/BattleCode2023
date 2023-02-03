@@ -65,6 +65,20 @@ SCHEMA = {
             'converted': 1,
             'index': 7,
         }
+    },
+    'enemy_target_odd': {
+        'slots': 5,
+        'bits': {
+            'x_coord': 6,
+            'y_coord': 6,
+        }
+    },
+    'enemy_target_even': {
+        'slots': 5,
+        'bits': {
+            'x_coord': 6,
+            'y_coord': 6,
+        }
     }
 }
 

@@ -18,6 +18,8 @@ public class Comms {
     public final static int SYMMETRY_SLOTS = 1;
     public final static int NUM_HQS_SLOTS = 1;
     public final static int ELIXIR_SECTOR_SLOTS = 1;
+    public final static int ENEMY_TARGET_ODD_SLOTS = 5;
+    public final static int ENEMY_TARGET_EVEN_SLOTS = 5;
 
     // ControlStatus priorities are in increasing priority.
     public class ControlStatus {
@@ -70,6 +72,24 @@ public class Comms {
     public static void writeOurHqLocation(int idx, MapLocation loc) throws GameActionException {
         writeOurHqXCoord(idx, loc.x);
         writeOurHqYCoord(idx, loc.y);
+    }
+
+    public static MapLocation readEnemyTargetEven(int idx) throws GameActionException {
+        return new MapLocation(readEnemyTargetEvenXCoord(idx), readEnemyTargetEvenYCoord(idx));
+    }
+
+    public static MapLocation readEnemyTargetOdd(int idx) throws GameActionException {
+        return new MapLocation(readEnemyTargetOddXCoord(idx), readEnemyTargetOddYCoord(idx));
+    }
+
+    public static void writeEnemyTargetEven(int idx, MapLocation loc) throws GameActionException {
+        writeEnemyTargetEvenXCoord(idx, loc.x);
+        writeEnemyTargetEvenYCoord(idx, loc.y);
+    }
+
+    public static void writeEnemyTargetOdd(int idx, MapLocation loc) throws GameActionException {
+        writeEnemyTargetOddXCoord(idx, loc.x);
+        writeEnemyTargetOddYCoord(idx, loc.y);
     }
 
     public static void initSymmetry() throws GameActionException {
@@ -5680,6 +5700,380 @@ public class Comms {
 
     public static void writeBPElixirSectorAll(int value) throws GameActionException {
         writeToBufferPool(55, (bufferPool[55] & 63495) | (value << 3));
+    }
+
+    public static int readEnemyTargetOddXCoord(int idx) throws GameActionException {
+        switch (idx) {
+            case 0:
+                return ((rc.readSharedArray(55) & 7) << 3) + ((rc.readSharedArray(56) & 57344) >>> 13);
+            case 1:
+                return (rc.readSharedArray(56) & 126) >>> 1;
+            case 2:
+                return (rc.readSharedArray(57) & 2016) >>> 5;
+            case 3:
+                return (rc.readSharedArray(58) & 32256) >>> 9;
+            case 4:
+                return ((rc.readSharedArray(58) & 7) << 3) + ((rc.readSharedArray(59) & 57344) >>> 13);
+            default:
+                return -1;
+        }
+    }
+
+    public static void writeEnemyTargetOddXCoord(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                rc.writeSharedArray(55, (rc.readSharedArray(55) & 65528) | ((value & 56) >>> 3));
+                rc.writeSharedArray(56, (rc.readSharedArray(56) & 8191) | ((value & 7) << 13));
+                break;
+            case 1:
+                rc.writeSharedArray(56, (rc.readSharedArray(56) & 65409) | (value << 1));
+                break;
+            case 2:
+                rc.writeSharedArray(57, (rc.readSharedArray(57) & 63519) | (value << 5));
+                break;
+            case 3:
+                rc.writeSharedArray(58, (rc.readSharedArray(58) & 33279) | (value << 9));
+                break;
+            case 4:
+                rc.writeSharedArray(58, (rc.readSharedArray(58) & 65528) | ((value & 56) >>> 3));
+                rc.writeSharedArray(59, (rc.readSharedArray(59) & 8191) | ((value & 7) << 13));
+                break;
+        }
+    }
+
+    public static void writeBPEnemyTargetOddXCoord(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                writeToBufferPool(55, (bufferPool[55] & 65528) | ((value & 56) >>> 3));
+                writeToBufferPool(56, (bufferPool[56] & 8191) | ((value & 7) << 13));
+                break;
+            case 1:
+                writeToBufferPool(56, (bufferPool[56] & 65409) | (value << 1));
+                break;
+            case 2:
+                writeToBufferPool(57, (bufferPool[57] & 63519) | (value << 5));
+                break;
+            case 3:
+                writeToBufferPool(58, (bufferPool[58] & 33279) | (value << 9));
+                break;
+            case 4:
+                writeToBufferPool(58, (bufferPool[58] & 65528) | ((value & 56) >>> 3));
+                writeToBufferPool(59, (bufferPool[59] & 8191) | ((value & 7) << 13));
+                break;
+        }
+    }
+
+    public static int readEnemyTargetOddYCoord(int idx) throws GameActionException {
+        switch (idx) {
+            case 0:
+                return (rc.readSharedArray(56) & 8064) >>> 7;
+            case 1:
+                return ((rc.readSharedArray(56) & 1) << 5) + ((rc.readSharedArray(57) & 63488) >>> 11);
+            case 2:
+                return ((rc.readSharedArray(57) & 31) << 1) + ((rc.readSharedArray(58) & 32768) >>> 15);
+            case 3:
+                return (rc.readSharedArray(58) & 504) >>> 3;
+            case 4:
+                return (rc.readSharedArray(59) & 8064) >>> 7;
+            default:
+                return -1;
+        }
+    }
+
+    public static void writeEnemyTargetOddYCoord(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                rc.writeSharedArray(56, (rc.readSharedArray(56) & 57471) | (value << 7));
+                break;
+            case 1:
+                rc.writeSharedArray(56, (rc.readSharedArray(56) & 65534) | ((value & 32) >>> 5));
+                rc.writeSharedArray(57, (rc.readSharedArray(57) & 2047) | ((value & 31) << 11));
+                break;
+            case 2:
+                rc.writeSharedArray(57, (rc.readSharedArray(57) & 65504) | ((value & 62) >>> 1));
+                rc.writeSharedArray(58, (rc.readSharedArray(58) & 32767) | ((value & 1) << 15));
+                break;
+            case 3:
+                rc.writeSharedArray(58, (rc.readSharedArray(58) & 65031) | (value << 3));
+                break;
+            case 4:
+                rc.writeSharedArray(59, (rc.readSharedArray(59) & 57471) | (value << 7));
+                break;
+        }
+    }
+
+    public static void writeBPEnemyTargetOddYCoord(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                writeToBufferPool(56, (bufferPool[56] & 57471) | (value << 7));
+                break;
+            case 1:
+                writeToBufferPool(56, (bufferPool[56] & 65534) | ((value & 32) >>> 5));
+                writeToBufferPool(57, (bufferPool[57] & 2047) | ((value & 31) << 11));
+                break;
+            case 2:
+                writeToBufferPool(57, (bufferPool[57] & 65504) | ((value & 62) >>> 1));
+                writeToBufferPool(58, (bufferPool[58] & 32767) | ((value & 1) << 15));
+                break;
+            case 3:
+                writeToBufferPool(58, (bufferPool[58] & 65031) | (value << 3));
+                break;
+            case 4:
+                writeToBufferPool(59, (bufferPool[59] & 57471) | (value << 7));
+                break;
+        }
+    }
+
+    public static int readEnemyTargetOddAll(int idx) throws GameActionException {
+        switch (idx) {
+            case 0:
+                return ((rc.readSharedArray(55) & 7) << 9) + ((rc.readSharedArray(56) & 65408) >>> 7);
+            case 1:
+                return ((rc.readSharedArray(56) & 127) << 5) + ((rc.readSharedArray(57) & 63488) >>> 11);
+            case 2:
+                return ((rc.readSharedArray(57) & 2047) << 1) + ((rc.readSharedArray(58) & 32768) >>> 15);
+            case 3:
+                return (rc.readSharedArray(58) & 32760) >>> 3;
+            case 4:
+                return ((rc.readSharedArray(58) & 7) << 9) + ((rc.readSharedArray(59) & 65408) >>> 7);
+            default:
+                return -1;
+        }
+    }
+
+    public static void writeEnemyTargetOddAll(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                rc.writeSharedArray(55, (rc.readSharedArray(55) & 65528) | ((value & 3584) >>> 9));
+                rc.writeSharedArray(56, (rc.readSharedArray(56) & 127) | ((value & 511) << 7));
+                break;
+            case 1:
+                rc.writeSharedArray(56, (rc.readSharedArray(56) & 65408) | ((value & 4064) >>> 5));
+                rc.writeSharedArray(57, (rc.readSharedArray(57) & 2047) | ((value & 31) << 11));
+                break;
+            case 2:
+                rc.writeSharedArray(57, (rc.readSharedArray(57) & 63488) | ((value & 4094) >>> 1));
+                rc.writeSharedArray(58, (rc.readSharedArray(58) & 32767) | ((value & 1) << 15));
+                break;
+            case 3:
+                rc.writeSharedArray(58, (rc.readSharedArray(58) & 32775) | (value << 3));
+                break;
+            case 4:
+                rc.writeSharedArray(58, (rc.readSharedArray(58) & 65528) | ((value & 3584) >>> 9));
+                rc.writeSharedArray(59, (rc.readSharedArray(59) & 127) | ((value & 511) << 7));
+                break;
+        }
+    }
+
+    public static void writeBPEnemyTargetOddAll(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                writeToBufferPool(55, (bufferPool[55] & 65528) | ((value & 3584) >>> 9));
+                writeToBufferPool(56, (bufferPool[56] & 127) | ((value & 511) << 7));
+                break;
+            case 1:
+                writeToBufferPool(56, (bufferPool[56] & 65408) | ((value & 4064) >>> 5));
+                writeToBufferPool(57, (bufferPool[57] & 2047) | ((value & 31) << 11));
+                break;
+            case 2:
+                writeToBufferPool(57, (bufferPool[57] & 63488) | ((value & 4094) >>> 1));
+                writeToBufferPool(58, (bufferPool[58] & 32767) | ((value & 1) << 15));
+                break;
+            case 3:
+                writeToBufferPool(58, (bufferPool[58] & 32775) | (value << 3));
+                break;
+            case 4:
+                writeToBufferPool(58, (bufferPool[58] & 65528) | ((value & 3584) >>> 9));
+                writeToBufferPool(59, (bufferPool[59] & 127) | ((value & 511) << 7));
+                break;
+        }
+    }
+
+    public static int readEnemyTargetEvenXCoord(int idx) throws GameActionException {
+        switch (idx) {
+            case 0:
+                return (rc.readSharedArray(59) & 126) >>> 1;
+            case 1:
+                return (rc.readSharedArray(60) & 2016) >>> 5;
+            case 2:
+                return (rc.readSharedArray(61) & 32256) >>> 9;
+            case 3:
+                return ((rc.readSharedArray(61) & 7) << 3) + ((rc.readSharedArray(62) & 57344) >>> 13);
+            case 4:
+                return (rc.readSharedArray(62) & 126) >>> 1;
+            default:
+                return -1;
+        }
+    }
+
+    public static void writeEnemyTargetEvenXCoord(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                rc.writeSharedArray(59, (rc.readSharedArray(59) & 65409) | (value << 1));
+                break;
+            case 1:
+                rc.writeSharedArray(60, (rc.readSharedArray(60) & 63519) | (value << 5));
+                break;
+            case 2:
+                rc.writeSharedArray(61, (rc.readSharedArray(61) & 33279) | (value << 9));
+                break;
+            case 3:
+                rc.writeSharedArray(61, (rc.readSharedArray(61) & 65528) | ((value & 56) >>> 3));
+                rc.writeSharedArray(62, (rc.readSharedArray(62) & 8191) | ((value & 7) << 13));
+                break;
+            case 4:
+                rc.writeSharedArray(62, (rc.readSharedArray(62) & 65409) | (value << 1));
+                break;
+        }
+    }
+
+    public static void writeBPEnemyTargetEvenXCoord(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                writeToBufferPool(59, (bufferPool[59] & 65409) | (value << 1));
+                break;
+            case 1:
+                writeToBufferPool(60, (bufferPool[60] & 63519) | (value << 5));
+                break;
+            case 2:
+                writeToBufferPool(61, (bufferPool[61] & 33279) | (value << 9));
+                break;
+            case 3:
+                writeToBufferPool(61, (bufferPool[61] & 65528) | ((value & 56) >>> 3));
+                writeToBufferPool(62, (bufferPool[62] & 8191) | ((value & 7) << 13));
+                break;
+            case 4:
+                writeToBufferPool(62, (bufferPool[62] & 65409) | (value << 1));
+                break;
+        }
+    }
+
+    public static int readEnemyTargetEvenYCoord(int idx) throws GameActionException {
+        switch (idx) {
+            case 0:
+                return ((rc.readSharedArray(59) & 1) << 5) + ((rc.readSharedArray(60) & 63488) >>> 11);
+            case 1:
+                return ((rc.readSharedArray(60) & 31) << 1) + ((rc.readSharedArray(61) & 32768) >>> 15);
+            case 2:
+                return (rc.readSharedArray(61) & 504) >>> 3;
+            case 3:
+                return (rc.readSharedArray(62) & 8064) >>> 7;
+            case 4:
+                return ((rc.readSharedArray(62) & 1) << 5) + ((rc.readSharedArray(63) & 63488) >>> 11);
+            default:
+                return -1;
+        }
+    }
+
+    public static void writeEnemyTargetEvenYCoord(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                rc.writeSharedArray(59, (rc.readSharedArray(59) & 65534) | ((value & 32) >>> 5));
+                rc.writeSharedArray(60, (rc.readSharedArray(60) & 2047) | ((value & 31) << 11));
+                break;
+            case 1:
+                rc.writeSharedArray(60, (rc.readSharedArray(60) & 65504) | ((value & 62) >>> 1));
+                rc.writeSharedArray(61, (rc.readSharedArray(61) & 32767) | ((value & 1) << 15));
+                break;
+            case 2:
+                rc.writeSharedArray(61, (rc.readSharedArray(61) & 65031) | (value << 3));
+                break;
+            case 3:
+                rc.writeSharedArray(62, (rc.readSharedArray(62) & 57471) | (value << 7));
+                break;
+            case 4:
+                rc.writeSharedArray(62, (rc.readSharedArray(62) & 65534) | ((value & 32) >>> 5));
+                rc.writeSharedArray(63, (rc.readSharedArray(63) & 2047) | ((value & 31) << 11));
+                break;
+        }
+    }
+
+    public static void writeBPEnemyTargetEvenYCoord(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                writeToBufferPool(59, (bufferPool[59] & 65534) | ((value & 32) >>> 5));
+                writeToBufferPool(60, (bufferPool[60] & 2047) | ((value & 31) << 11));
+                break;
+            case 1:
+                writeToBufferPool(60, (bufferPool[60] & 65504) | ((value & 62) >>> 1));
+                writeToBufferPool(61, (bufferPool[61] & 32767) | ((value & 1) << 15));
+                break;
+            case 2:
+                writeToBufferPool(61, (bufferPool[61] & 65031) | (value << 3));
+                break;
+            case 3:
+                writeToBufferPool(62, (bufferPool[62] & 57471) | (value << 7));
+                break;
+            case 4:
+                writeToBufferPool(62, (bufferPool[62] & 65534) | ((value & 32) >>> 5));
+                writeToBufferPool(63, (bufferPool[63] & 2047) | ((value & 31) << 11));
+                break;
+        }
+    }
+
+    public static int readEnemyTargetEvenAll(int idx) throws GameActionException {
+        switch (idx) {
+            case 0:
+                return ((rc.readSharedArray(59) & 127) << 5) + ((rc.readSharedArray(60) & 63488) >>> 11);
+            case 1:
+                return ((rc.readSharedArray(60) & 2047) << 1) + ((rc.readSharedArray(61) & 32768) >>> 15);
+            case 2:
+                return (rc.readSharedArray(61) & 32760) >>> 3;
+            case 3:
+                return ((rc.readSharedArray(61) & 7) << 9) + ((rc.readSharedArray(62) & 65408) >>> 7);
+            case 4:
+                return ((rc.readSharedArray(62) & 127) << 5) + ((rc.readSharedArray(63) & 63488) >>> 11);
+            default:
+                return -1;
+        }
+    }
+
+    public static void writeEnemyTargetEvenAll(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                rc.writeSharedArray(59, (rc.readSharedArray(59) & 65408) | ((value & 4064) >>> 5));
+                rc.writeSharedArray(60, (rc.readSharedArray(60) & 2047) | ((value & 31) << 11));
+                break;
+            case 1:
+                rc.writeSharedArray(60, (rc.readSharedArray(60) & 63488) | ((value & 4094) >>> 1));
+                rc.writeSharedArray(61, (rc.readSharedArray(61) & 32767) | ((value & 1) << 15));
+                break;
+            case 2:
+                rc.writeSharedArray(61, (rc.readSharedArray(61) & 32775) | (value << 3));
+                break;
+            case 3:
+                rc.writeSharedArray(61, (rc.readSharedArray(61) & 65528) | ((value & 3584) >>> 9));
+                rc.writeSharedArray(62, (rc.readSharedArray(62) & 127) | ((value & 511) << 7));
+                break;
+            case 4:
+                rc.writeSharedArray(62, (rc.readSharedArray(62) & 65408) | ((value & 4064) >>> 5));
+                rc.writeSharedArray(63, (rc.readSharedArray(63) & 2047) | ((value & 31) << 11));
+                break;
+        }
+    }
+
+    public static void writeBPEnemyTargetEvenAll(int idx, int value) throws GameActionException {
+        switch (idx) {
+            case 0:
+                writeToBufferPool(59, (bufferPool[59] & 65408) | ((value & 4064) >>> 5));
+                writeToBufferPool(60, (bufferPool[60] & 2047) | ((value & 31) << 11));
+                break;
+            case 1:
+                writeToBufferPool(60, (bufferPool[60] & 63488) | ((value & 4094) >>> 1));
+                writeToBufferPool(61, (bufferPool[61] & 32767) | ((value & 1) << 15));
+                break;
+            case 2:
+                writeToBufferPool(61, (bufferPool[61] & 32775) | (value << 3));
+                break;
+            case 3:
+                writeToBufferPool(61, (bufferPool[61] & 65528) | ((value & 3584) >>> 9));
+                writeToBufferPool(62, (bufferPool[62] & 127) | ((value & 511) << 7));
+                break;
+            case 4:
+                writeToBufferPool(62, (bufferPool[62] & 65408) | ((value & 4064) >>> 5));
+                writeToBufferPool(63, (bufferPool[63] & 2047) | ((value & 31) << 11));
+                break;
+        }
     }
 
     // BUFFER POOL READ AND WRITE METHODS

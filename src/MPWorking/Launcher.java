@@ -892,7 +892,12 @@ public class Launcher extends Robot {
         int nextCooldown = rc.getActionCooldownTurns() +
                 (int) (RobotType.LAUNCHER.actionCooldown * info.getCooldownMultiplier(team));
 
-        MapLocation attackLoc = null;
+        MapLocation attackLoc = readClosestEnemyTargetLoc();
+        if (attackLoc != null && rc.canAttack(attackLoc)) {
+            rc.attack(attackLoc);
+            return;
+        }
+
         if (info.hasCloud()) {
             // If attacking out of a cloud would put us over the cooldown limit for
             // NEXT turn, don't attack

@@ -181,6 +181,7 @@ public class Robot {
     }
 
     public void endTurn() throws GameActionException {
+        writeBestEnemyTarget();
         MapTracker.initialize();
         flushSectorDatabase();
         MapTracker.markSeen();
@@ -1898,5 +1899,86 @@ public class Robot {
         }
 
         return bestDirSoFar;
+    }
+
+    public int getNextEmptyEnemyTargetIndex() throws GameActionException {
+        int index = 0;
+        MapLocation loc;
+        if (rc.getRoundNum() % 2 == 0) {
+            while (index < Comms.ENEMY_TARGET_EVEN_SLOTS) {
+                loc = Comms.readEnemyTargetEven(index);
+                if (!rc.onTheMap(loc))
+                    break;
+                index++;
+            }
+        } else {
+            while (index < Comms.ENEMY_TARGET_ODD_SLOTS) {
+                loc = Comms.readEnemyTargetOdd(index);
+                if (!rc.onTheMap(loc))
+                    break;
+                index++;
+            }
+        }
+        return index;
+    }
+
+    // @pre canWriteSharedArray
+    public void writeEnemyTargetLoc(MapLocation loc) throws GameActionException {
+        if (rc.getRoundNum() % 2 == 0) {
+            int index = getNextEmptyEnemyTargetIndex();
+            if (index < Comms.ENEMY_TARGET_EVEN_SLOTS) {
+                Comms.writeEnemyTargetEven(index, loc);
+            }
+        } else {
+            int index = getNextEmptyEnemyTargetIndex();
+            if (index < Comms.ENEMY_TARGET_ODD_SLOTS) {
+                Comms.writeEnemyTargetOdd(index, loc);
+            }
+        }
+    }
+
+    public void writeBestEnemyTarget() throws GameActionException {
+        if (!rc.canWriteSharedArray(0, 0))
+            return;
+
+        RobotInfo bestEnemy = getBestEnemy();
+        if (bestEnemy != null) {
+            writeEnemyTargetLoc(bestEnemy.location);
+        }
+    }
+
+    public MapLocation readClosestEnemyTargetLoc() throws GameActionException {
+        MapLocation currLoc = rc.getLocation();
+        MapLocation closestEnemyTargetLoc = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist;
+
+        if (rc.getRoundNum() % 2 == 0) {
+            // Read from the previous round's odd slots
+            for (int i = 0; i < Comms.ENEMY_TARGET_ODD_SLOTS; i++) {
+                MapLocation loc = Comms.readEnemyTargetOdd(i);
+                if (!rc.onTheMap(loc))
+                    break;
+                dist = loc.distanceSquaredTo(currLoc);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    closestEnemyTargetLoc = loc;
+                }
+            }
+        } else {
+            // Read from the previous round's even slots
+            for (int i = 0; i < Comms.ENEMY_TARGET_EVEN_SLOTS; i++) {
+                MapLocation loc = Comms.readEnemyTargetEven(i);
+                if (!rc.onTheMap(loc))
+                    break;
+                dist = loc.distanceSquaredTo(currLoc);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    closestEnemyTargetLoc = loc;
+                }
+            }
+        }
+
+        return closestEnemyTargetLoc;
     }
 }

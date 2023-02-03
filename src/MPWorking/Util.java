@@ -45,7 +45,8 @@ public class Util {
     public static final int MIN_ROUND_NUM_FOR_ELIXIR = 500;
     public static final int MIN_MANA_SECTORS_FOR_ELIXIR = 3;
 
-    public static final int MIN_ROUNDS_FOR_AMPLIFIER = 200;
+    public static final int MIN_ROUND_FOR_FIRST_AMPLIFIER = 50;
+    public static final int MIN_ROUND_FOR_MORE_AMPLIFIERS = 200;
     public static final int AMPLIFIER_COOLDOWN = 50;
     public static final int MAX_AMPLIFIER_COUNT = 2;
 

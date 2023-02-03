@@ -167,6 +167,7 @@ public class Headquarters extends Robot {
 
         loadClosestMiningSector();
         writeElixirWellCandidate();
+        clearEnemyTargetInfo();
 
         setPrioritySectors();
         toggleState();
@@ -1090,11 +1091,17 @@ public class Headquarters extends Robot {
     }
 
     public boolean shouldBuildAmplifier() {
-        // return rc.getRoundNum() >= Util.MIN_ROUNDS_FOR_AMPLIFIER &&
-        // !isSemiSmallMap() &&
-        // roundsSinceLastAmplifier >= Util.AMPLIFIER_COOLDOWN &&
-        // amplifierCount < Util.MAX_AMPLIFIER_COUNT;
-        return false;
+        // Build the first amplifier at the first threshold
+        if (amplifierCount == 0) {
+            return rc.getRoundNum() >= Util.MIN_ROUND_FOR_FIRST_AMPLIFIER &&
+                    roundsSinceLastAmplifier >= Util.AMPLIFIER_COOLDOWN;
+        }
+
+        // Build more amplifiers at the second threshold
+        return rc.getRoundNum() >= Util.MIN_ROUND_FOR_MORE_AMPLIFIERS &&
+                !isSemiSmallMap() &&
+                roundsSinceLastAmplifier >= Util.AMPLIFIER_COOLDOWN &&
+                amplifierCount < Util.MAX_AMPLIFIER_COUNT;
     }
 
     public static boolean isOptimalExploreDir(Direction dir) {
@@ -1117,5 +1124,24 @@ public class Headquarters extends Robot {
         return (carrierCount >= minCarriersBeforeAnchor || rc.getRoundNum() >= Util.ROUND_MUST_BUILD_ANCHOR) &&
                 rc.getNumAnchors(Anchor.STANDARD) == 0 &&
                 rc.getRoundNum() >= turnBuiltAnchor + BUILD_ANCHOR_COOLDOWN;
+    }
+
+    public void clearEnemyTargetInfo() throws GameActionException {
+        if (myHqNum != 0)
+            return;
+
+        MapLocation badLocation = new MapLocation(
+                GameConstants.MAP_MAX_WIDTH + 1,
+                GameConstants.MAP_MAX_HEIGHT + 1);
+        if (rc.getRoundNum() % 2 == 0) {
+            // Clear the even info on even rounds so that units can place into it.
+            for (int i = 0; i < Comms.ENEMY_TARGET_EVEN_SLOTS; i++) {
+                Comms.writeEnemyTargetEven(i, badLocation);
+            }
+        } else {
+            for (int i = 0; i < Comms.ENEMY_TARGET_ODD_SLOTS; i++) {
+                Comms.writeEnemyTargetOdd(i, badLocation);
+            }
+        }
     }
 }
