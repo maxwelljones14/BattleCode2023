@@ -70,7 +70,7 @@ public class Carrier extends Robot {
 
     public static final int REPORTING_COOLDOWN = 10;
 
-    public static final int BLOCK_LAST_ENEMY_DIR_TIMEOUT = 2;
+    public static final int BLOCK_LAST_ENEMY_DIR_TIMEOUT = 4;
 
     public Carrier(RobotController r) throws GameActionException {
         super(r);
@@ -373,12 +373,16 @@ public class Carrier extends Robot {
                 : closestEnemy.getLocation().distanceSquaredTo(wellLoc);
 
         if (closestEnemyLauncherDist <= RobotType.LAUNCHER.actionRadiusSquared) {
-            // Blacklist this well for this cycle and the next.
             wellSectorsVisitedThisCycle.add(sectorCenters[whichSector(wellLoc)]);
-            blacklistedWells.add(wellLoc);
-            wellsVisitedThisCycle.add(wellLoc);
-            closestWell = null;
-            turnsNearWell = 0;
+            int mineSectorIndex = getNearestMineSectorIdx(resourceTarget, wellSectorsVisitedThisCycle);
+            if (mineSectorIndex != Comms.UNDEFINED_SECTOR_INDEX &&
+                    Util.distance(sectorCenters[mineSectorIndex], wellLoc) <= Util.MAX_BLACKLIST_DIST) {
+                // We found another well. Blacklist this one for this cycle and the next.
+                blacklistedWells.add(wellLoc);
+                wellsVisitedThisCycle.add(wellLoc);
+                closestWell = null;
+                turnsNearWell = 0;
+            }
         }
     }
 
