@@ -492,7 +492,17 @@ public class Util {
     static MapLocation findInitLocation(RobotType type, Direction dir) throws GameActionException {
         MapLocation[] possibleLocations;
         MapLocation newLoc;
-        for (int i = 8; --i >= 0;) {
+
+        Direction left = dir.rotateLeft();
+        Direction right = dir.rotateRight();
+        MapLocation leftLoc = rc.getLocation().add(left).add(left);
+        MapLocation rightLoc = rc.getLocation().add(right).add(right);
+        MapLocation center = new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2);
+        boolean rotateRight = rightLoc.distanceSquaredTo(center) < leftLoc.distanceSquaredTo(center);
+        Direction[] dirs = getInOrderDirections(dir, rotateRight);
+
+        for (int i = 0; i < dirs.length; i++) {
+            dir = dirs[i];
             if (Headquarters.currentState == Headquarters.State.INIT &&
                     type == RobotType.LAUNCHER &&
                     Headquarters.isOptimalExploreDir(dir)) {
@@ -511,7 +521,6 @@ public class Util {
                     return newLoc;
                 }
             }
-            dir = dir.rotateRight();
         }
         return null;
 
@@ -555,6 +564,16 @@ public class Util {
     static Direction[] getInOrderDirections(Direction target_dir) {
         return new Direction[] { target_dir, target_dir.rotateRight(), target_dir.rotateLeft(),
                 target_dir.rotateRight().rotateRight(), target_dir.rotateLeft().rotateLeft() };
+    }
+
+    static Direction[] getInOrderDirections(Direction target_dir, boolean rotateRightFirst) {
+        if (rotateRightFirst) {
+            return new Direction[] { target_dir, target_dir.rotateRight(), target_dir.rotateLeft(),
+                    target_dir.rotateRight().rotateRight(), target_dir.rotateLeft().rotateLeft() };
+        } else {
+            return new Direction[] { target_dir, target_dir.rotateLeft(), target_dir.rotateRight(),
+                    target_dir.rotateLeft().rotateLeft(), target_dir.rotateRight().rotateRight() };
+        }
     }
 
     static Direction getFirstValidInOrderDirection(Direction dir) {
