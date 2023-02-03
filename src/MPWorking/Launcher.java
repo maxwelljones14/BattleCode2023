@@ -16,6 +16,7 @@ public class Launcher extends Robot {
         HELPING, // UNUSED
         HEALING,
         WAITING,
+        KILLING_ISLAND,
     }
 
     static LauncherState currState;
@@ -68,6 +69,8 @@ public class Launcher extends Robot {
     static int turnsFollowedExploreTarget;
     static int EXPLORE_TARGET_TIMEOUT;
     static final int EXPLORE_TIMEOUT_MULT = 10;
+
+    static int enemyIslandIdx;
 
     public static final int MAX_TURNS_SPENT_AT_HQ = 5;
 
@@ -318,6 +321,55 @@ public class Launcher extends Robot {
                     }
                 }
                 break;
+            case KILLING_ISLAND:
+                if (shouldWaitOnEnemyIsland()) {
+                    break;
+                }
+
+                if (shouldHeal()) {
+                    enterHealing();
+                } else if (closestEnemy != null) {
+                    if (shouldRunAway()) {
+                        currState = LauncherState.RUNNING;
+                    } else if (shouldHelpInjured()) {
+                        currState = LauncherState.HELPING;
+                    } else {
+                        if (closestEnemy.getType() == RobotType.HEADQUARTERS) {
+                            MapLocation closestEnemyLocation = closestEnemy.getLocation();
+                            int ourDist = currLoc.distanceSquaredTo(closestEnemyLocation);
+                            int numTroopsCloser = rc.senseNearbyRobots(closestEnemyLocation, ourDist - 1,
+                                    rc.getTeam()).length;
+                            turnsSpentAtHQ++;
+                            if (HQwaitCounter != 0 ||
+                                    numTroopsCloser >= MAX_LAUNCHERS_PER_ENEMY_HQ ||
+                                    turnsSpentAtHQ >= MAX_TURNS_SPENT_AT_HQ) {
+                                currState = LauncherState.EXPLORING;
+                                HQwaitCounter = 5;
+                                return;
+                            }
+                            if (ourDist <= RobotType.HEADQUARTERS.actionRadiusSquared) {
+                                currState = LauncherState.RUNNING;
+                                return;
+                            }
+                        } else {
+                            turnsSpentAtHQ = 0;
+                        }
+                        currState = LauncherState.ATTACKING;
+                    }
+                } else if (shouldHelpInjured()) {
+                    currState = LauncherState.HELPING;
+                } else if (shouldWait()) {
+                    currState = LauncherState.WAITING;
+                } else if (numAggressiveFriendlies == 0 &&
+                        rc.getHealth() <= LOW_HEALTH_REPORT_THRESHOLD &&
+                        !hasReported) {
+                    // If you don't see any enemies or friends, and your health is low. Go report.
+                    currState = LauncherState.REPORTING;
+                    sectorToReport = 1;
+                } else {
+                    currState = LauncherState.EXPLORING;
+                }
+                break;
             default:
                 if (shouldHeal()) {
                     enterHealing();
@@ -349,6 +401,8 @@ public class Launcher extends Robot {
                         }
                         currState = LauncherState.ATTACKING;
                     }
+                } else if (shouldWaitOnEnemyIsland()) {
+                    currState = LauncherState.KILLING_ISLAND;
                 } else if (shouldHelpInjured()) {
                     currState = LauncherState.HELPING;
                 } else if (shouldWait()) {
@@ -398,6 +452,9 @@ public class Launcher extends Robot {
                 break;
             case WAITING:
                 formHull();
+                break;
+            case KILLING_ISLAND:
+                waitOnEnemyIsland();
                 break;
         }
     }
@@ -1003,6 +1060,47 @@ public class Launcher extends Robot {
         }
 
         moveAndAttack(bestDir);
+    }
+
+    public boolean shouldWaitOnEnemyIsland() throws GameActionException {
+        // Don't wait if you see an attacking enemy
+        if (closestEnemy != null &&
+                (closestEnemy.type == RobotType.LAUNCHER || closestEnemy.type == RobotType.DESTABILIZER))
+            return false;
+
+        int[] islandIdxs = rc.senseNearbyIslands();
+        for (int i = islandIdxs.length; --i >= 0;) {
+            if (rc.senseTeamOccupyingIsland(islandIdxs[i]) == team.opponent()) {
+                enemyIslandIdx = islandIdxs[i];
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void waitOnEnemyIsland() throws GameActionException {
+        MapLocation[] locs = rc.senseNearbyIslandLocations(enemyIslandIdx);
+
+        // Find the closest island location to wait on
+        MapLocation bestLoc = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist;
+        MapLocation loc;
+        for (int i = locs.length; --i >= 0;) {
+            loc = locs[i];
+            dist = currLoc.distanceSquaredTo(loc);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestLoc = loc;
+            }
+        }
+
+        if (bestLoc == null) {
+            Debug.println("ERROR: Couldn't find island loc");
+            return;
+        }
+
+        moveAndAttack(bestLoc);
     }
 
     public void updateSymManaSectors() throws GameActionException {

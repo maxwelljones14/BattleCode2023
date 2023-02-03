@@ -15,6 +15,7 @@ public class Carrier extends Robot {
         REPORTING_EARLY_WELL,
         CONVERTING,
         REPORTING_ELIXIR_CONVERTED,
+        KILLING_ISLAND,
     }
 
     static CarrierState currState;
@@ -52,6 +53,8 @@ public class Carrier extends Robot {
 
     static boolean isFirstPass;
     static MapLocation lastTarget;
+
+    static int enemyIslandIdx;
 
     public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
@@ -151,7 +154,9 @@ public class Carrier extends Robot {
     public void trySwitchState() throws GameActionException {
         switch (currState) {
             case MINING:
-                if (shouldReportEarlyWell()) {
+                if (shouldWaitOnEnemyIsland()) {
+                    currState = CarrierState.KILLING_ISLAND;
+                } else if (shouldReportEarlyWell()) {
                     currState = CarrierState.REPORTING_EARLY_WELL;
                     sectorToReport = 1;
                 } else if (shouldReport()) {
@@ -245,6 +250,11 @@ public class Carrier extends Robot {
                     } else {
                         currState = CarrierState.DEPOSITING;
                     }
+                }
+                break;
+            case KILLING_ISLAND:
+                if (!shouldWaitOnEnemyIsland()) {
+                    enterMineState();
                 }
                 break;
         }
@@ -769,6 +779,47 @@ public class Carrier extends Robot {
     public boolean shouldIgnoreEarlyWell(MapLocation target) {
         return roundNum <= Util.TURN_TO_IGNORE_EARLY_MINING_SECTORS &&
                 Util.distance(home, target) > Util.DIST_TO_IGNORE_EARLY_MINING_SECTORS;
+    }
+
+    public boolean shouldWaitOnEnemyIsland() throws GameActionException {
+        // Don't wait if you see an attacking enemy
+        if (closestEnemy != null &&
+                (closestEnemy.type == RobotType.LAUNCHER || closestEnemy.type == RobotType.DESTABILIZER))
+            return false;
+
+        int[] islandIdxs = rc.senseNearbyIslands();
+        for (int i = islandIdxs.length; --i >= 0;) {
+            if (rc.senseTeamOccupyingIsland(islandIdxs[i]) == team.opponent()) {
+                enemyIslandIdx = islandIdxs[i];
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void waitOnEnemyIsland() throws GameActionException {
+        MapLocation[] locs = rc.senseNearbyIslandLocations(enemyIslandIdx);
+
+        // Find the closest island location to wait on
+        MapLocation bestLoc = null;
+        int bestDist = Integer.MAX_VALUE;
+        int dist;
+        MapLocation loc;
+        for (int i = locs.length; --i >= 0;) {
+            loc = locs[i];
+            dist = currLoc.distanceSquaredTo(loc);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestLoc = loc;
+            }
+        }
+
+        if (bestLoc == null) {
+            Debug.println("ERROR: Couldn't find island loc");
+            return;
+        }
+
+        move(bestLoc);
     }
 
     public void runFromEnemy() throws GameActionException {
