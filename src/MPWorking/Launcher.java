@@ -460,8 +460,12 @@ public class Launcher extends Robot {
     }
 
     public void moveAndAttack(Direction dir) throws GameActionException {
+        moveAndAttack(dir, true);
+    }
+
+    public void moveAndAttack(Direction dir, boolean sync) throws GameActionException {
         // Sync launcher movement
-        if (rc.getRoundNum() % 2 == 0) {
+        if (sync && rc.getRoundNum() % 2 == 0) {
             tryAttackBestEnemy();
             return;
         }
@@ -630,7 +634,7 @@ public class Launcher extends Robot {
             return;
         }
         Debug.printString("RA, Dest: " + dir);
-        moveAndAttack(dir);
+        moveAndAttack(dir, false);
     }
 
     public void moveTowardsEnemy() throws GameActionException {
