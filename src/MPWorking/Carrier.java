@@ -65,7 +65,7 @@ public class Carrier extends Robot {
     public static final int CARRIERS_PER_WELL_TO_LEAVE = 12;
     public static final int RESET_WELLS_VISITED_TIMEOUT = 100;
     public static final int NO_WELLS_RESET_TIMEOUT = 20;
-    public static final int WELL_TIMEOUT = 40;
+    public static final int WELL_TIMEOUT = 30;
     public static final int WELL_DIST_TO_START_TIMER = 20;
 
     public static final int REPORTING_COOLDOWN = 10;
@@ -184,8 +184,7 @@ public class Carrier extends Robot {
                     currState = CarrierState.REPORTING;
                     sectorToReport = 1;
                 } else if (rc.getWeight() == GameConstants.CARRIER_CAPACITY) {
-                    if (resourceTarget == ResourceType.ADAMANTIUM &&
-                            Comms.readElixirSectorIndex() != Comms.UNDEFINED_SECTOR_INDEX) {
+                    if (shouldConvert()) {
                         enterConvertingState();
                     } else {
                         currState = CarrierState.DEPOSITING;
@@ -1120,5 +1119,12 @@ public class Carrier extends Robot {
         }
 
         Pathfinding.setImpassable(imp);
+    }
+
+    public boolean shouldConvert() throws GameActionException {
+        return resourceTarget == ResourceType.ADAMANTIUM &&
+                Comms.readElixirSectorIndex() != Comms.UNDEFINED_SECTOR_INDEX &&
+                Comms.readElixirSectorConverted() == 0 &&
+                rc.getRobotCount() >= Util.MIN_NUM_ROBOTS_TO_CONVERT;
     }
 }
