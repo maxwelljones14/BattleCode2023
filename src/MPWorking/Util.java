@@ -375,6 +375,33 @@ public class Util {
         return bestCollect == null ? well : bestCollect;
     }
 
+    static MapLocation getCollectLocClosestTo(MapLocation wellLoc, MapLocation loc) throws GameActionException {
+        MapLocation currLoc = rc.getLocation();
+        MapLocation bestCollect = null;
+        double bestDist = Double.MAX_VALUE;
+        MapLocation collectLoc;
+        double dist;
+        RobotInfo robot;
+
+        for (int i = Direction.DIRECTION_ORDER.length; --i >= 0;) {
+            collectLoc = wellLoc.add(Direction.DIRECTION_ORDER[i]);
+            if (!rc.canSenseLocation(collectLoc) ||
+                    !rc.sensePassability(collectLoc) ||
+                    !currLoc.isAdjacentTo(collectLoc))
+                continue;
+            robot = rc.senseRobotAtLocation(collectLoc);
+            if (robot != null && robot.ID != rc.getID())
+                continue;
+            dist = collectLoc.distanceSquaredTo(loc);
+            if (dist < bestDist) {
+                bestCollect = collectLoc;
+                bestDist = dist;
+            }
+        }
+
+        return bestCollect;
+    }
+
     // @pre We are already adjacent to the well. Only Carriers should call this
     static MapLocation getBetterCollectLoc(MapLocation wellLoc) throws GameActionException {
         MapLocation currLoc = rc.getLocation();

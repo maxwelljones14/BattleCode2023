@@ -29,6 +29,8 @@ public class Carrier extends Robot {
     static RobotInfo[] friendlyAttackable;
     static RobotInfo closestEnemy;
     static RobotInfo closestFriendly;
+    static RobotInfo closestEnemyCarrier;
+    static int numEnemyCarriers;
     static int numAttackingEnemyCount;
 
     static FastLocSet blacklistedWells;
@@ -487,7 +489,16 @@ public class Carrier extends Robot {
             if (currLoc.isAdjacentTo(wellLoc)) {
                 turnsNearWell = 0;
                 collect(closestWell);
-                MapLocation betterCollectLoc = Util.getBetterCollectLoc(wellLoc);
+
+                MapLocation betterCollectLoc;
+                closestEnemyCarrier = findCarrierSearchingForSpot(wellLoc);
+                if (numEnemyCarriers < FriendlySensable.length && closestEnemyCarrier != null) {
+                    // If there is an enemy carrier searching for a spot and there
+                    // are more friendlies, try to box out the carrier.
+                    betterCollectLoc = Util.getCollectLocClosestTo(wellLoc, closestEnemyCarrier.location);
+                } else {
+                    betterCollectLoc = Util.getBetterCollectLoc(wellLoc);
+                }
                 move(betterCollectLoc);
             } else {
                 // If there are too many carriers on this well, move to another well.
@@ -1002,6 +1013,28 @@ public class Carrier extends Robot {
             Debug.printString(str);
         }
         return target;
+    }
+
+    public RobotInfo findCarrierSearchingForSpot(MapLocation wellLoc) throws GameActionException {
+        RobotInfo robot;
+        RobotInfo closestRobot = null;
+        int leastDistance = Integer.MAX_VALUE;
+        int currDistance;
+        numEnemyCarriers = 0;
+
+        for (int i = EnemySensable.length; --i >= 0;) {
+            robot = EnemySensable[i];
+            if (robot.type != RobotType.CARRIER || robot.location.isAdjacentTo(wellLoc))
+                continue;
+            numEnemyCarriers++;
+            currDistance = robot.location.distanceSquaredTo(currLoc);
+            if (leastDistance > currDistance) {
+                leastDistance = currDistance;
+                closestRobot = robot;
+            }
+        }
+
+        return closestRobot;
     }
 
     public void checkCombatSectorNearby() throws GameActionException {
